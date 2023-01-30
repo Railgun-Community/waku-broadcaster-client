@@ -1152,6 +1152,14 @@
     "@ethersproject/contracts" "^5.7.0"
     "@ethersproject/transactions" "^5.7.0"
 
+"@railgun-community/shared-models@3.9.1":
+  version "3.9.1"
+  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-3.9.1.tgz#77089c38ebec2e79e6290e4473760d1f618eebab"
+  integrity sha512-pLucSb5rbO3xMqpq6ITd8OsgIdPyOxwYrXUD2K82HqSuPqq3b1f0VT6g+KlYUq8eSClEErU6AceBvbAhCbwJ9A==
+  dependencies:
+    "@ethersproject/contracts" "^5.7.0"
+    "@ethersproject/transactions" "^5.7.0"
+
 "@scure/base@^1.1.1", "@scure/base@~1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.1.tgz#ebb651ee52ff84f420097055f4bf46cfba403938"

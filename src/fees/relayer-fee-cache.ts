@@ -1,5 +1,8 @@
-import { Chain, networkForChain } from '@railgun-community/shared-models';
-import { CachedTokenFee } from '../models/export-models';
+import {
+  CachedTokenFee,
+  Chain,
+  networkForChain,
+} from '@railgun-community/shared-models';
 import { RelayerConfig } from '../models/relayer-config';
 import { RelayerDebug } from '../utils/relayer-debug';
 import {

@@ -1,9 +1,10 @@
 import {
+  CachedTokenFee,
   NetworkName,
   NETWORK_CONFIG,
+  SelectedRelayer,
   versionCompare,
 } from '@railgun-community/shared-models';
-import { CachedTokenFee, SelectedRelayer } from '../models';
 import { RelayerConfig } from '../models/relayer-config';
 
 const FEE_REFRESH_BEFORE_EXPIRATION_BUFFER = 20000;

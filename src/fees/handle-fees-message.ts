@@ -2,13 +2,16 @@ import {
   verifyRelayerSignature,
   getRailgunWalletAddressData,
 } from '@railgun-community/quickstart';
-import { Chain, RelayerFeeMessageData } from '@railgun-community/shared-models';
+import {
+  CachedTokenFee,
+  Chain,
+  RelayerFeeMessageData,
+} from '@railgun-community/shared-models';
 import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '@waku/byte-utils';
 import { contentTopics } from '../waku/waku-topics';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerConfig } from '../models/relayer-config';
-import { CachedTokenFee } from '../models/export-models';
 import { RelayerFeeCache } from './relayer-fee-cache';
 import { invalidRelayerVersion } from '../utils/relayer-util';
 
@@ -62,7 +65,8 @@ export const handleRelayerFeesMessage = async (
     const railgunAddress = feeMessageData.railgunAddress;
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
     const valid = await verifyRelayerSignature(
-      signature as any, // TODO: Fix these types (String or Uin8Array in Quickstart / Engine)
+      // TODO: Fix these types (String or Uin8Array in Quickstart / Engine)
+      signature as any,
       data as any,
       viewingPublicKey,
     );
