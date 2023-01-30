@@ -6,7 +6,7 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 
 describe('relayer-util', () => {
-  it('Should get Relayer names', () => {
+  it('Should get display names for Relayers', () => {
     expect(nameForRelayer('0zk1234567890', undefined)).to.equal(
       '0zk12345...7890',
     );
