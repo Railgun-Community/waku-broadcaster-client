@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "inlineSources": true,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "outDir": "dist",
+    "strict": true,
+    "types": ["node", "mocha"],
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "removeComments": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "noUnusedLocals": false, //true,
+    "noUnusedParameters": false, //true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": false
+  },
+  "include": ["./src/**/*.ts"],
+  "exclude": ["src/**/__tests__", "src/tests", "dist", "node_modules"]
+}
