@@ -15,8 +15,6 @@ import { RelayerConfig } from '../models/relayer-config';
 import { RelayerFeeCache } from './relayer-fee-cache';
 import { invalidRelayerVersion } from '../utils/relayer-util';
 
-const subtleCrypto = crypto.subtle;
-
 const hexToUTF8String = (hexData: string) => {
   const buffer = Buffer.from(hexData, 'hex');
   return new TextDecoder().decode(buffer);
@@ -49,9 +47,9 @@ export const handleRelayerFeesMessage = async (
     };
     const utf8String = hexToUTF8String(data);
     const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
-    if (!subtleCrypto && RelayerConfig.IS_DEV) {
+    if (!crypto.subtle && RelayerConfig.IS_DEV) {
       RelayerDebug.log(
-        'Skipping Relayer fee validation in DEV. `crypto.web.subtle` does not exist (not secure: use https or localhost). ',
+        'Skipping Relayer fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
       );
       updateFeesForRelayer(chain, feeMessageData);
       return;

@@ -22,6 +22,7 @@
     "test": "npm run compile-test && mocha 'src/**/__tests__/*.test.ts'"
   },
   "dependencies": {
+    "@ethersproject/bignumber": "^5.7.0",
     "@libp2p/bootstrap": "^6.0.0",
     "@multiformats/multiaddr": "^11.4.0",
     "@railgun-community/shared-models": "3.9.1",

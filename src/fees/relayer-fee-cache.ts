@@ -92,4 +92,12 @@ export class RelayerFeeCache {
     this.cache.forNetwork ??= {};
     this.cache.forNetwork[network.name] = { forToken: {} };
   }
+
+  static feesForChain(chain: Chain): RelayerFeeNetworkCacheMap {
+    const network = networkForChain(chain);
+    if (!network) {
+      throw new Error('Chain not found.');
+    }
+    return this.cache.forNetwork[network.name];
+  }
 }

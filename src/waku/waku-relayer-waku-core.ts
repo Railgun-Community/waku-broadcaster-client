@@ -17,8 +17,7 @@ export class WakuRelayerWakuCore {
   static isReady = false;
   static hasError = false;
   private static connecting = false;
-
-  static defaultDirectPeers: string[];
+  static directPeers: string[];
 
   static waku: Optional<Waku>;
 
@@ -80,10 +79,10 @@ export class WakuRelayerWakuCore {
         },
       });
 
-      RelayerDebug.log('Start waku');
+      RelayerDebug.log('Start Waku.');
       await waku.start();
 
-      RelayerDebug.log('Waiting for remote peer');
+      RelayerDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
       if (!waku.relay) {
@@ -103,7 +102,7 @@ export class WakuRelayerWakuCore {
 
       RelayerDebug.log('Dialing direct peers (synchronously)');
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.dialDirectPeer(waku, this.defaultDirectPeers);
+      this.dialDirectPeer(waku, this.directPeers);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

@@ -1,38 +1,14 @@
 import {
   CachedTokenFee,
-  NetworkName,
-  NETWORK_CONFIG,
-  SelectedRelayer,
+  Chain,
+  networkForChain,
   versionCompare,
 } from '@railgun-community/shared-models';
 import { RelayerConfig } from '../models/relayer-config';
 
-const FEE_REFRESH_BEFORE_EXPIRATION_BUFFER = 20000;
 const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
 
 export const DEFAULT_RELAYER_IDENTIFIER = 'default';
-
-const isCachedFeeAboutToExpire = (cachedFee: CachedTokenFee) => {
-  // Replace selected relayer if <60sec until expiration.
-  const feeReplacementCutoff =
-    Date.now() +
-    FEE_EXPIRATION_MINIMUM_MSEC +
-    FEE_REFRESH_BEFORE_EXPIRATION_BUFFER;
-
-  return cachedFee.expiration < feeReplacementCutoff;
-};
-
-export const shouldReplaceCurrentRelayer = (
-  newRelayer: SelectedRelayer,
-  currentRelayer: Optional<SelectedRelayer>,
-) => {
-  return (
-    !currentRelayer ||
-    newRelayer.railgunAddress !== currentRelayer.railgunAddress ||
-    newRelayer.tokenAddress !== currentRelayer.tokenAddress ||
-    isCachedFeeAboutToExpire(currentRelayer.tokenFee)
-  );
-};
 
 const shortenAddress = (address: string): string => {
   if (address.length < 13) {
@@ -54,7 +30,7 @@ export const nameForRelayer = (
 };
 
 export const cachedFeeExpired = (feeExpiration: number) => {
-  // Must have at least 40sec until expiration, in order to run the proof and submit.
+  // Minimum of 40sec until expiration, in order to run the proof and submit.
   // If submitted after feeCacheID expires, it risks "Bad token fee" error from Relayer.
   return feeExpiration < Date.now() + FEE_EXPIRATION_MINIMUM_MSEC;
 };
@@ -70,7 +46,7 @@ export const invalidRelayerVersion = (version: Optional<string>) => {
 
 export const cachedFeeUnavailableOrExpired = (
   cachedFee: CachedTokenFee,
-  networkName: NetworkName,
+  chain: Chain,
   useRelayAdapt: boolean,
 ) => {
   if (useRelayAdapt) {
@@ -78,7 +54,11 @@ export const cachedFeeUnavailableOrExpired = (
     if (!relayAdapt) {
       return true;
     }
-    const expectedRelayAdapt = NETWORK_CONFIG[networkName].relayAdaptContract;
+    const network = networkForChain(chain);
+    if (!network) {
+      throw new Error('Unrecognized chain');
+    }
+    const expectedRelayAdapt = network.relayAdaptContract;
     if (relayAdapt && relayAdapt !== expectedRelayAdapt) {
       return true;
     }
