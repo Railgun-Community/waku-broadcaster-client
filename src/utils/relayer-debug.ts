@@ -1,12 +1,9 @@
-type Debugger = {
-  log: (msg: string) => void;
-  error: (error: Error) => void;
-};
+import { RelayerDebugger } from '../models/export-models';
 
 export class RelayerDebug {
-  private static debug: Optional<Debugger>;
+  private static debug: Optional<RelayerDebugger>;
 
-  static init(debug: Debugger) {
+  static setDebugger(debug: RelayerDebugger) {
     this.debug = debug;
   }
 

@@ -1,4 +1,4 @@
-export class RelayerAddressFilter {
+export class AddressFilter {
   private static allowlist: Optional<string[]>;
   private static blocklist: Optional<string[]>;
 

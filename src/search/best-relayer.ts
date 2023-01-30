@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { Chain, SelectedRelayer } from '@railgun-community/shared-models';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
-import { RelayerAddressFilter } from '../filters';
+import { AddressFilter } from '../filters/address-filter';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { cachedFeeUnavailableOrExpired } from '../utils/relayer-util';
 
@@ -20,7 +20,7 @@ export class RelayerSearch {
     }
 
     const unfilteredAddresses = Object.keys(relayerTokenFees);
-    const relayerAddresses = RelayerAddressFilter.filter(unfilteredAddresses);
+    const relayerAddresses = AddressFilter.filter(unfilteredAddresses);
     if (unfilteredAddresses.length !== relayerAddresses.length) {
       RelayerDebug.log(
         `Removed ${

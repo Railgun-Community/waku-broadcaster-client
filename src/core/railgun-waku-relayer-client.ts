@@ -1,10 +1,13 @@
 import { Chain, delay } from '@railgun-community/shared-models';
+import { AddressFilter } from '../filters/address-filter';
 import {
   RelayerConnectionStatus,
   RelayerConnectionStatusCallback,
+  RelayerDebugger,
 } from '../models/export-models';
 import { RelayerSearch } from '../search/best-relayer';
 import { RelayerStatus } from '../status/relayer-connection-status';
+import { RelayerDebug } from '../utils/relayer-debug';
 import { WakuObservers } from '../waku/waku-observers';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 
@@ -17,6 +20,7 @@ export class RailgunWakuRelayerClient {
     chain: Chain,
     wakuDirectPeers: string[],
     statusCallback: RelayerConnectionStatusCallback,
+    relayerDebugger: RelayerDebugger,
   ) {
     this.chain = chain;
     this.statusCallback = statusCallback;
@@ -24,11 +28,13 @@ export class RailgunWakuRelayerClient {
     WakuRelayerWakuCore.directPeers = wakuDirectPeers;
     await WakuRelayerWakuCore.initWaku(chain);
 
+    RelayerDebug.setDebugger(relayerDebugger);
+
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();
   }
 
-  static async setChain(chain: Chain) {
+  static setChain(chain: Chain) {
     this.chain = chain;
     WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
     this.updateStatus();
@@ -40,6 +46,14 @@ export class RailgunWakuRelayerClient {
     useRelayAdapt: boolean,
   ) {
     return RelayerSearch.findBestRelayer(chain, tokenAddress, useRelayAdapt);
+  }
+
+  static setAddressAllowlist(allowlist: Optional<string[]>) {
+    AddressFilter.setAllowlist(allowlist);
+  }
+
+  static setAddressBlocklist(blocklist: Optional<string[]>) {
+    AddressFilter.setBlocklist(blocklist);
   }
 
   /**

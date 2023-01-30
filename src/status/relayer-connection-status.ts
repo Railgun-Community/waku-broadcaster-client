@@ -1,6 +1,6 @@
 import { CachedTokenFee, Chain } from '@railgun-community/shared-models';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
-import { RelayerAddressFilter } from '../filters';
+import { AddressFilter } from '../filters/address-filter';
 import { RelayerConnectionStatus } from '../models/export-models';
 import { cachedFeeExpired } from '../utils/relayer-util';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
@@ -39,7 +39,7 @@ export class RelayerStatus {
         const unfilteredRelayerAddresses = Object.keys(
           tokenRelayerMap.forRelayer,
         );
-        const filteredRelayerAddresses = RelayerAddressFilter.filter(
+        const filteredRelayerAddresses = AddressFilter.filter(
           unfilteredRelayerAddresses,
         );
         return filteredRelayerAddresses.length > 0;
@@ -62,7 +62,7 @@ export class RelayerStatus {
       const unfilteredRailgunAddresses = Object.keys(
         tokenRelayerMap.forRelayer,
       );
-      const filteredRailgunAddresses = RelayerAddressFilter.filter(
+      const filteredRailgunAddresses = AddressFilter.filter(
         unfilteredRailgunAddresses,
       );
       filteredRailgunAddresses.forEach(railgunAddress => {
