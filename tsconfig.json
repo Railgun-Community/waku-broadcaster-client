@@ -1,5 +1,9 @@
 {
+  "env": {
+    "node": true
+  },
   "compilerOptions": {
+    "module": "commonjs",
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
@@ -21,11 +25,9 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "isolatedModules": true,
-    "noUnusedLocals": false, //true,
-    "noUnusedParameters": false, //true,
     "noImplicitReturns": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["src/**/__tests__", "src/tests", "dist", "node_modules"]
+  "exclude": ["node_modules", "src/**/__tests__", "src/tests", "dist"]
 }
