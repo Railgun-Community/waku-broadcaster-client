@@ -8,10 +8,10 @@ import {
 } from '@waku/core/lib/predefined_bootstrap_nodes';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Waku, Protocols, IMessage } from '@waku/interfaces';
-import { utf8ToBytes } from '@waku/byte-utils';
 import { WakuObservers } from './waku-observers';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
+import { utf8ToBytes } from '../utils/conversion';
 
 export class WakuRelayerWakuCore {
   static isReady = false;

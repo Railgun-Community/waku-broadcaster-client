@@ -10,8 +10,8 @@ import {
   RelayerMethodParamsTransact,
   RelayerRawParamsTransact,
 } from '@railgun-community/shared-models';
-import { bytesToHex } from '@waku/byte-utils';
 import { RelayerConfig } from '../models/relayer-config';
+import { bytesToHex } from '../utils/conversion';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 import { contentTopics } from '../waku/waku-topics';

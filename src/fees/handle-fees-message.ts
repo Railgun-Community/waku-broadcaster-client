@@ -7,26 +7,23 @@ import {
   Chain,
   RelayerFeeMessageData,
 } from '@railgun-community/shared-models';
+import crypto from 'crypto';
 import { IMessage } from '@waku/interfaces';
-import { bytesToUtf8 } from '@waku/byte-utils';
 import { contentTopics } from '../waku/waku-topics';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerConfig } from '../models/relayer-config';
 import { RelayerFeeCache } from './relayer-fee-cache';
 import { invalidRelayerVersion } from '../utils/relayer-util';
-
-const hexToUTF8String = (hexData: string) => {
-  const buffer = Buffer.from(hexData, 'hex');
-  return new TextDecoder().decode(buffer);
-};
+import { bytesToUtf8, hexToUTF8String } from '../utils/conversion';
 
 const isExpiredTimestamp = (timestamp: Optional<Date>) => {
   if (!timestamp) {
     return false;
   }
-  // 45 seconds ago.
-  const expiration = Date.now() / 1000 - 45;
-  return timestamp.getTime() < expiration;
+
+  // Expired if message originated > 45 seconds ago.
+  const expirationMsec = Date.now() - 45 * 1000;
+  return timestamp.getTime() < expirationMsec;
 };
 
 export const handleRelayerFeesMessage = async (
@@ -35,11 +32,16 @@ export const handleRelayerFeesMessage = async (
   contentTopic: string,
 ) => {
   try {
-    if (!message.payload) return;
-    if (contentTopic !== contentTopics.fees(chain)) return;
+    if (!message.payload) {
+      return;
+    }
+    if (contentTopic !== contentTopics.fees(chain)) {
+      return;
+    }
     if (isExpiredTimestamp(message.timestamp)) {
       return;
     }
+
     const payload = bytesToUtf8(message.payload);
     const { data, signature } = JSON.parse(payload) as {
       data: string;
@@ -47,6 +49,7 @@ export const handleRelayerFeesMessage = async (
     };
     const utf8String = hexToUTF8String(data);
     const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
+
     if (!crypto.subtle && RelayerConfig.IS_DEV) {
       RelayerDebug.log(
         'Skipping Relayer fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
@@ -54,31 +57,45 @@ export const handleRelayerFeesMessage = async (
       updateFeesForRelayer(chain, feeMessageData);
       return;
     }
+
     if (invalidRelayerVersion(feeMessageData.version)) {
       RelayerDebug.log(
         `Skipping Relayer outside version range: ${feeMessageData.version}, ${feeMessageData.railgunAddress}`,
       );
       return;
     }
-    const railgunAddress = feeMessageData.railgunAddress;
-    const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
-    const valid = await verifyRelayerSignature(
-      // TODO: Fix these types (String or Uin8Array in Quickstart / Engine)
-      signature as any,
-      data as any,
-      viewingPublicKey,
-    );
-    if (valid) {
-      updateFeesForRelayer(chain, feeMessageData);
+
+    const valid = await verifySignature(data, signature, feeMessageData);
+    if (!valid) {
+      return;
     }
+
+    updateFeesForRelayer(chain, feeMessageData);
   } catch (err) {
     if (!(err instanceof Error)) {
       throw err;
     }
 
     RelayerDebug.log('Error handling Relayer fees');
-    RelayerDebug.error(err);
+    const ignoreInTests = true;
+    RelayerDebug.error(err, ignoreInTests);
   }
+};
+
+const verifySignature = async (
+  data: string,
+  signature: string,
+  feeMessageData: RelayerFeeMessageData,
+): Promise<boolean> => {
+  const { railgunAddress } = feeMessageData;
+  const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
+  const valid = await verifyRelayerSignature(
+    // TODO: Fix these types (String or Uin8Array in Quickstart / Engine)
+    signature as any,
+    data as any,
+    viewingPublicKey,
+  );
+  return valid;
 };
 
 const updateFeesForRelayer = (

@@ -32,6 +32,11 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
+  static getObservers = (waku: Waku): string[] => {
+    // @ts-ignore - private accessor
+    return waku.relay.observers.keys() as string[];
+  };
+
   private static removeAllObservers = (waku: Waku) => {
     if (!waku.relay) {
       return;
@@ -58,11 +63,8 @@ export class WakuObservers {
     );
 
     RelayerDebug.log('Waku observers:');
-
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    for (const observer of waku.relay.observers.keys() as string[]) {
+    this.getObservers(waku).forEach(observer => {
       RelayerDebug.log(observer);
-    }
+    });
   };
 }

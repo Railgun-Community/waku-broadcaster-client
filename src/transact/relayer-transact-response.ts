@@ -1,6 +1,6 @@
 import { decryptAESGCM256 } from '@railgun-community/quickstart';
-import { bytesToUtf8 } from '@waku/byte-utils';
 import { IMessage } from '@waku/interfaces';
+import { bytesToUtf8 } from '../utils/conversion';
 import { RelayerDebug } from '../utils/relayer-debug';
 
 export type WakuTransactResponse = {

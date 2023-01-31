@@ -1,15 +1,15 @@
 import { Chain, delay } from '@railgun-community/shared-models';
-import { AddressFilter } from '../filters/address-filter';
+import { AddressFilter } from './filters/address-filter';
 import {
   RelayerConnectionStatus,
   RelayerConnectionStatusCallback,
   RelayerDebugger,
-} from '../models/export-models';
-import { RelayerSearch } from '../search/best-relayer';
-import { RelayerStatus } from '../status/relayer-connection-status';
-import { RelayerDebug } from '../utils/relayer-debug';
-import { WakuObservers } from '../waku/waku-observers';
-import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
+} from './models/export-models';
+import { RelayerSearch } from './search/best-relayer';
+import { RelayerStatus } from './status/relayer-connection-status';
+import { RelayerDebug } from './utils/relayer-debug';
+import { WakuObservers } from './waku/waku-observers';
+import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
 export class RailgunWakuRelayerClient {
   static chain: Chain;
