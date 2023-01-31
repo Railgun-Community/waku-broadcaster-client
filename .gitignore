@@ -8,4 +8,6 @@ yarn-error.log
 package-lock.json
 dist/
 
+# Test
 .nyc_output
+test.db

@@ -22,7 +22,7 @@ type RelayerFeeNetworkTokenCacheMap = {
 type RelayerFeeNetworkCacheMap = {
   forToken: MapType<RelayerFeeNetworkTokenCacheMap>;
 };
-type RelayerFeeCacheState = {
+export type RelayerFeeCacheState = {
   forNetwork: MapType<RelayerFeeNetworkCacheMap>;
 };
 
@@ -90,7 +90,7 @@ export class RelayerFeeCache {
       return;
     }
     this.cache.forNetwork ??= {};
-    this.cache.forNetwork[network.name] = { forToken: {} };
+    delete this.cache.forNetwork[network.name];
   }
 
   static feesForChain(chain: Chain): RelayerFeeNetworkCacheMap {
