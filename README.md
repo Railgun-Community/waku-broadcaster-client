@@ -1,3 +1,5 @@
+[![Node.js CI Actions Status](https://github.com/Railgun-Community/waku-relayer-client/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/waku-relayer-client/actions)
+
 # RAILGUN Relayer Client with Waku networking layer
 
 Compatible with Browser and NodeJS environments.
