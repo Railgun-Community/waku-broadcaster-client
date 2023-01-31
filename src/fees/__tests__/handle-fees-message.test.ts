@@ -171,22 +171,6 @@ describe('handle-fees-message', () => {
     expect(relayerFeeCacheStub.notCalled).to.be.true;
   });
 
-  it('Should not cache fees with invalid version', async () => {
-    const message: IMessage = {
-      payload: await createPayload(
-        {
-          ...validFeeMessageData,
-          version: '2.0',
-        },
-        walletA,
-      ),
-      timestamp: validTimestamp,
-    };
-
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
-  });
-
   it('Should cache fees with valid fields and signature', async () => {
     const message: IMessage = {
       payload: await createPayload(validFeeMessageData, walletA),

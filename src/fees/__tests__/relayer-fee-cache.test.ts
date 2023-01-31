@@ -31,6 +31,8 @@ const feeExpiration = Date.now() + 10000000;
 
 describe('relayer-fee-cache', () => {
   it('Should return relayer-fee-cache initial state', () => {
+    RelayerFeeCache.resetCache(chain);
+
     // @ts-ignore
     expect(RelayerFeeCache.cache).to.deep.equal(initialState);
 

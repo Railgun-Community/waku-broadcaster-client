@@ -20,6 +20,10 @@ const isExpiredTimestamp = (timestamp: Optional<Date>) => {
   if (!timestamp) {
     return false;
   }
+  if (timestamp.getFullYear() === 1970) {
+    // Waku timestamp bug.
+    return false;
+  }
 
   // Expired if message originated > 45 seconds ago.
   const expirationMsec = Date.now() - 45 * 1000;

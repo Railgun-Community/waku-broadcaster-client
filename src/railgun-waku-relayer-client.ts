@@ -12,9 +12,9 @@ import { WakuObservers } from './waku/waku-observers';
 import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
 export class RailgunWakuRelayerClient {
-  static chain: Chain;
-  static status: RelayerConnectionStatus;
-  static statusCallback: RelayerConnectionStatusCallback;
+  private static chain: Chain;
+  private static status: RelayerConnectionStatus;
+  private static statusCallback: RelayerConnectionStatusCallback;
 
   static async start(
     chain: Chain,

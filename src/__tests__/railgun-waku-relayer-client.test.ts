@@ -1,4 +1,4 @@
-import { delay } from '@railgun-community/shared-models';
+import { delay, poll } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RelayerConnectionStatus } from '../models/export-models';
@@ -12,19 +12,11 @@ const chain = MOCK_CHAIN;
 const wakuDirectPeers: string[] = [];
 
 let currentStatus: RelayerConnectionStatus;
-
 const statusCallback = (status: RelayerConnectionStatus) => {
-  console.log(status);
   currentStatus = status;
 };
 
 describe('railgun-waku-relayer-client', () => {
-  before(async () => {});
-
-  afterEach(() => {});
-
-  after(() => {});
-
   it('Should start up the client and pull live fees', async () => {
     await RailgunWakuRelayerClient.start(
       chain,
@@ -32,8 +24,14 @@ describe('railgun-waku-relayer-client', () => {
       statusCallback,
     );
 
-    await delay(5000);
+    expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
 
-    expect(currentStatus).to.equal(RelayerConnectionStatus.Connected);
-  });
+    // Poll until currentStatus is Connected.
+    await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Connected,
+      20,
+      10000 / 20, // 10 sec.
+    );
+  }).timeout(15000);
 });

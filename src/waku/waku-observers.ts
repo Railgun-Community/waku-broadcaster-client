@@ -63,8 +63,8 @@ export class WakuObservers {
     );
 
     RelayerDebug.log('Waku observers:');
-    this.getObservers(waku).forEach(observer => {
+    for (const observer of this.getObservers(waku)) {
       RelayerDebug.log(observer);
-    });
+    }
   };
 }

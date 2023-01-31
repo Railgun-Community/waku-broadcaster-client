@@ -3,6 +3,8 @@
     "node": true
   },
   "compilerOptions": {
+    "target": "es6",
+    "module": "esnext",
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
