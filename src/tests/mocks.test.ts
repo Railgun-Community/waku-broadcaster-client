@@ -5,6 +5,11 @@ export const MOCK_CHAIN: Chain = {
   id: 1,
 };
 
+export const MOCK_CHAIN_GOERLI: Chain = {
+  type: ChainType.EVM,
+  id: 5,
+};
+
 export const MOCK_DB_ENCRYPTION_KEY =
   '0101010101010101010101010101010101010101010101010101010101010101';
 
