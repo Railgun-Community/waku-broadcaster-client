@@ -65,7 +65,7 @@ export class RelayerTransaction {
   private chain: Chain;
   private nullifiers: string[];
 
-  constructor(
+  private constructor(
     encryptedDataResponse: EncryptDataWithSharedKeyResponse,
     chain: Chain,
     nullifiers: string[],
@@ -80,9 +80,7 @@ export class RelayerTransaction {
     this.contentTopic = contentTopics.transact(chain);
     this.chain = chain;
     this.nullifiers = nullifiers;
-    RelayerTransactResponse.setTransactionResponseSharedKey(
-      encryptedDataResponse.sharedKey,
-    );
+    RelayerTransactResponse.setSharedKey(encryptedDataResponse.sharedKey);
   }
 
   static async create(
@@ -171,7 +169,7 @@ export class RelayerTransaction {
     return undefined;
   }
 
-  getRelayRetryState(retryNumber: number): RelayRetryState {
+  private getRelayRetryState(retryNumber: number): RelayRetryState {
     const retrySeconds = retryNumber * SECONDS_PER_RETRY;
     if (retrySeconds <= RETRY_TRANSACTION_SECONDS) {
       return RelayRetryState.RetryTransact;
@@ -182,7 +180,11 @@ export class RelayerTransaction {
     return RelayRetryState.Wait;
   }
 
-  async relay(retryNumber = 0): Promise<string> {
+  async send(): Promise<string> {
+    return this.relay();
+  }
+
+  private async relay(retryNumber = 0): Promise<string> {
     const relayRetryState = this.getRelayRetryState(retryNumber);
     switch (relayRetryState) {
       case RelayRetryState.RetryTransact:
@@ -215,11 +217,11 @@ export class RelayerTransaction {
     );
     if (response) {
       if (response.txHash) {
-        RelayerTransactResponse.clearTransactionResponseSharedKey();
+        RelayerTransactResponse.clearSharedKey();
         return response.txHash;
       }
       if (response.error) {
-        RelayerTransactResponse.clearTransactionResponseSharedKey();
+        RelayerTransactResponse.clearSharedKey();
         throw new Error(response.error);
       }
     }

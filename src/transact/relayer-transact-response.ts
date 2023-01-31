@@ -11,20 +11,20 @@ export type WakuTransactResponse = {
 
 export class RelayerTransactResponse {
   static storedTransactionResponse: Optional<WakuTransactResponse>;
-  private static transactionResponseSharedKey: Optional<Uint8Array>;
+  static sharedKey: Optional<Uint8Array>;
 
-  static setTransactionResponseSharedKey = (key: Uint8Array) => {
-    RelayerTransactResponse.transactionResponseSharedKey = key;
+  static setSharedKey = (key: Uint8Array) => {
+    RelayerTransactResponse.sharedKey = key;
     RelayerTransactResponse.storedTransactionResponse = undefined;
   };
 
-  static clearTransactionResponseSharedKey = () => {
-    RelayerTransactResponse.transactionResponseSharedKey = undefined;
+  static clearSharedKey = () => {
+    RelayerTransactResponse.sharedKey = undefined;
     RelayerTransactResponse.storedTransactionResponse = undefined;
   };
 
   static async handleRelayerTransactionResponseMessage(message: IMessage) {
-    if (!RelayerTransactResponse.transactionResponseSharedKey) {
+    if (!RelayerTransactResponse.sharedKey) {
       return;
     }
     if (!message.payload) {
@@ -39,7 +39,7 @@ export class RelayerTransactResponse {
 
       const decrypted = await decryptAESGCM256(
         encryptedData,
-        RelayerTransactResponse.transactionResponseSharedKey,
+        RelayerTransactResponse.sharedKey,
       );
       if (decrypted == null) {
         return;
