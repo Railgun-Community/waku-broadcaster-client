@@ -14,9 +14,9 @@ import {
 } from '@waku/core/lib/predefined_bootstrap_nodes';
 
 export class WakuRelayerWakuCore {
-  static isReady = false;
   static hasError = false;
   private static connecting = false;
+
   static directPeers: string[];
 
   static waku: Optional<Waku>;
@@ -46,10 +46,7 @@ export class WakuRelayerWakuCore {
     if (WakuRelayerWakuCore.connecting) {
       return;
     }
-    if (this.isReady) {
-      await WakuRelayerWakuCore.waku?.stop();
-    }
-    this.isReady = false;
+    await WakuRelayerWakuCore.waku?.stop();
 
     // Resets connection status to "Connecting" for this network.
     RelayerFeeCache.resetCache(chain);
@@ -97,7 +94,6 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Connected to Waku');
       WakuRelayerWakuCore.waku = waku;
       WakuRelayerWakuCore.connecting = false;
-      WakuRelayerWakuCore.isReady = true;
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log('Dialing direct peers (synchronously)');
@@ -107,8 +103,8 @@ export class WakuRelayerWakuCore {
       if (!(err instanceof Error)) {
         throw err;
       }
-      WakuRelayerWakuCore.hasError = true;
       WakuRelayerWakuCore.connecting = false;
+      WakuRelayerWakuCore.hasError = true;
       RelayerDebug.error(err);
       if (fleet === Fleet.Prod) {
         return WakuRelayerWakuCore.connect(Fleet.Test);

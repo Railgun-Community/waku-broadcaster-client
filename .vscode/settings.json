@@ -675,5 +675,7 @@
     "node_modules/yargs-unparser": true,
     "node_modules/yn": true,
     "node_modules/yocto-queue": true
-  }
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true
 }

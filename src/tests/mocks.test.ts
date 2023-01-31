@@ -18,3 +18,6 @@ export const MOCK_MNEMONIC =
 
 export const MOCK_MNEMONIC_2 =
   'pause crystal tornado alcohol genre cement fade large song like bag where';
+
+export const MOCK_RAILGUN_WALLET_ADDRESS =
+  '0zk1q8hxknrs97q8pjxaagwthzc0df99rzmhl2xnlxmgv9akv32sua0kfrv7j6fe3z53llhxknrs97q8pjxaagwthzc0df99rzmhl2xnlxmgv9akv32sua0kg0zpzts';
