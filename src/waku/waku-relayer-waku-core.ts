@@ -1,17 +1,17 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
-import { multiaddr } from '@multiformats/multiaddr';
-import { createRelayNode } from '@waku/create';
-import { bootstrap } from '@libp2p/bootstrap';
-import {
-  Fleet,
-  getPredefinedBootstrapNodes,
-} from '@waku/core/lib/predefined_bootstrap_nodes';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Waku, Protocols, IMessage } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { utf8ToBytes } from '../utils/conversion';
+import { multiaddr } from '@multiformats/multiaddr';
+import { bootstrap } from '@libp2p/bootstrap';
+import { createRelayNode } from '@waku/create';
+import {
+  Fleet,
+  getPredefinedBootstrapNodes,
+} from '@waku/core/lib/predefined_bootstrap_nodes';
 
 export class WakuRelayerWakuCore {
   static isReady = false;

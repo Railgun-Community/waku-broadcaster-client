@@ -24,11 +24,9 @@
   "dependencies": {
     "@ethersproject/bignumber": "^5.7.0",
     "@libp2p/bootstrap": "^6.0.0",
-    "@multiformats/multiaddr": "^11.4.0",
     "@railgun-community/shared-models": "3.9.1",
     "@waku/core": "^0.0.10",
-    "@waku/create": "^0.0.6",
-    "@waku/interfaces": "^0.0.7"
+    "@waku/create": "^0.0.6"
   },
   "peerDependencies": {
     "@railgun-community/quickstart": "3.11.0"

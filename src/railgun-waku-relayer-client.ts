@@ -20,7 +20,7 @@ export class RailgunWakuRelayerClient {
     chain: Chain,
     wakuDirectPeers: string[],
     statusCallback: RelayerConnectionStatusCallback,
-    relayerDebugger: RelayerDebugger,
+    relayerDebugger?: RelayerDebugger,
   ) {
     this.chain = chain;
     this.statusCallback = statusCallback;
@@ -28,7 +28,9 @@ export class RailgunWakuRelayerClient {
     WakuRelayerWakuCore.directPeers = wakuDirectPeers;
     await WakuRelayerWakuCore.initWaku(chain);
 
-    RelayerDebug.setDebugger(relayerDebugger);
+    if (relayerDebugger) {
+      RelayerDebug.setDebugger(relayerDebugger);
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();

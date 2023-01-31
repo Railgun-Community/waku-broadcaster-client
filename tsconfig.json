@@ -3,7 +3,6 @@
     "node": true
   },
   "compilerOptions": {
-    "module": "commonjs",
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
