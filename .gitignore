@@ -11,3 +11,4 @@ dist/
 # Test
 .nyc_output
 test.db
+coverage/
