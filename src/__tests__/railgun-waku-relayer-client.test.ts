@@ -1,4 +1,4 @@
-import { delay, poll } from '@railgun-community/shared-models';
+import { poll } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RelayerConnectionStatus } from '../models/export-models';

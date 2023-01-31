@@ -69,8 +69,14 @@ export const handleRelayerFeesMessage = async (
       return;
     }
 
-    const valid = await verifySignature(data, signature, feeMessageData);
-    if (!valid) {
+    const { railgunAddress } = feeMessageData;
+    const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
+    const verified = await verifyRelayerSignature(
+      signature,
+      data,
+      viewingPublicKey,
+    );
+    if (!verified) {
       return;
     }
 
@@ -84,22 +90,6 @@ export const handleRelayerFeesMessage = async (
     const ignoreInTests = true;
     RelayerDebug.error(err, ignoreInTests);
   }
-};
-
-const verifySignature = async (
-  data: string,
-  signature: string,
-  feeMessageData: RelayerFeeMessageData,
-): Promise<boolean> => {
-  const { railgunAddress } = feeMessageData;
-  const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
-  const valid = await verifyRelayerSignature(
-    // TODO: Fix these types (String or Uin8Array in Quickstart / Engine)
-    signature as any,
-    data as any,
-    viewingPublicKey,
-  );
-  return valid;
 };
 
 const updateFeesForRelayer = (

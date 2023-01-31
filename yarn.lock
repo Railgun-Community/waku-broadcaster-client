@@ -1129,10 +1129,10 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@railgun-community/engine@3.10.3":
-  version "3.10.3"
-  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-3.10.3.tgz#3b87559248c2795644717a4471829afe4ca555cd"
-  integrity sha512-NDhW9MbvmIXUh5Lz+y/s6+cjimd0ERPyCb/Wn9RSuVCtKrSsMAxme8nB2xL9N+BA+vp9hxqhuNnnjtLpEp6EhA==
+"@railgun-community/engine@3.10.7":
+  version "3.10.7"
+  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-3.10.7.tgz#559e53097cf0598cb0dfe4b947b016442e368849"
+  integrity sha512-nrfuh6SqtH17Jklpcd47Q56zMWAsQ+CwEro5Lwdt/t7CQnxoecinhHXQqK3G7fC5bmqz5LisJIJWUvgX/qSLDQ==
   dependencies:
     "@ethersproject/abi" "^5.7.0"
     "@ethersproject/abstract-provider" "^5.7.0"
@@ -1151,13 +1151,13 @@
     levelup "^5.1.1"
     msgpack-lite "^0.1.26"
 
-"@railgun-community/quickstart@3.11.0":
-  version "3.11.0"
-  resolved "https://registry.yarnpkg.com/@railgun-community/quickstart/-/quickstart-3.11.0.tgz#3309dbd9b0074c5385f824d4e7bf028f587cee5d"
-  integrity sha512-GkCTcUfmbqvbJTuBwjD9rQSm0DR476slRAILcNoYqGOUrwqw3kaTrzVbSB1ZWIdwlgg0HLBD2id+pw7cHtwYDQ==
+"@railgun-community/quickstart@^3.11.3":
+  version "3.11.3"
+  resolved "https://registry.yarnpkg.com/@railgun-community/quickstart/-/quickstart-3.11.3.tgz#3d8932501470b1dabf7adff1b2e10448b3a1d82f"
+  integrity sha512-fQC112PP2LBLh4Hq+yhPTnJqQ5tReuGc16AfqT8XvcCpo3Z6vgIn4UW8gVtMSjRgXUL2HeGafyIXyGDQj9LV8g==
   dependencies:
     "@noble/ed25519" "^1.7.1"
-    "@railgun-community/engine" "3.10.3"
+    "@railgun-community/engine" "3.10.7"
     "@railgun-community/shared-models" "3.9.0"
     axios "0.27.2"
     brotli "^1.3.3"
@@ -5713,6 +5713,11 @@ prelude-ls@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/prelude-ls/-/prelude-ls-1.1.2.tgz#21932a549f5e52ffd9a827f570e04be62a97da54"
   integrity sha512-ESF23V4SKG6lVSGZgYNpbsiaAkdab6ZgOxe52p7+Kid3W3u3bxR4Vfd/o21dmN7jSt0IwgZ4v5MUd26FEtXE9w==
+
+prettier@^2.8.3:
+  version "2.8.3"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.3.tgz#ab697b1d3dd46fb4626fbe2f543afe0cc98d8632"
+  integrity sha512-tJ/oJ4amDihPoufT5sM0Z1SKEuKay8LfVAMlbbhnnkvt6BUserZylqo2PN+p9KeljLr0OHa2rXHU1T8reeoTrw==
 
 pretty-ms@^7.0.1:
   version "7.0.1"

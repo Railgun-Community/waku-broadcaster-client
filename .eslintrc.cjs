@@ -49,13 +49,5 @@ module.exports = {
     '@typescript-eslint/no-floating-promises': 2,
     '@typescript-eslint/no-non-null-assertion': 2,
     'no-warning-comments': 1,
-  },
-  overrides: [
-    {
-      files: ['**/__tests__/**', './src/tests/**'],
-      rules: {
-        'require-await': 0,
-      },
-    },
-  ],
+  }
 };
