@@ -1,7 +1,10 @@
-import { CachedTokenFee, Chain } from '@railgun-community/shared-models';
+import {
+  CachedTokenFee,
+  Chain,
+  RelayerConnectionStatus,
+} from '@railgun-community/shared-models';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { AddressFilter } from '../filters/address-filter';
-import { RelayerConnectionStatus } from '../models/export-models';
 import { cachedFeeExpired } from '../utils/relayer-util';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 

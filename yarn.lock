@@ -1170,10 +1170,10 @@
     "@ethersproject/contracts" "^5.7.0"
     "@ethersproject/transactions" "^5.7.0"
 
-"@railgun-community/shared-models@3.9.1":
-  version "3.9.1"
-  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-3.9.1.tgz#77089c38ebec2e79e6290e4473760d1f618eebab"
-  integrity sha512-pLucSb5rbO3xMqpq6ITd8OsgIdPyOxwYrXUD2K82HqSuPqq3b1f0VT6g+KlYUq8eSClEErU6AceBvbAhCbwJ9A==
+"@railgun-community/shared-models@3.9.2":
+  version "3.9.2"
+  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-3.9.2.tgz#a64115d3f9d0ca8896921794d445e254a4652696"
+  integrity sha512-xZIjRfBvQpfls3aIdMt2BavWskw4iVup9PiudbVw1S6nwi88RO0Zgb8GrzEcVC7MDmMlytWUPi3Bl1auXu4dsw==
   dependencies:
     "@ethersproject/contracts" "^5.7.0"
     "@ethersproject/transactions" "^5.7.0"

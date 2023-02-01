@@ -11,10 +11,7 @@ import { RelayerTransaction } from '../relayer-transaction';
 import { delay, networkForChain } from '@railgun-community/shared-models';
 import { RelayerTransactResponse } from '../relayer-transact-response';
 import { utf8ToBytes } from '../../utils/conversion';
-import {
-  fromUTF8String,
-  encryptJSONDataWithSharedKey,
-} from '@railgun-community/engine';
+import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test';
 import { loadProvider } from '@railgun-community/quickstart';
 

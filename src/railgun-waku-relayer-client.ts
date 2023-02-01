@@ -1,7 +1,10 @@
-import { Chain, delay } from '@railgun-community/shared-models';
+import {
+  Chain,
+  delay,
+  RelayerConnectionStatus,
+} from '@railgun-community/shared-models';
 import { AddressFilter } from './filters/address-filter';
 import {
-  RelayerConnectionStatus,
   RelayerConnectionStatusCallback,
   RelayerDebugger,
 } from './models/export-models';

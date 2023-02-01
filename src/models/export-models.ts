@@ -1,10 +1,4 @@
-export enum RelayerConnectionStatus {
-  Error = 'Error',
-  Searching = 'Searching',
-  Connected = 'Connected',
-  Disconnected = 'Disconnected',
-  AllUnavailable = 'AllUnavailable',
-}
+import { RelayerConnectionStatus } from '@railgun-community/shared-models';
 
 export type RelayerConnectionStatusCallback = (
   status: RelayerConnectionStatus,
