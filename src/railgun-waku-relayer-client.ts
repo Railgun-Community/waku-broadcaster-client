@@ -2,6 +2,7 @@ import {
   Chain,
   delay,
   RelayerConnectionStatus,
+  SelectedRelayer,
 } from '@railgun-community/shared-models';
 import { AddressFilter } from './filters/address-filter';
 import {
@@ -15,6 +16,8 @@ import { WakuObservers } from './waku/waku-observers';
 import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
 export class RailgunWakuRelayerClient {
+  static started = false;
+
   private static chain: Chain;
   private static status: RelayerConnectionStatus;
   private static statusCallback: RelayerConnectionStatusCallback;
@@ -30,6 +33,7 @@ export class RailgunWakuRelayerClient {
 
     WakuRelayerWakuCore.directPeers = wakuDirectPeers;
     await WakuRelayerWakuCore.initWaku(chain);
+    this.started = true;
 
     if (relayerDebugger) {
       RelayerDebug.setDebugger(relayerDebugger);
@@ -39,7 +43,11 @@ export class RailgunWakuRelayerClient {
     this.pollStatus();
   }
 
-  static setChain(chain: Chain) {
+  static setChain(chain: Chain): void {
+    if (!this.started) {
+      return;
+    }
+
     this.chain = chain;
     WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
     this.updateStatus();
@@ -49,15 +57,19 @@ export class RailgunWakuRelayerClient {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ) {
+  ): Optional<SelectedRelayer> {
+    if (!this.started) {
+      return;
+    }
+
     return RelayerSearch.findBestRelayer(chain, tokenAddress, useRelayAdapt);
   }
 
-  static setAddressAllowlist(allowlist: Optional<string[]>) {
+  static setAddressFilters(
+    allowlist: Optional<string[]>,
+    blocklist: Optional<string[]>,
+  ): void {
     AddressFilter.setAllowlist(allowlist);
-  }
-
-  static setAddressBlocklist(blocklist: Optional<string[]>) {
     AddressFilter.setBlocklist(blocklist);
   }
 
