@@ -33,7 +33,6 @@
     "@railgun-community/quickstart": "^3.11.3"
   },
   "devDependencies": {
-    "@octokit/core": "^4.2.0",
     "@railgun-community/quickstart": "^3.11.3",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
@@ -50,7 +49,6 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.6.1",
     "leveldown": "^6.1.1",
     "madge": "^5.0.1",
     "mocha": "^10.2.0",
