@@ -49,13 +49,13 @@ export class RailgunWakuRelayerClient {
   }
 
   static setChain(chain: Chain): void {
-    if (!this.started) {
+    if (!RailgunWakuRelayerClient.started) {
       return;
     }
 
-    this.chain = chain;
+    RailgunWakuRelayerClient.chain = chain;
     WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
-    this.updateStatus();
+    RailgunWakuRelayerClient.updateStatus();
   }
 
   static findBestRelayer(
@@ -63,7 +63,7 @@ export class RailgunWakuRelayerClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ): Optional<SelectedRelayer> {
-    if (!this.started) {
+    if (!RailgunWakuRelayerClient.started) {
       return;
     }
 
@@ -80,10 +80,10 @@ export class RailgunWakuRelayerClient {
 
   static async tryReconnect(): Promise<void> {
     // Reset fees, which will reset status to "Disconnected".
-    RelayerFeeCache.resetCache(this.chain);
-    this.updateStatus();
+    RelayerFeeCache.resetCache(RailgunWakuRelayerClient.chain);
+    RailgunWakuRelayerClient.updateStatus();
 
-    await this.restart();
+    await RailgunWakuRelayerClient.restart();
   }
 
   static supportsToken(
@@ -92,19 +92,6 @@ export class RailgunWakuRelayerClient {
     useRelayAdapt: boolean,
   ) {
     return RelayerFeeCache.supportsToken(chain, tokenAddress, useRelayAdapt);
-  }
-
-  /**
-   * Start keep-alive poller which checks Relayer status every few seconds.
-   */
-  private static async pollStatus(): Promise<void> {
-    this.updateStatus();
-
-    const pollDelay = 5000;
-    await delay(pollDelay);
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
   }
 
   private static async restart(): Promise<void> {
@@ -124,6 +111,19 @@ export class RailgunWakuRelayerClient {
       RelayerDebug.log('Error reinitializing Waku Relayer Client');
       RelayerDebug.error(err);
     }
+  }
+
+  /**
+   * Start keep-alive poller which checks Relayer status every few seconds.
+   */
+  private static async pollStatus(): Promise<void> {
+    this.updateStatus();
+
+    const pollDelay = 5000;
+    await delay(pollDelay);
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    this.pollStatus();
   }
 
   private static updateStatus() {
