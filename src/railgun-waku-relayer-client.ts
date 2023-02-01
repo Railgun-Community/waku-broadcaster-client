@@ -86,6 +86,14 @@ export class RailgunWakuRelayerClient {
     await this.restart();
   }
 
+  static supportsToken(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+  ) {
+    return RelayerFeeCache.supportsToken(chain, tokenAddress, useRelayAdapt);
+  }
+
   /**
    * Start keep-alive poller which checks Relayer status every few seconds.
    */

@@ -3,6 +3,7 @@ import {
   Chain,
   networkForChain,
 } from '@railgun-community/shared-models';
+import { AddressFilter } from '../filters/address-filter';
 import { RelayerConfig } from '../models/relayer-config';
 import { RelayerDebug } from '../utils/relayer-debug';
 import {
@@ -10,6 +11,7 @@ import {
   cachedFeeExpired,
   DEFAULT_RELAYER_IDENTIFIER,
   invalidRelayerVersion,
+  cachedFeeUnavailableOrExpired,
 } from '../utils/relayer-util';
 
 // {forNetwork: {forToken: {forRelayer: (fee, updatedAt)}}}
@@ -93,11 +95,44 @@ export class RelayerFeeCache {
     delete this.cache.forNetwork[network.name];
   }
 
-  static feesForChain(chain: Chain): RelayerFeeNetworkCacheMap {
+  static feesForChain(chain: Chain): Optional<RelayerFeeNetworkCacheMap> {
     const network = networkForChain(chain);
     if (!network) {
       throw new Error('Chain not found.');
     }
     return this.cache.forNetwork[network.name];
+  }
+
+  static feesForToken(
+    chain: Chain,
+    tokenAddress: string,
+  ): Optional<RelayerFeeNetworkTokenCacheMap> {
+    return this.feesForChain(chain)?.forToken[tokenAddress.toLowerCase()];
+  }
+
+  static supportsToken(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+  ): boolean {
+    const feesForToken = this.feesForToken(chain, tokenAddress);
+    if (!feesForToken) {
+      return false;
+    }
+
+    const railgunAddresses = Object.keys(feesForToken.forRelayer);
+    const filteredRailgunAddresses = AddressFilter.filter(railgunAddresses);
+
+    const cachedFees: CachedTokenFee[] = filteredRailgunAddresses
+      .map(railgunAddress =>
+        Object.values(feesForToken.forRelayer[railgunAddress].forIdentifier),
+      )
+      .flat();
+
+    const availableUnexpiredFee = cachedFees.find(
+      cachedFee =>
+        !cachedFeeUnavailableOrExpired(cachedFee, chain, useRelayAdapt),
+    );
+    return availableUnexpiredFee != null;
   }
 }
