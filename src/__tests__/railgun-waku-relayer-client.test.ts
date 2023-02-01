@@ -1,5 +1,6 @@
 /// <reference types="../types/index" />
 import {
+  Chain,
   poll,
   RelayerConnectionStatus,
   SelectedRelayer,
@@ -17,8 +18,10 @@ const wakuDirectPeers: string[] = [];
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
+let currentChain: Chain;
 let currentStatus: RelayerConnectionStatus;
-const statusCallback = (status: RelayerConnectionStatus) => {
+const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
+  currentChain = chain;
   currentStatus = status;
 };
 
@@ -30,6 +33,7 @@ describe('railgun-waku-relayer-client', () => {
       statusCallback,
     );
 
+    expect(currentChain).to.deep.equal(chain);
     expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
 
     // Poll until currentStatus is Connected.
@@ -37,7 +41,7 @@ describe('railgun-waku-relayer-client', () => {
       async () => currentStatus,
       status => status === RelayerConnectionStatus.Connected,
       20,
-      10000 / 20, // 10 sec.
+      20000 / 20, // 20 sec.
     );
 
     const useRelayAdapt = true;

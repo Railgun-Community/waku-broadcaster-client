@@ -1,6 +1,10 @@
-import { RelayerConnectionStatus } from '@railgun-community/shared-models';
+import {
+  Chain,
+  RelayerConnectionStatus,
+} from '@railgun-community/shared-models';
 
 export type RelayerConnectionStatusCallback = (
+  chain: Chain,
   status: RelayerConnectionStatus,
 ) => void;
 

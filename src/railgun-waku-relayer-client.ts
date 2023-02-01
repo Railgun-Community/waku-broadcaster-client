@@ -4,6 +4,7 @@ import {
   RelayerConnectionStatus,
   SelectedRelayer,
 } from '@railgun-community/shared-models';
+import { RelayerFeeCache } from './fees/relayer-fee-cache';
 import { AddressFilter } from './filters/address-filter';
 import {
   RelayerConnectionStatusCallback,
@@ -16,11 +17,11 @@ import { WakuObservers } from './waku/waku-observers';
 import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
 export class RailgunWakuRelayerClient {
-  static started = false;
-
   private static chain: Chain;
   private static status: RelayerConnectionStatus;
   private static statusCallback: RelayerConnectionStatusCallback;
+  private static started = false;
+  private static isRestarting = false;
 
   static async start(
     chain: Chain,
@@ -41,6 +42,10 @@ export class RailgunWakuRelayerClient {
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();
+  }
+
+  static isStarted() {
+    return this.started;
   }
 
   static setChain(chain: Chain): void {
@@ -73,6 +78,14 @@ export class RailgunWakuRelayerClient {
     AddressFilter.setBlocklist(blocklist);
   }
 
+  static async tryReconnect(): Promise<void> {
+    // Reset fees, which will reset status to "Disconnected".
+    RelayerFeeCache.resetCache(this.chain);
+    this.updateStatus();
+
+    await this.restart();
+  }
+
   /**
    * Start keep-alive poller which checks Relayer status every few seconds.
    */
@@ -86,6 +99,25 @@ export class RailgunWakuRelayerClient {
     this.pollStatus();
   }
 
+  private static async restart(): Promise<void> {
+    if (this.isRestarting) {
+      return;
+    }
+    this.isRestarting = true;
+    try {
+      await WakuRelayerWakuCore.reinitWaku(this.chain);
+      this.isRestarting = false;
+      this.updateStatus();
+    } catch (err) {
+      this.isRestarting = false;
+      if (!(err instanceof Error)) {
+        return;
+      }
+      RelayerDebug.log('Error reinitializing Waku Relayer Client');
+      RelayerDebug.error(err);
+    }
+  }
+
   private static updateStatus() {
     const status = RelayerStatus.getRelayerConnectionStatus(this.chain);
     if (status === this.status) {
@@ -94,14 +126,14 @@ export class RailgunWakuRelayerClient {
     }
 
     this.status = status;
-    this.statusCallback(status);
+    this.statusCallback(this.chain, status);
 
     if (
       status === RelayerConnectionStatus.Disconnected ||
       status === RelayerConnectionStatus.Error
     ) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      WakuRelayerWakuCore.reinitWaku(this.chain);
+      this.restart();
     }
   }
 }
