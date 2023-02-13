@@ -37,7 +37,7 @@ export class RelayerTransactResponse {
         result: [string, string];
       };
 
-      const decrypted = await decryptAESGCM256(
+      const decrypted = decryptAESGCM256(
         encryptedData,
         RelayerTransactResponse.sharedKey,
       );
