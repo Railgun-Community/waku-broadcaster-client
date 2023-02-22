@@ -10,7 +10,7 @@ const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
 
 export const DEFAULT_RELAYER_IDENTIFIER = 'default';
 
-const shortenAddress = (address: string): string => {
+export const shortenAddress = (address: string): string => {
   if (address.length < 13) {
     return address;
   }

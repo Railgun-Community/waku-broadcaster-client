@@ -3,7 +3,10 @@ import { Chain, SelectedRelayer } from '@railgun-community/shared-models';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { AddressFilter } from '../filters/address-filter';
 import { RelayerDebug } from '../utils/relayer-debug';
-import { cachedFeeUnavailableOrExpired } from '../utils/relayer-util';
+import {
+  cachedFeeUnavailableOrExpired,
+  shortenAddress,
+} from '../utils/relayer-util';
 
 export class RelayerSearch {
   static findBestRelayer(
@@ -22,10 +25,15 @@ export class RelayerSearch {
     const unfilteredAddresses = Object.keys(relayerTokenFees);
     const relayerAddresses = AddressFilter.filter(unfilteredAddresses);
     if (unfilteredAddresses.length !== relayerAddresses.length) {
+      const removedAddresses = unfilteredAddresses.filter(
+        address => !relayerAddresses.includes(address),
+      );
       RelayerDebug.log(
-        `Removed ${
-          unfilteredAddresses.length - relayerAddresses.length
-        } railgun relayer addresses.`,
+        `Filtered RAILGUN relayer addresses ${
+          removedAddresses.length
+        }: ${removedAddresses
+          .map(address => shortenAddress(address))
+          .join(', ')}`,
       );
     }
 
