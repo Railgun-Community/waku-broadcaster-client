@@ -132,11 +132,6 @@ export class RailgunWakuRelayerClient {
     this.status = status;
     this.statusCallback(this.chain, status);
 
-    if (status === this.status) {
-      // Same status - do nothing.
-      return;
-    }
-
     if (
       status === RelayerConnectionStatus.Disconnected ||
       status === RelayerConnectionStatus.Error
