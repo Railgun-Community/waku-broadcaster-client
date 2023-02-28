@@ -119,7 +119,7 @@ export class RailgunWakuRelayerClient {
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
 
-    const pollDelay = 5000;
+    const pollDelay = 10000;
     await delay(pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -128,10 +128,6 @@ export class RailgunWakuRelayerClient {
 
   private static updateStatus() {
     const status = RelayerStatus.getRelayerConnectionStatus(this.chain);
-    if (status === this.status) {
-      // Same status - do nothing.
-      return;
-    }
 
     this.status = status;
     this.statusCallback(this.chain, status);
