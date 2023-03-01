@@ -33,15 +33,23 @@ export class RailgunWakuRelayerClient {
     this.statusCallback = statusCallback;
 
     WakuRelayerWakuCore.directPeers = wakuDirectPeers;
-    await WakuRelayerWakuCore.initWaku(chain);
-    this.started = true;
 
-    if (relayerDebugger) {
-      RelayerDebug.setDebugger(relayerDebugger);
+    try {
+      await WakuRelayerWakuCore.initWaku(chain);
+      this.started = true;
+
+      if (relayerDebugger) {
+        RelayerDebug.setDebugger(relayerDebugger);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.pollStatus();
+    } catch (err) {
+      RelayerDebug.log('Error initializing Waku Relayer Client');
+      if (err instanceof Error) {
+        RelayerDebug.error(err);
+      }
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
   }
 
   static isStarted() {
@@ -129,7 +137,6 @@ export class RailgunWakuRelayerClient {
   private static updateStatus() {
     const status = RelayerStatus.getRelayerConnectionStatus(this.chain);
 
-    this.status = status;
     this.statusCallback(this.chain, status);
 
     if (
