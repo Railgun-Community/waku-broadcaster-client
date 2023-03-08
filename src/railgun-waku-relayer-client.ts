@@ -23,6 +23,8 @@ export class RailgunWakuRelayerClient {
   private static started = false;
   private static isRestarting = false;
 
+  static pollDelay = 5000;
+
   static async start(
     chain: Chain,
     wakuDirectPeers: string[],
@@ -87,7 +89,7 @@ export class RailgunWakuRelayerClient {
   }
 
   static async tryReconnect(): Promise<void> {
-    // Reset fees, which will reset status to "Disconnected".
+    // Reset fees, which will reset status to "Searching".
     RelayerFeeCache.resetCache(RailgunWakuRelayerClient.chain);
     RailgunWakuRelayerClient.updateStatus();
 
@@ -127,8 +129,7 @@ export class RailgunWakuRelayerClient {
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
 
-    const pollDelay = 5000;
-    await delay(pollDelay);
+    await delay(RailgunWakuRelayerClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();

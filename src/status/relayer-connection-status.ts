@@ -13,6 +13,9 @@ export class RelayerStatus {
     if (WakuRelayerWakuCore.hasError) {
       return RelayerConnectionStatus.Error;
     }
+    if (!WakuRelayerWakuCore.waku) {
+      return RelayerConnectionStatus.Disconnected;
+    }
     if (!this.hasRelayerFeesForNetwork(chain)) {
       return RelayerConnectionStatus.Searching;
     }

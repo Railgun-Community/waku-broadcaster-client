@@ -46,7 +46,6 @@ export class WakuRelayerWakuCore {
     if (WakuRelayerWakuCore.connecting) {
       return;
     }
-    await WakuRelayerWakuCore.waku?.stop();
 
     // Resets connection status to "Connecting" for this network.
     RelayerFeeCache.resetCache(chain);
@@ -103,12 +102,12 @@ export class WakuRelayerWakuCore {
       if (!(err instanceof Error)) {
         throw err;
       }
-      WakuRelayerWakuCore.connecting = false;
-      WakuRelayerWakuCore.hasError = true;
       RelayerDebug.error(err);
       if (fleet === Fleet.Prod) {
         return WakuRelayerWakuCore.connect(Fleet.Test);
       }
+      WakuRelayerWakuCore.connecting = false;
+      WakuRelayerWakuCore.hasError = true;
       throw err;
     }
   };
@@ -116,7 +115,7 @@ export class WakuRelayerWakuCore {
   private static async waitForRemotePeer(waku: Waku) {
     try {
       const timeout = 10000;
-      await waitForRemotePeer(waku, [Protocols.Relay], timeout);
+      await promiseTimeout(waitForRemotePeer(waku, [Protocols.Relay]), timeout);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

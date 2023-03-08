@@ -7,8 +7,10 @@ import {
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { RailgunWakuRelayerClient } from '../railgun-waku-relayer-client';
 import { MOCK_CHAIN } from '../tests/mocks.test';
+import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -26,7 +28,9 @@ const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
 };
 
 describe('railgun-waku-relayer-client', () => {
-  it('Should start up the client, pull live fees and find best Relayer', async () => {
+  it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
+    RailgunWakuRelayerClient.pollDelay = 500;
+
     await RailgunWakuRelayerClient.start(
       chain,
       wakuDirectPeers,
@@ -37,12 +41,15 @@ describe('railgun-waku-relayer-client', () => {
     expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
 
     // Poll until currentStatus is Connected.
-    await poll(
+    const statusInitialConnection = await poll(
       async () => currentStatus,
       status => status === RelayerConnectionStatus.Connected,
       20,
       20000 / 20, // 20 sec.
     );
+    if (!statusInitialConnection) {
+      throw new Error('Could not establish initial connection with fees.');
+    }
 
     const useRelayAdapt = true;
     const selectedRelayer: Optional<SelectedRelayer> =
@@ -62,5 +69,43 @@ describe('railgun-waku-relayer-client', () => {
     expect(selectedRelayer?.tokenFee.feePerUnitGas).to.be.a('string');
     expect(selectedRelayer?.tokenFee.feesID).to.be.a('string');
     expect(selectedRelayer?.tokenFee.relayAdapt).to.be.a('string');
-  }).timeout(20000);
+
+    // Set error state in order to test status and reconnect.
+    WakuRelayerWakuCore.hasError = true;
+
+    // Poll until currentStatus is Error.
+    const statusError = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Error,
+      20,
+      1000 / 20, // 1 sec.
+    );
+    if (!statusError) {
+      throw new Error(`Should be error, got ${currentStatus}`);
+    }
+
+    // Poll until currentStatus is Disconnected.
+    const statusDisconnected = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Disconnected,
+      20,
+      1000 / 20, // 1 sec.
+    );
+    if (!statusDisconnected) {
+      throw new Error(`Should be disconnected, got ${currentStatus}`);
+    }
+
+    // Poll until currentStatus is Connected.
+    const statusConnected = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Connected,
+      20,
+      20000 / 20, // 20 sec.
+    );
+    if (!statusConnected) {
+      throw new Error(
+        `Should be re-connected after disconnection, got ${currentStatus}`,
+      );
+    }
+  }).timeout(60000);
 });
