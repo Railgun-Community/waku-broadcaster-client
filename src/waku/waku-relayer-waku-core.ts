@@ -104,7 +104,8 @@ export class WakuRelayerWakuCore {
       }
       RelayerDebug.error(err);
       if (fleet === Fleet.Prod) {
-        return WakuRelayerWakuCore.connect(Fleet.Test);
+        await WakuRelayerWakuCore.connect(Fleet.Test);
+        return;
       }
       WakuRelayerWakuCore.connecting = false;
       WakuRelayerWakuCore.hasError = true;
