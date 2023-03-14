@@ -47,10 +47,10 @@ export class RailgunWakuRelayerClient {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
     } catch (err) {
-      RelayerDebug.log('Error initializing Waku Relayer Client');
-      if (err instanceof Error) {
-        RelayerDebug.error(err);
+      if (!(err instanceof Error)) {
+        throw err;
       }
+      throw new Error(`Error connecting to Relayer network: ${err.message}`);
     }
   }
 
@@ -112,7 +112,6 @@ export class RailgunWakuRelayerClient {
     try {
       await WakuRelayerWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
-      this.updateStatus();
     } catch (err) {
       this.isRestarting = false;
       if (!(err instanceof Error)) {

@@ -29,7 +29,7 @@ export class WakuRelayerWakuCore {
       await WakuRelayerWakuCore.connect();
       if (!WakuRelayerWakuCore.waku) {
         RelayerDebug.log('No waku instance found');
-        return;
+        throw new Error('No waku instance found');
       }
       WakuObservers.resetCurrentChain();
       WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
