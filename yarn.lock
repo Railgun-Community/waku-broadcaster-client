@@ -1624,7 +1624,7 @@
   dependencies:
     uint8arrays "^4.0.2"
 
-"@waku/core@*", "@waku/core@^0.0.10":
+"@waku/core@*", "@waku/core@0.0.10":
   version "0.0.10"
   resolved "https://registry.yarnpkg.com/@waku/core/-/core-0.0.10.tgz#9fd482ac27dee0146e47f39028546368581545af"
   integrity sha512-PyQYO41jwT8dEdkyJ+TSjXc4/4S3fsHXn47l1uITa+vkQ2y2uoSiKXpl1eF+hofqJAxcMn7Mh+Ul3UTAWdGC+g==
@@ -1656,7 +1656,7 @@
     uint8arrays "^4.0.2"
     uuid "^9.0.0"
 
-"@waku/create@^0.0.6":
+"@waku/create@0.0.6":
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/@waku/create/-/create-0.0.6.tgz#7b5c1ef5b3ce12d05375e841ebab6279ef7380aa"
   integrity sha512-5xIzHBU27pYiIhZK6ydZ19zt7ArcJPdFBKsomiFeA+fYZPeeSIkmnjSoe0KTrWKZDtbwh3mlbuCLVeBaXC8xRg==
@@ -2360,7 +2360,7 @@ cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
-"circomlibjs@github:hsg88/circomlibjs#ffjavascrip.0.1.0":
+circomlibjs@hsg88/circomlibjs#ffjavascrip.0.1.0:
   version "0.0.8"
   resolved "https://codeload.github.com/hsg88/circomlibjs/tar.gz/fee5b3c479caa3db1e34cbfdedad763d74277844"
   dependencies:
