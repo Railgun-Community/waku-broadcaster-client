@@ -32,11 +32,6 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
-  static getObservers = (waku: Waku): string[] => {
-    // @ts-ignore - private accessor
-    return waku.relay.observers.keys() as string[];
-  };
-
   private static removeAllObservers = (waku: Waku) => {
     if (!waku.relay) {
       return;
@@ -62,9 +57,12 @@ export class WakuObservers {
       RelayerTransactResponse.handleRelayerTransactionResponseMessage,
     );
 
-    RelayerDebug.log('Waku observers:');
-    for (const observer of this.getObservers(waku)) {
-      RelayerDebug.log(observer);
+    const activeSubscriptions = waku.relay.getActiveSubscriptions();
+    if (activeSubscriptions) {
+      RelayerDebug.log('Waku observers:');
+      for (const observer of activeSubscriptions.keys()) {
+        RelayerDebug.log(observer);
+      }
     }
   };
 }

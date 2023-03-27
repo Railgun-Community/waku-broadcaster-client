@@ -126,7 +126,6 @@ describe('handle-fees-message', () => {
     };
 
     await handleRelayerFeesMessage(chain, message, contentTopic);
-    await handleRelayerFeesMessage(chain, {}, contentTopic);
 
     expect(relayerFeeCacheStub.notCalled).to.be.true;
   });

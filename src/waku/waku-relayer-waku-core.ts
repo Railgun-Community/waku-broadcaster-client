@@ -162,7 +162,7 @@ export class WakuRelayerWakuCore {
 
     try {
       await WakuRelayerWakuCore.waku.relay.send(
-        createEncoder(contentTopic),
+        createEncoder({ contentTopic }),
         message,
       );
     } catch (err) {
