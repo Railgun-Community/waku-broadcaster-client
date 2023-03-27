@@ -30,10 +30,10 @@
     "@waku/create": "0.0.9"
   },
   "peerDependencies": {
-    "@railgun-community/quickstart": "^3.11.6"
+    "@railgun-community/quickstart": "^4.1.16"
   },
   "devDependencies": {
-    "@railgun-community/quickstart": "^3.11.6",
+    "@railgun-community/quickstart": "^4.1.16",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",

@@ -1218,10 +1218,10 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
-"@railgun-community/engine@3.10.10":
-  version "3.10.10"
-  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-3.10.10.tgz#aafa0d45e0f7188a31fdedccebfd169fdb40b123"
-  integrity sha512-YPXlwCqBCTYwbKGtU5LJb58Y+cHQxCvzD9dMuycJ3P4kSxg408Hb4Pj5OTEEOBpMxwxqx9hQW7HNe31QhP9uUA==
+"@railgun-community/engine@4.1.1":
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-4.1.1.tgz#5ac700ba4043efea1b2ce923603a40a9e5fbf242"
+  integrity sha512-sZYPXW0exRXKiKxPXph/gIW8ihofoYggi8YRcxQpSQHsqscHs9F0aefKR1Q9Ypq4gwa6H0MFvMyiDwA3oIqEDg==
   dependencies:
     "@ethersproject/abi" "^5.7.0"
     "@ethersproject/abstract-provider" "^5.7.0"
@@ -1240,14 +1240,14 @@
     levelup "^5.1.1"
     msgpack-lite "^0.1.26"
 
-"@railgun-community/quickstart@^3.11.6":
-  version "3.11.6"
-  resolved "https://registry.yarnpkg.com/@railgun-community/quickstart/-/quickstart-3.11.6.tgz#06b9ac6d3f68d974a73c584c7074577764a496ca"
-  integrity sha512-4KM5D9L7jROhdqwle/Za0AdKeTs15wxuMVYINabyTMWhQh6epWbDsjaMvTLuApY+VND3rujbRO9B5CByy9oQ2A==
+"@railgun-community/quickstart@^4.1.16":
+  version "4.1.16"
+  resolved "https://registry.yarnpkg.com/@railgun-community/quickstart/-/quickstart-4.1.16.tgz#86c43277b7301a221423d52e45684c4f78518f5e"
+  integrity sha512-Lo6L9P3zgbaExTTawfVIkz+AKv7j6JA3rBmC4G3jRxJAwR5ZLTN4X9nRIrGc+8ad8YE3J21r2ztsOKGXA33wZg==
   dependencies:
     "@noble/ed25519" "^1.7.1"
-    "@railgun-community/engine" "3.10.10"
-    "@railgun-community/shared-models" "3.9.4"
+    "@railgun-community/engine" "4.1.1"
+    "@railgun-community/shared-models" "4.1.7"
     axios "0.27.2"
     brotli "^1.3.3"
 
@@ -1255,6 +1255,14 @@
   version "3.9.4"
   resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-3.9.4.tgz#59d76aa0f79f8867e5c048d76b6c1869e9481b1a"
   integrity sha512-NQl+MtXUOX9D/up8HLix2WgATj5FQ9zNsAaZ4nVnTf561DFNnasW7w6zeqx5qvNs03yT5dkrjpjxU7SlBfzaoA==
+  dependencies:
+    "@ethersproject/contracts" "^5.7.0"
+    "@ethersproject/transactions" "^5.7.0"
+
+"@railgun-community/shared-models@4.1.7":
+  version "4.1.7"
+  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-4.1.7.tgz#fdffeb6eb80c2990e73fc65134e6062bf49d6b51"
+  integrity sha512-SP6vkKI5HU+b46mhUzo0rL9GijHMmIiTegkzIvFN+kgOae3XoyX/AfoJ44AMFW6hQZD7PB4I6HcRgNYANMYOWw==
   dependencies:
     "@ethersproject/contracts" "^5.7.0"
     "@ethersproject/transactions" "^5.7.0"

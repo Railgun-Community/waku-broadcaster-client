@@ -44,6 +44,7 @@ export const initTestEngine = (useNativeArtifacts = false) => {
     shouldDebug,
     testArtifactStore,
     useNativeArtifacts,
+    false, // skipMerkletreeScans
   );
   if (response.error) {
     throw new Error(response.error);
