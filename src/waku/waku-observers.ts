@@ -60,8 +60,10 @@ export class WakuObservers {
     const activeSubscriptions = waku.relay.getActiveSubscriptions();
     if (activeSubscriptions) {
       RelayerDebug.log('Waku observers:');
-      for (const observer of activeSubscriptions.keys()) {
-        RelayerDebug.log(observer);
+      for (const observerList of activeSubscriptions.values()) {
+        for (const observer of observerList) {
+          RelayerDebug.log(observer);
+        }
       }
     }
   };

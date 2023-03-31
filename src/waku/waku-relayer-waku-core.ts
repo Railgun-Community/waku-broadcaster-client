@@ -15,7 +15,6 @@ import {
 
 export class WakuRelayerWakuCore {
   static hasError = false;
-  private static connecting = false;
 
   static directPeers: string[];
 
@@ -23,9 +22,6 @@ export class WakuRelayerWakuCore {
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
-      if (WakuRelayerWakuCore.connecting) {
-        return;
-      }
       await WakuRelayerWakuCore.connect();
       if (!WakuRelayerWakuCore.waku) {
         RelayerDebug.log('No waku instance found');
@@ -43,8 +39,8 @@ export class WakuRelayerWakuCore {
   };
 
   static reinitWaku = async (chain: Chain) => {
-    if (WakuRelayerWakuCore.connecting) {
-      return;
+    if (WakuRelayerWakuCore.waku?.isStarted()) {
+      await WakuRelayerWakuCore.disconnect();
     }
 
     // Resets connection status to "Connecting" for this network.
@@ -53,17 +49,13 @@ export class WakuRelayerWakuCore {
     await WakuRelayerWakuCore.initWaku(chain);
   };
 
+  static disconnect = async () => {
+    await WakuRelayerWakuCore.waku?.stop();
+    WakuRelayerWakuCore.waku = undefined;
+  };
+
   private static connect = async (fleet = Fleet.Prod): Promise<void> => {
     try {
-      if (WakuRelayerWakuCore.connecting) {
-        return;
-      }
-      if (WakuRelayerWakuCore.waku?.isStarted) {
-        await WakuRelayerWakuCore.waku.stop();
-        WakuRelayerWakuCore.waku = undefined;
-      }
-
-      WakuRelayerWakuCore.connecting = true;
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log(`Creating waku relay client`);
@@ -92,7 +84,6 @@ export class WakuRelayerWakuCore {
 
       RelayerDebug.log('Connected to Waku');
       WakuRelayerWakuCore.waku = waku;
-      WakuRelayerWakuCore.connecting = false;
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log('Dialing direct peers (synchronously)');
@@ -107,7 +98,6 @@ export class WakuRelayerWakuCore {
         await WakuRelayerWakuCore.connect(Fleet.Test);
         return;
       }
-      WakuRelayerWakuCore.connecting = false;
       WakuRelayerWakuCore.hasError = true;
       throw err;
     }

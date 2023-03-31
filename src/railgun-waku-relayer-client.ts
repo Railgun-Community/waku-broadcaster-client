@@ -18,12 +18,11 @@ import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
 export class RailgunWakuRelayerClient {
   private static chain: Chain;
-  private static status: RelayerConnectionStatus;
   private static statusCallback: RelayerConnectionStatusCallback;
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 5000;
+  static pollDelay = 10000;
 
   static async start(
     chain: Chain,
@@ -52,6 +51,12 @@ export class RailgunWakuRelayerClient {
       }
       throw new Error(`Error connecting to Relayer network: ${err.message}`);
     }
+  }
+
+  static async stop() {
+    await WakuRelayerWakuCore.disconnect();
+    this.started = false;
+    this.updateStatus();
   }
 
   static isStarted() {

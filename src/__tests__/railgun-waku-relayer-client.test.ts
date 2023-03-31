@@ -28,6 +28,10 @@ const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
 };
 
 describe('railgun-waku-relayer-client', () => {
+  after(async () => {
+    await RailgunWakuRelayerClient.stop();
+  });
+
   it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
     RailgunWakuRelayerClient.pollDelay = 500;
 
