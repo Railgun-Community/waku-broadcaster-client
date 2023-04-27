@@ -46,13 +46,11 @@ export class WakuObservers {
     }
 
     const contentTopicFees = contentTopics.fees(chain);
-    waku.relay.addObserver(
-      createDecoder(contentTopicFees),
-      (message: IMessage) =>
-        handleRelayerFeesMessage(chain, message, contentTopicFees),
+    waku.relay.subscribe(createDecoder(contentTopicFees), (message: IMessage) =>
+      handleRelayerFeesMessage(chain, message, contentTopicFees),
     );
 
-    waku.relay.addObserver(
+    waku.relay.subscribe(
       createDecoder(contentTopics.transactResponse(chain)),
       RelayerTransactResponse.handleRelayerTransactionResponseMessage,
     );

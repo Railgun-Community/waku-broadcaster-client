@@ -78,7 +78,7 @@ export class WakuRelayerWakuCore {
       }
 
       RelayerDebug.log('Waku peers:');
-      for (const peer of waku.relay.getPeers()) {
+      for (const peer of waku.relay.getMeshPeers()) {
         RelayerDebug.log(JSON.stringify(peer));
       }
 

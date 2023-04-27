@@ -25,9 +25,9 @@
   "dependencies": {
     "@ethersproject/bignumber": "^5.7.0",
     "@libp2p/bootstrap": "^6.0.0",
-    "@railgun-community/shared-models": "3.9.4",
-    "@waku/core": "0.0.13",
-    "@waku/create": "0.0.9"
+    "@railgun-community/shared-models": "4.1.12",
+    "@waku/core": "0.0.16",
+    "@waku/create": "0.0.12"
   },
   "peerDependencies": {
     "@railgun-community/quickstart": "^4.1.16"
