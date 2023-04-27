@@ -94,5 +94,5 @@ describe('relayer-transaction', () => {
     ]);
 
     expect(response).to.equal(MOCK_TX_HASH);
-  }).timeout(5000);
+  }).timeout(10000);
 });

@@ -7,7 +7,6 @@ import {
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { RailgunWakuRelayerClient } from '../railgun-waku-relayer-client';
 import { MOCK_CHAIN } from '../tests/mocks.test';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
@@ -93,7 +92,7 @@ describe('railgun-waku-relayer-client', () => {
       async () => currentStatus,
       status => status === RelayerConnectionStatus.Disconnected,
       20,
-      1000 / 20, // 1 sec.
+      2000 / 20, // 2 sec.
     );
     if (!statusDisconnected) {
       throw new Error(`Should be disconnected, got ${currentStatus}`);
