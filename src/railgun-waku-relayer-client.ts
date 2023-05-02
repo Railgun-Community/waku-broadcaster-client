@@ -35,13 +35,14 @@ export class RailgunWakuRelayerClient {
 
     WakuRelayerWakuCore.directPeers = wakuDirectPeers;
 
+    if (relayerDebugger) {
+      RelayerDebug.setDebugger(relayerDebugger);
+    }
+
     try {
+      this.started = false;
       await WakuRelayerWakuCore.initWaku(chain);
       this.started = true;
-
-      if (relayerDebugger) {
-        RelayerDebug.setDebugger(relayerDebugger);
-      }
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
