@@ -50,7 +50,9 @@ export class RailgunWakuRelayerClient {
       if (!(err instanceof Error)) {
         throw err;
       }
-      throw new Error(`Error connecting to Relayer network: ${err.message}`);
+      throw new Error(
+        `Cannot connect to Relayer network: ${err.message}. Private transaction features will be limited.`,
+      );
     }
   }
 

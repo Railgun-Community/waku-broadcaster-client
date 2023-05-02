@@ -112,9 +112,7 @@ export class WakuRelayerWakuCore {
         throw err;
       }
       RelayerDebug.error(err);
-      throw new Error(
-        'Error connecting to Relayer network. Private transaction features will be limited.',
-      );
+      throw new Error(err.message);
     }
   }
 
