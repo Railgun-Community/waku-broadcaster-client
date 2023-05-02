@@ -62,7 +62,7 @@ export class WakuRelayerWakuCore {
       const waku: Waku = await createRelayNode({
         libp2p: {
           peerDiscovery: [
-            bootstrap({ list: getPredefinedBootstrapNodes(fleet) }),
+            bootstrap({ list: getPredefinedBootstrapNodes(fleet, 2) }),
           ],
         },
       });
@@ -105,7 +105,7 @@ export class WakuRelayerWakuCore {
 
   private static async waitForRemotePeer(waku: Waku) {
     try {
-      const timeout = 10000;
+      const timeout = 20000;
       await promiseTimeout(waitForRemotePeer(waku, [Protocols.Relay]), timeout);
     } catch (err) {
       if (!(err instanceof Error)) {
