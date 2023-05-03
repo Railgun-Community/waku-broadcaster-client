@@ -13,6 +13,11 @@ import {
   getPredefinedBootstrapNodes,
 } from '@waku/core/lib/predefined_bootstrap_nodes';
 
+const staticPeers: string[] = [
+  '/dns4/relayer.crabdance.com/tcp/8000/wss/p2p/16Uiu2HAm9TiCU9ZRPoKMUyo6QQvZTSceSH5ZtX6u353NHgVCtr1W',
+  '/dns4/relayer.chickenkiller.com/tcp/8000/wss/p2p/16Uiu2HAmNy49QzXVWHMdhz7DQHXCpk9sHvVua99j3QcShUK8PVSD',
+];
+
 export class WakuRelayerWakuCore {
   static hasError = false;
 
@@ -59,11 +64,14 @@ export class WakuRelayerWakuCore {
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log(`Creating waku relay client`);
+      const bootstrapNodes = getPredefinedBootstrapNodes(fleet, 2);
+
+      const peers = [
+        ...new Set([...bootstrapNodes, ...this.directPeers, ...staticPeers]),
+      ];
       const waku: Waku = await createRelayNode({
         libp2p: {
-          peerDiscovery: [
-            bootstrap({ list: getPredefinedBootstrapNodes(fleet, 2) }),
-          ],
+          peerDiscovery: [bootstrap({ list: peers })],
         },
       });
 
@@ -85,10 +93,6 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Connected to Waku');
       WakuRelayerWakuCore.waku = waku;
       WakuRelayerWakuCore.hasError = false;
-
-      RelayerDebug.log('Dialing direct peers (synchronously)');
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.dialDirectPeer(waku, this.directPeers);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
