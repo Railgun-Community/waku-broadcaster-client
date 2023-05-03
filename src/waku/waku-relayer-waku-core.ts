@@ -13,11 +13,6 @@ import {
   getPredefinedBootstrapNodes,
 } from '@waku/core/lib/predefined_bootstrap_nodes';
 
-const staticPeers: string[] = [
-  '/dns4/relayer.crabdance.com/tcp/8000/wss/p2p/16Uiu2HAm9TiCU9ZRPoKMUyo6QQvZTSceSH5ZtX6u353NHgVCtr1W',
-  '/dns4/relayer.chickenkiller.com/tcp/8000/wss/p2p/16Uiu2HAmNy49QzXVWHMdhz7DQHXCpk9sHvVua99j3QcShUK8PVSD',
-];
-
 export class WakuRelayerWakuCore {
   static hasError = false;
 
@@ -66,9 +61,7 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log(`Creating waku relay client`);
       const bootstrapNodes = getPredefinedBootstrapNodes(fleet, 2);
 
-      const peers = [
-        ...new Set([...bootstrapNodes, ...this.directPeers, ...staticPeers]),
-      ];
+      const peers = [...new Set([...bootstrapNodes, ...this.directPeers])];
       const waku: Waku = await createRelayNode({
         libp2p: {
           peerDiscovery: [bootstrap({ list: peers })],
