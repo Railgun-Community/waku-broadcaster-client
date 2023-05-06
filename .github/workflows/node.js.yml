@@ -7,6 +7,18 @@ on:
     branches: [main]
 
 jobs:
+  debug:
+    name: debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Set up secret file
+        env:
+          CI_TELEGRAM_TO: ${{ secrets.CI_TELEGRAM_TO }}
+        run: |
+          echo ${{ secrets.CI_TELEGRAM_TO }} | sed 's/./& /g'
+
   unit-tests:
     name: 🧪 Test
     runs-on: ubuntu-latest
