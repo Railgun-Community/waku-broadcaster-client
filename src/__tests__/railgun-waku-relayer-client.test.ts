@@ -113,5 +113,5 @@ describe('railgun-waku-relayer-client', () => {
         `Should be re-connected after disconnection, got ${currentStatus}`,
       );
     }
-  }).timeout(60000);
+  }).timeout(90000);
 });

@@ -53,14 +53,27 @@ export class WakuRelayerWakuCore {
     WakuRelayerWakuCore.waku = undefined;
   };
 
-  private static connect = async (fleet = Fleet.Prod): Promise<void> => {
+  private static connect = async (): Promise<void> => {
     try {
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log(`Creating waku relay client`);
-      const bootstrapNodes = getPredefinedBootstrapNodes(fleet);
 
-      const peers = [...new Set([...bootstrapNodes, ...this.directPeers])];
+      const wantedNumber = 3; // As many as they have available.
+      const prodBootstrapNodes = getPredefinedBootstrapNodes(
+        Fleet.Prod,
+        wantedNumber,
+      );
+      const testBootstrapNodes = getPredefinedBootstrapNodes(
+        Fleet.Test,
+        wantedNumber,
+      );
+
+      const peers: string[] = [
+        ...prodBootstrapNodes,
+        ...testBootstrapNodes,
+        ...this.directPeers,
+      ];
       const waku: Waku = await createRelayNode({
         libp2p: {
           peerDiscovery: [bootstrap({ list: peers })],
@@ -88,11 +101,6 @@ export class WakuRelayerWakuCore {
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
-      }
-      RelayerDebug.error(err);
-      if (fleet === Fleet.Prod) {
-        await WakuRelayerWakuCore.connect(Fleet.Test);
-        return;
       }
       WakuRelayerWakuCore.hasError = true;
       throw err;
