@@ -5,7 +5,6 @@ import { WakuObservers } from './waku-observers';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { utf8ToBytes } from '../utils/conversion';
-import { multiaddr } from '@multiformats/multiaddr';
 import { bootstrap } from '@libp2p/bootstrap';
 import { createRelayNode } from '@waku/create';
 import {
@@ -59,7 +58,7 @@ export class WakuRelayerWakuCore {
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log(`Creating waku relay client`);
-      const bootstrapNodes = getPredefinedBootstrapNodes(fleet, 2);
+      const bootstrapNodes = getPredefinedBootstrapNodes(fleet);
 
       const peers = [...new Set([...bootstrapNodes, ...this.directPeers])];
       const waku: Waku = await createRelayNode({
@@ -102,7 +101,7 @@ export class WakuRelayerWakuCore {
 
   private static async waitForRemotePeer(waku: Waku) {
     try {
-      const timeout = 20000;
+      const timeout = 30000;
       await promiseTimeout(waitForRemotePeer(waku, [Protocols.Relay]), timeout);
     } catch (err) {
       if (!(err instanceof Error)) {
@@ -110,29 +109,6 @@ export class WakuRelayerWakuCore {
       }
       RelayerDebug.error(err);
       throw new Error(err.message);
-    }
-  }
-
-  private static async dialDirectPeer(
-    waku: Waku,
-    peerList: string[],
-  ): Promise<void> {
-    try {
-      if (!peerList.length) {
-        return;
-      }
-      const nextMultiAddr = multiaddr(peerList[0]);
-      await promiseTimeout(waku.dial(nextMultiAddr), 6000);
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
-      }
-      RelayerDebug.log(`Error connecting to direct peer ${peerList[0]}`);
-      RelayerDebug.error(err);
-      if (peerList.length) {
-        return this.dialDirectPeer(waku, peerList.slice(1));
-      }
-      // NOTE: Do not throw here, as direct peer connection is helpful but not necessary.
     }
   }
 
