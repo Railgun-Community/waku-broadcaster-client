@@ -64,14 +64,22 @@ export class RailgunWakuRelayerClient {
     return this.started;
   }
 
-  static setChain(chain: Chain): void {
+  static async setChain(chain: Chain): Promise<void> {
     if (!RailgunWakuRelayerClient.started) {
       return;
     }
 
     RailgunWakuRelayerClient.chain = chain;
-    WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
+    await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
     RailgunWakuRelayerClient.updateStatus();
+  }
+
+  static getObservers(): string[] {
+    return WakuObservers.getCurrentObservers(WakuRelayerWakuCore.waku);
+  }
+
+  static getMeshPeerCount(): number {
+    return WakuRelayerWakuCore.getMeshPeerCount();
   }
 
   static findBestRelayer(

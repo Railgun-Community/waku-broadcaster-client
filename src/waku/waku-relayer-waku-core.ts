@@ -27,7 +27,7 @@ export class WakuRelayerWakuCore {
         return;
       }
       WakuObservers.resetCurrentChain();
-      WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
+      await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
@@ -70,13 +70,19 @@ export class WakuRelayerWakuCore {
       );
 
       const peers: string[] = [
+        ...this.directPeers,
         ...prodBootstrapNodes,
         ...testBootstrapNodes,
-        ...this.directPeers,
       ];
+      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: Waku = await createRelayNode({
         libp2p: {
-          peerDiscovery: [bootstrap({ list: peers })],
+          peerDiscovery: [
+            bootstrap({
+              list: peers,
+              timeout: waitTimeoutBeforeBootstrap,
+            }),
+          ],
         },
       });
 
@@ -107,9 +113,13 @@ export class WakuRelayerWakuCore {
     }
   };
 
+  static getMeshPeerCount(): number {
+    return this.waku?.relay?.getMeshPeers().length ?? 0;
+  }
+
   private static async waitForRemotePeer(waku: Waku) {
     try {
-      const timeout = 30000;
+      const timeout = 60000;
       await promiseTimeout(waitForRemotePeer(waku, [Protocols.Relay]), timeout);
     } catch (err) {
       if (!(err instanceof Error)) {

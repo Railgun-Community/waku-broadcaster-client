@@ -9,7 +9,7 @@ import { RelayerDebug } from '../utils/relayer-debug';
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
 
-  static setObserversForChain = (waku: Optional<Waku>, chain: Chain) => {
+  static setObserversForChain = async (waku: Optional<Waku>, chain: Chain) => {
     if (!waku) {
       return;
     }
@@ -22,7 +22,7 @@ export class WakuObservers {
     RelayerDebug.log(`Add Waku observers for chain: ${chain.type}:${chain.id}`);
     WakuObservers.currentChain = chain;
     WakuObservers.removeAllObservers(waku);
-    WakuObservers.addChainObservers(waku, chain);
+    await WakuObservers.addChainObservers(waku, chain);
     RelayerDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
     );
@@ -40,29 +40,40 @@ export class WakuObservers {
     waku.relay.observers = new Map();
   };
 
-  private static addChainObservers = (waku: Waku, chain: Chain) => {
+  private static addChainObservers = async (waku: Waku, chain: Chain) => {
     if (!waku.relay) {
       return;
     }
 
     const contentTopicFees = contentTopics.fees(chain);
-    waku.relay.subscribe(createDecoder(contentTopicFees), (message: IMessage) =>
-      handleRelayerFeesMessage(chain, message, contentTopicFees),
+    await waku.relay.subscribe(
+      createDecoder(contentTopicFees),
+      (message: IMessage) =>
+        handleRelayerFeesMessage(chain, message, contentTopicFees),
     );
 
-    waku.relay.subscribe(
+    await waku.relay.subscribe(
       createDecoder(contentTopics.transactResponse(chain)),
       RelayerTransactResponse.handleRelayerTransactionResponseMessage,
     );
 
-    const activeSubscriptions = waku.relay.getActiveSubscriptions();
-    if (activeSubscriptions) {
-      RelayerDebug.log('Waku observers:');
-      for (const observerList of activeSubscriptions.values()) {
-        for (const observer of observerList) {
-          RelayerDebug.log(observer);
-        }
-      }
+    // Log current list of observers
+    const currentObservers = WakuObservers.getCurrentObservers(waku);
+    RelayerDebug.log('Waku observers:');
+    for (const observer of currentObservers) {
+      RelayerDebug.log(observer);
     }
   };
+
+  static getCurrentObservers(waku?: Waku): string[] {
+    const activeSubscriptions = waku?.relay?.getActiveSubscriptions();
+    if (!activeSubscriptions) {
+      return [];
+    }
+    const observers: string[] = [];
+    for (const observerList of activeSubscriptions.values()) {
+      observers.push(...observerList);
+    }
+    return observers;
+  }
 }

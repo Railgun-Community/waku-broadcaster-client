@@ -8,7 +8,7 @@ import {
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { RailgunWakuRelayerClient } from '../railgun-waku-relayer-client';
-import { MOCK_CHAIN } from '../tests/mocks.test';
+import { MOCK_CHAIN, MOCK_CHAIN_GOERLI } from '../tests/mocks.test';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 
 chai.use(chaiAsPromised);
@@ -113,5 +113,15 @@ describe('railgun-waku-relayer-client', () => {
         `Should be re-connected after disconnection, got ${currentStatus}`,
       );
     }
+
+    expect(
+      RailgunWakuRelayerClient.getMeshPeerCount(),
+    ).to.be.greaterThanOrEqual(1);
+
+    await RailgunWakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
+    expect(RailgunWakuRelayerClient.getObservers()).to.deep.equal([
+      '/railgun/v2/0/5/fees/json',
+      '/railgun/v2/0/5/transact-response/json',
+    ]);
   }).timeout(90000);
 });
