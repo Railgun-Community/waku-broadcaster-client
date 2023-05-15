@@ -11,13 +11,18 @@ import {
   Fleet,
   getPredefinedBootstrapNodes,
 } from '@waku/core/lib/predefined_bootstrap_nodes';
+import { RelayerOptions } from '../models';
 
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static directPeers: string[];
-
   static waku: Optional<Waku>;
+
+  private static pubSubTopic: string;
+
+  private static directPeers: string[];
+
+  private static peerDiscoveryTimeout = 60000;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -48,6 +53,15 @@ export class WakuRelayerWakuCore {
     await WakuRelayerWakuCore.initWaku(chain);
   };
 
+  static setRelayerOptions(relayerOptions: RelayerOptions) {
+    WakuRelayerWakuCore.pubSubTopic = relayerOptions.pubSubTopic;
+    WakuRelayerWakuCore.directPeers = relayerOptions.wakuDirectPeers;
+    if (relayerOptions.peerDiscoveryTimeout) {
+      WakuRelayerWakuCore.peerDiscoveryTimeout =
+        relayerOptions.peerDiscoveryTimeout;
+    }
+  }
+
   static disconnect = async () => {
     await WakuRelayerWakuCore.waku?.stop();
     WakuRelayerWakuCore.waku = undefined;
@@ -76,6 +90,7 @@ export class WakuRelayerWakuCore {
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: Waku = await createRelayNode({
+        pubSubTopic: WakuRelayerWakuCore.pubSubTopic,
         libp2p: {
           peerDiscovery: [
             bootstrap({
@@ -119,8 +134,11 @@ export class WakuRelayerWakuCore {
 
   private static async waitForRemotePeer(waku: Waku) {
     try {
-      const timeout = 60000;
-      await promiseTimeout(waitForRemotePeer(waku, [Protocols.Relay]), timeout);
+      const protocols = [Protocols.Relay];
+      await promiseTimeout(
+        waitForRemotePeer(waku, protocols),
+        WakuRelayerWakuCore.peerDiscoveryTimeout,
+      );
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

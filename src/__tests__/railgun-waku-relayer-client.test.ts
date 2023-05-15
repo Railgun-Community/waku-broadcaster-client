@@ -10,15 +10,23 @@ import chaiAsPromised from 'chai-as-promised';
 import { RailgunWakuRelayerClient } from '../railgun-waku-relayer-client';
 import { MOCK_CHAIN, MOCK_CHAIN_GOERLI } from '../tests/mocks.test';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
+import { RelayerOptions } from '../models';
+import { DefaultPubSubTopic } from '@waku/core';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
 const chain = MOCK_CHAIN;
+
+const pubSubTopic = DefaultPubSubTopic; // '/waku/2/default-waku/proto'
 const wakuDirectPeers: string[] = [
   '/dns4/relayer.crabdance.com/tcp/8000/wss/p2p/16Uiu2HAm9TiCU9ZRPoKMUyo6QQvZTSceSH5ZtX6u353NHgVCtr1W',
   '/dns4/relayer.chickenkiller.com/tcp/8000/wss/p2p/16Uiu2HAmNy49QzXVWHMdhz7DQHXCpk9sHvVua99j3QcShUK8PVSD',
 ];
+const relayerOptions: RelayerOptions = {
+  pubSubTopic,
+  wakuDirectPeers,
+};
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
@@ -37,11 +45,7 @@ describe('railgun-waku-relayer-client', () => {
   it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
     RailgunWakuRelayerClient.pollDelay = 500;
 
-    await RailgunWakuRelayerClient.start(
-      chain,
-      wakuDirectPeers,
-      statusCallback,
-    );
+    await RailgunWakuRelayerClient.start(chain, relayerOptions, statusCallback);
 
     expect(currentChain).to.deep.equal(chain);
     expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);

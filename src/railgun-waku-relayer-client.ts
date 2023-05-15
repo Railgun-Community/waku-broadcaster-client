@@ -9,6 +9,7 @@ import { AddressFilter } from './filters/address-filter';
 import {
   RelayerConnectionStatusCallback,
   RelayerDebugger,
+  RelayerOptions,
 } from './models/export-models';
 import { RelayerSearch } from './search/best-relayer';
 import { RelayerStatus } from './status/relayer-connection-status';
@@ -26,14 +27,14 @@ export class RailgunWakuRelayerClient {
 
   static async start(
     chain: Chain,
-    wakuDirectPeers: string[],
+    relayerOptions: RelayerOptions,
     statusCallback: RelayerConnectionStatusCallback,
     relayerDebugger?: RelayerDebugger,
   ) {
     this.chain = chain;
     this.statusCallback = statusCallback;
 
-    WakuRelayerWakuCore.directPeers = wakuDirectPeers;
+    WakuRelayerWakuCore.setRelayerOptions(relayerOptions);
 
     if (relayerDebugger) {
       RelayerDebug.setDebugger(relayerDebugger);
