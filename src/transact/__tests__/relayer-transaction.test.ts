@@ -58,7 +58,7 @@ describe('relayer-transaction', () => {
     const relayerRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
     const relayerFeesID = 'abc';
     const nullifiers = ['0x012345'];
-    const overallBatchMinGasPrice = '0x0100';
+    const overallBatchMinGasPrice = BigInt('0x0100');
     const useRelayAdapt = true;
 
     const relayerTransaction = await RelayerTransaction.create(

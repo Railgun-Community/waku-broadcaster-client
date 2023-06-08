@@ -91,7 +91,7 @@ export class RelayerTransaction {
     relayerFeesID: string,
     chain: Chain,
     nullifiers: string[],
-    overallBatchMinGasPrice: Optional<string>,
+    overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
   ): Promise<RelayerTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
@@ -112,12 +112,9 @@ export class RelayerTransaction {
     relayerRailgunAddress: string,
     relayerFeesID: string,
     chain: Chain,
-    overallBatchMinGasPrice: Optional<string>,
+    overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
   ): Promise<EncryptDataWithSharedKeyResponse> {
-    if (!overallBatchMinGasPrice) {
-      throw new Error('Requires batch minGasPrice for Relayers.');
-    }
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
     }
@@ -132,7 +129,7 @@ export class RelayerTransaction {
       relayerViewingKey: bytesToHex(relayerViewingKey),
       chainID: chain.id,
       chainType: chain.type,
-      minGasPrice: overallBatchMinGasPrice,
+      minGasPrice: overallBatchMinGasPrice.toString(),
       feesID: relayerFeesID,
       useRelayAdapt,
       devLog: RelayerConfig.IS_DEV,
