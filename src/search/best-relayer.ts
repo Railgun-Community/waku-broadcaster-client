@@ -1,4 +1,3 @@
-import { BigNumber } from '@ethersproject/bignumber';
 import { Chain, SelectedRelayer } from '@railgun-community/shared-models';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { AddressFilter } from '../filters/address-filter';
@@ -40,7 +39,7 @@ export class RelayerSearch {
     let bestRelayerAddress: Optional<string>;
     let bestRelayerIdentifier: Optional<string>;
 
-    let minFee: Optional<BigNumber>;
+    let minFee: Optional<bigint>;
 
     relayerAddresses.forEach((relayerAddress: string) => {
       const identifiers: string[] = Object.keys(
@@ -54,8 +53,8 @@ export class RelayerSearch {
         ) {
           return;
         }
-        const fee = BigNumber.from(nextCachedFee.feePerUnitGas);
-        if (!minFee || fee.lt(minFee)) {
+        const fee = BigInt(nextCachedFee.feePerUnitGas);
+        if (!minFee || fee < minFee) {
           minFee = fee;
           bestRelayerAddress = relayerAddress;
           bestRelayerIdentifier = identifier;

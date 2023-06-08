@@ -1,10 +1,7 @@
 /* eslint-disable no-console */
 import LevelDOWN from 'leveldown';
 import fs from 'fs';
-import {
-  ArtifactStore,
-  startRailgunEngine,
-} from '@railgun-community/quickstart';
+import { ArtifactStore, startRailgunEngine } from '@railgun-community/wallet';
 
 const TEST_DB = 'test.db';
 const db = new LevelDOWN(TEST_DB);
@@ -38,7 +35,7 @@ const testArtifactStore = new ArtifactStore(
 
 export const initTestEngine = (useNativeArtifacts = false) => {
   const shouldDebug = true;
-  const response = startRailgunEngine(
+  startRailgunEngine(
     'TESTS',
     db,
     shouldDebug,
@@ -46,7 +43,4 @@ export const initTestEngine = (useNativeArtifacts = false) => {
     useNativeArtifacts,
     false, // skipMerkletreeScans
   );
-  if (response.error) {
-    throw new Error(response.error);
-  }
 };

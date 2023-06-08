@@ -1,7 +1,7 @@
 import {
   verifyRelayerSignature,
   getRailgunWalletAddressData,
-} from '@railgun-community/quickstart';
+} from '@railgun-community/wallet';
 import {
   CachedTokenFee,
   Chain,

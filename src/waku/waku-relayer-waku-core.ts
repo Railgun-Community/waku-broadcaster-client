@@ -12,16 +12,18 @@ import {
   getPredefinedBootstrapNodes,
 } from '@waku/core/lib/predefined_bootstrap_nodes';
 import { RelayerOptions } from '../models';
+import {
+  WAKU_RAILGUN_DEFAULT_PEERS,
+  WAKU_RAILGUN_PUB_SUB_TOPIC,
+} from '../models/constants';
 
 export class WakuRelayerWakuCore {
   static hasError = false;
 
   static waku: Optional<Waku>;
 
-  private static pubSubTopic: string;
-
-  private static directPeers: string[];
-
+  private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
+  private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
 
   static initWaku = async (chain: Chain): Promise<void> => {
@@ -54,8 +56,13 @@ export class WakuRelayerWakuCore {
   };
 
   static setRelayerOptions(relayerOptions: RelayerOptions) {
-    WakuRelayerWakuCore.pubSubTopic = relayerOptions.pubSubTopic;
-    WakuRelayerWakuCore.directPeers = relayerOptions.wakuDirectPeers;
+    if (relayerOptions.pubSubTopic) {
+      WakuRelayerWakuCore.pubSubTopic = relayerOptions.pubSubTopic;
+    }
+    if (relayerOptions.additionalDirectPeers) {
+      WakuRelayerWakuCore.additionalDirectPeers =
+        relayerOptions.additionalDirectPeers;
+    }
     if (relayerOptions.peerDiscoveryTimeout) {
       WakuRelayerWakuCore.peerDiscoveryTimeout =
         relayerOptions.peerDiscoveryTimeout;
@@ -67,26 +74,30 @@ export class WakuRelayerWakuCore {
     WakuRelayerWakuCore.waku = undefined;
   };
 
+  // Unused because these don't support RAILGUN topic.
+  private static getDefaultWakuPeers = (): string[] => {
+    // As many as they have available.
+    const wantedNumber = 3;
+    const prodBootstrapNodes = getPredefinedBootstrapNodes(
+      Fleet.Prod,
+      wantedNumber,
+    );
+    const testBootstrapNodes = getPredefinedBootstrapNodes(
+      Fleet.Test,
+      wantedNumber,
+    );
+    return [...prodBootstrapNodes, ...testBootstrapNodes];
+  };
+
   private static connect = async (): Promise<void> => {
     try {
       WakuRelayerWakuCore.hasError = false;
 
       RelayerDebug.log(`Creating waku relay client`);
 
-      const wantedNumber = 3; // As many as they have available.
-      const prodBootstrapNodes = getPredefinedBootstrapNodes(
-        Fleet.Prod,
-        wantedNumber,
-      );
-      const testBootstrapNodes = getPredefinedBootstrapNodes(
-        Fleet.Test,
-        wantedNumber,
-      );
-
       const peers: string[] = [
-        ...this.directPeers,
-        ...prodBootstrapNodes,
-        ...testBootstrapNodes,
+        ...WAKU_RAILGUN_DEFAULT_PEERS,
+        ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: Waku = await createRelayNode({

@@ -13,7 +13,7 @@ import { RelayerTransactResponse } from '../relayer-transact-response';
 import { utf8ToBytes } from '../../utils/conversion';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test';
-import { loadProvider } from '@railgun-community/quickstart';
+import { loadProvider } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -39,7 +39,7 @@ describe('relayer-transaction', () => {
     if (network == null) {
       throw new Error('Network is null');
     }
-    await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name, false);
+    await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
 
     wakuRelayerRelayMessageStub = sinon
       .stub(WakuRelayerWakuCore, 'relayMessage')
@@ -55,7 +55,6 @@ describe('relayer-transaction', () => {
   });
 
   it('Should generate and relay a Relayer transaction', async () => {
-    const serializedTransaction = '0x1234abcdef';
     const relayerRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
     const relayerFeesID = 'abc';
     const nullifiers = ['0x012345'];
@@ -63,7 +62,8 @@ describe('relayer-transaction', () => {
     const useRelayAdapt = true;
 
     const relayerTransaction = await RelayerTransaction.create(
-      serializedTransaction,
+      '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
+      '0x1234abcdef', // data
       relayerRailgunAddress,
       relayerFeesID,
       chain,

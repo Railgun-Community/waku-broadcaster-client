@@ -4,8 +4,8 @@ import {
 } from '@railgun-community/shared-models';
 
 export type RelayerOptions = {
-  pubSubTopic: string;
-  wakuDirectPeers: string[];
+  pubSubTopic?: string;
+  additionalDirectPeers?: string[];
   peerDiscoveryTimeout?: number;
 };
 

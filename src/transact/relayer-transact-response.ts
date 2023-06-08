@@ -1,4 +1,4 @@
-import { decryptAESGCM256 } from '@railgun-community/quickstart';
+import { decryptAESGCM256 } from '@railgun-community/wallet';
 import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '../utils/conversion';
 import { RelayerDebug } from '../utils/relayer-debug';

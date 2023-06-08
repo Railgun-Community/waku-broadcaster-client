@@ -23,17 +23,19 @@
     "test": "npm run compile-test && NODE_ENV=test mocha"
   },
   "dependencies": {
-    "@ethersproject/bignumber": "^5.7.0",
     "@libp2p/bootstrap": "^6.0.0",
-    "@railgun-community/shared-models": "4.1.12",
     "@waku/core": "0.0.16",
     "@waku/create": "0.0.12"
   },
   "peerDependencies": {
-    "@railgun-community/quickstart": "^4.1.16"
+    "ethers": "^6.4.0",
+    "@railgun-community/shared-models": "5.1.4",
+    "@railgun-community/wallet": "5.1.2"
   },
   "devDependencies": {
-    "@railgun-community/quickstart": "^4.1.16",
+    "ethers": "^6.4.0",
+    "@railgun-community/shared-models": "5.1.4",
+    "@railgun-community/wallet": "5.1.2",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",

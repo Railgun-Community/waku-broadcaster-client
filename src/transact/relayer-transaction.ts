@@ -2,12 +2,12 @@ import {
   getRailgunWalletAddressData,
   encryptDataWithSharedKey,
   getCompletedTxidFromNullifiers,
-} from '@railgun-community/quickstart';
+} from '@railgun-community/wallet';
 import {
   Chain,
   EncryptDataWithSharedKeyResponse,
   poll,
-  RelayerMethodParamsTransact,
+  RelayerEncryptedMethodParams,
   RelayerRawParamsTransact,
 } from '@railgun-community/shared-models';
 import { RelayerConfig } from '../models/relayer-config';
@@ -19,6 +19,7 @@ import {
   WakuTransactResponse,
   RelayerTransactResponse,
 } from './relayer-transact-response';
+import { getAddress, isHexString } from 'ethers';
 
 //
 // Transact: Encryption Flow
@@ -50,7 +51,7 @@ enum RelayRetryState {
 
 type RelayMessageData = {
   method: string;
-  params: RelayerMethodParamsTransact;
+  params: RelayerEncryptedMethodParams;
 };
 
 // NOTE: Relayer default transaction-send timeout is 45 seconds.
@@ -84,7 +85,8 @@ export class RelayerTransaction {
   }
 
   static async create(
-    serializedTransaction: string,
+    to: string,
+    data: string,
     relayerRailgunAddress: string,
     relayerFeesID: string,
     chain: Chain,
@@ -93,7 +95,8 @@ export class RelayerTransaction {
     useRelayAdapt: boolean,
   ): Promise<RelayerTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
-      serializedTransaction,
+      to,
+      data,
       relayerRailgunAddress,
       relayerFeesID,
       chain,
@@ -104,7 +107,8 @@ export class RelayerTransaction {
   }
 
   private static async encryptTransaction(
-    serializedTransaction: string,
+    to: string,
+    data: string,
     relayerRailgunAddress: string,
     relayerFeesID: string,
     chain: Chain,
@@ -114,13 +118,17 @@ export class RelayerTransaction {
     if (!overallBatchMinGasPrice) {
       throw new Error('Requires batch minGasPrice for Relayers.');
     }
+    if (!isHexString(data)) {
+      throw new Error('Data field must be a hex string.');
+    }
 
     const { viewingPublicKey: relayerViewingKey } = getRailgunWalletAddressData(
       relayerRailgunAddress,
     );
 
     const transactData: RelayerRawParamsTransact = {
-      serializedTransaction,
+      to: getAddress(to),
+      data,
       relayerViewingKey: bytesToHex(relayerViewingKey),
       chainID: chain.id,
       chainType: chain.type,
@@ -141,14 +149,19 @@ export class RelayerTransaction {
   }
 
   private async findMatchingNullifierTxid(): Promise<Optional<string>> {
-    const { txid, error } = await getCompletedTxidFromNullifiers(
-      this.chain,
-      this.nullifiers,
-    );
-    if (error) {
-      RelayerDebug.error(new Error(error));
+    try {
+      const { txid } = await getCompletedTxidFromNullifiers(
+        this.chain,
+        this.nullifiers,
+      );
+      return txid;
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      RelayerDebug.error(err);
+      return undefined;
     }
-    return txid;
   }
 
   private async getTransactionResponse(): Promise<

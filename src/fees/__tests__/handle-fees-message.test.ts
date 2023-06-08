@@ -7,7 +7,7 @@ import {
 import {
   createRailgunWallet,
   fullWalletForID,
-} from '@railgun-community/quickstart';
+} from '@railgun-community/wallet';
 import { RelayerFeeMessageData } from '@railgun-community/shared-models';
 import { IMessage } from '@waku/interfaces';
 import chai from 'chai';
@@ -69,25 +69,19 @@ describe('handle-fees-message', () => {
 
     relayerFeeCacheStub = sinon.stub(RelayerFeeCache, 'addTokenFees').returns();
 
-    const walletAResponse = await createRailgunWallet(
+    const railgunWalletInfoA = await createRailgunWallet(
       MOCK_DB_ENCRYPTION_KEY,
       MOCK_MNEMONIC,
       undefined,
     );
-    if (walletAResponse.railgunWalletInfo == null) {
-      throw new Error(walletAResponse.error);
-    }
-    walletA = fullWalletForID(walletAResponse.railgunWalletInfo.id);
+    walletA = fullWalletForID(railgunWalletInfoA.id);
 
-    const walletBResponse = await createRailgunWallet(
+    const railgunWalletInfoB = await createRailgunWallet(
       MOCK_DB_ENCRYPTION_KEY,
       MOCK_MNEMONIC_2,
       undefined,
     );
-    if (walletBResponse.railgunWalletInfo == null) {
-      throw new Error(walletBResponse.error);
-    }
-    walletB = fullWalletForID(walletBResponse.railgunWalletInfo.id);
+    walletB = fullWalletForID(railgunWalletInfoB.id);
 
     validFeeMessageData = {
       fees,
