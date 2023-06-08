@@ -48,7 +48,7 @@ describe('relayer-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '2.99',
+      '3.99', // too low
     );
 
     RelayerFeeCache.addTokenFees(
@@ -57,7 +57,7 @@ describe('relayer-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '4.0.0',
+      '5.0.0', // too high
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
@@ -72,7 +72,7 @@ describe('relayer-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '3.22',
+      '4.22',
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
@@ -87,7 +87,7 @@ describe('relayer-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '3.2.2.99',
+      '4.2.2.99', // version
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.deep.equal({
