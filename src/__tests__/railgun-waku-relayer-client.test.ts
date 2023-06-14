@@ -36,97 +36,90 @@ describe('railgun-waku-relayer-client', () => {
     await RailgunWakuRelayerClient.stop();
   });
 
-  it.only(
-    'Should start up the client, pull live fees and find best Relayer, then error and reconnect',
-    async () => {
-      RailgunWakuRelayerClient.pollDelay = 500;
+  it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
+    RailgunWakuRelayerClient.pollDelay = 500;
 
-      await RailgunWakuRelayerClient.start(
+    await RailgunWakuRelayerClient.start(chain, relayerOptions, statusCallback);
+
+    expect(currentChain).to.deep.equal(chain);
+    expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
+
+    // Poll until currentStatus is Connected.
+    const statusInitialConnection = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Connected,
+      20,
+      20000 / 20, // 20 sec.
+    );
+    if (!statusInitialConnection) {
+      throw new Error('Could not establish initial connection with fees.');
+    }
+
+    const useRelayAdapt = true;
+    const selectedRelayer: Optional<SelectedRelayer> =
+      RailgunWakuRelayerClient.findBestRelayer(
         chain,
-        relayerOptions,
-        statusCallback,
+        WETH_ADDRESS,
+        useRelayAdapt,
       );
 
-      expect(currentChain).to.deep.equal(chain);
-      expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
+    expect(selectedRelayer).to.be.an('object');
+    expect(selectedRelayer?.railgunAddress).to.be.a('string');
+    expect(selectedRelayer?.tokenAddress).to.equal(WETH_ADDRESS);
+    expect(selectedRelayer?.tokenFee.availableWallets).to.be.greaterThanOrEqual(
+      1,
+    );
+    expect(selectedRelayer?.tokenFee.expiration).to.be.a('number');
+    expect(selectedRelayer?.tokenFee.feePerUnitGas).to.be.a('string');
+    expect(selectedRelayer?.tokenFee.feesID).to.be.a('string');
+    expect(selectedRelayer?.tokenFee.relayAdapt).to.be.a('string');
 
-      // Poll until currentStatus is Connected.
-      const statusInitialConnection = await poll(
-        async () => currentStatus,
-        status => status === RelayerConnectionStatus.Connected,
-        20,
-        20000 / 20, // 20 sec.
+    // Set error state in order to test status and reconnect.
+    WakuRelayerWakuCore.hasError = true;
+
+    // Poll until currentStatus is Error.
+    const statusError = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Error,
+      20,
+      1000 / 20, // 1 sec.
+    );
+    if (!statusError) {
+      throw new Error(`Should be error, got ${currentStatus}`);
+    }
+
+    // Poll until currentStatus is Disconnected.
+    const statusDisconnected = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Disconnected,
+      20,
+      2000 / 20, // 2 sec.
+    );
+    if (!statusDisconnected) {
+      throw new Error(`Should be disconnected, got ${currentStatus}`);
+    }
+
+    // Poll until currentStatus is Connected.
+    const statusConnected = await poll(
+      async () => currentStatus,
+      status => status === RelayerConnectionStatus.Connected,
+      20,
+      20000 / 20, // 20 sec.
+    );
+    if (!statusConnected) {
+      throw new Error(
+        `Should be re-connected after disconnection, got ${currentStatus}`,
       );
-      if (!statusInitialConnection) {
-        throw new Error('Could not establish initial connection with fees.');
-      }
+    }
 
-      const useRelayAdapt = true;
-      const selectedRelayer: Optional<SelectedRelayer> =
-        RailgunWakuRelayerClient.findBestRelayer(
-          chain,
-          WETH_ADDRESS,
-          useRelayAdapt,
-        );
+    expect(
+      RailgunWakuRelayerClient.getMeshPeerCount(),
+    ).to.be.greaterThanOrEqual(1);
 
-      expect(selectedRelayer).to.be.an('object');
-      expect(selectedRelayer?.railgunAddress).to.be.a('string');
-      expect(selectedRelayer?.tokenAddress).to.equal(WETH_ADDRESS);
-      expect(
-        selectedRelayer?.tokenFee.availableWallets,
-      ).to.be.greaterThanOrEqual(1);
-      expect(selectedRelayer?.tokenFee.expiration).to.be.a('number');
-      expect(selectedRelayer?.tokenFee.feePerUnitGas).to.be.a('string');
-      expect(selectedRelayer?.tokenFee.feesID).to.be.a('string');
-      expect(selectedRelayer?.tokenFee.relayAdapt).to.be.a('string');
-
-      // Set error state in order to test status and reconnect.
-      WakuRelayerWakuCore.hasError = true;
-
-      // Poll until currentStatus is Error.
-      const statusError = await poll(
-        async () => currentStatus,
-        status => status === RelayerConnectionStatus.Error,
-        20,
-        1000 / 20, // 1 sec.
-      );
-      if (!statusError) {
-        throw new Error(`Should be error, got ${currentStatus}`);
-      }
-
-      // Poll until currentStatus is Disconnected.
-      const statusDisconnected = await poll(
-        async () => currentStatus,
-        status => status === RelayerConnectionStatus.Disconnected,
-        20,
-        2000 / 20, // 2 sec.
-      );
-      if (!statusDisconnected) {
-        throw new Error(`Should be disconnected, got ${currentStatus}`);
-      }
-
-      // Poll until currentStatus is Connected.
-      const statusConnected = await poll(
-        async () => currentStatus,
-        status => status === RelayerConnectionStatus.Connected,
-        20,
-        20000 / 20, // 20 sec.
-      );
-      if (!statusConnected) {
-        throw new Error(
-          `Should be re-connected after disconnection, got ${currentStatus}`,
-        );
-      }
-
-      expect(
-        RailgunWakuRelayerClient.getMeshPeerCount(),
-      ).to.be.greaterThanOrEqual(1);
-
-      await RailgunWakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
-      expect(RailgunWakuRelayerClient.getContentTopics()).to.deep.equal([
-        '/railgun/v2/0/5/fees/json',
-        '/railgun/v2/0/5/transact-response/json',
-      ]);
-    },
-  ).timeout(90000);
+    await RailgunWakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
+    expect(RailgunWakuRelayerClient.getContentTopics()).to.deep.equal([
+      '/railgun/v2/0/5/fees/json',
+      '/railgun/v2/0/5/transact-response/json',
+    ]);
+  }).timeout(90000);
 });
