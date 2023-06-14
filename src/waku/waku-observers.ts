@@ -1,15 +1,19 @@
 import { Chain, compareChains } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics';
-import { Waku, IMessage } from '@waku/interfaces';
+import { RelayNode, IMessage } from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response';
 import { RelayerDebug } from '../utils/relayer-debug';
+import { ContentTopic } from '@waku/relay';
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
 
-  static setObserversForChain = async (waku: Optional<Waku>, chain: Chain) => {
+  static setObserversForChain = async (
+    waku: Optional<RelayNode>,
+    chain: Chain,
+  ) => {
     if (!waku) {
       return;
     }
@@ -32,7 +36,7 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
-  private static removeAllObservers = (waku: Waku) => {
+  private static removeAllObservers = (waku: RelayNode) => {
     if (!waku.relay) {
       return;
     }
@@ -40,7 +44,7 @@ export class WakuObservers {
     waku.relay.observers = new Map();
   };
 
-  private static addChainObservers = async (waku: Waku, chain: Chain) => {
+  private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
     if (!waku.relay) {
       return;
     }
@@ -58,22 +62,21 @@ export class WakuObservers {
     );
 
     // Log current list of observers
-    const currentObservers = WakuObservers.getCurrentObservers(waku);
-    RelayerDebug.log('Waku observers:');
-    for (const observer of currentObservers) {
+    const currentContentTopics = WakuObservers.getCurrentContentTopics(waku);
+    RelayerDebug.log('Waku content topics:');
+    for (const observer of currentContentTopics) {
       RelayerDebug.log(observer);
     }
   };
 
-  static getCurrentObservers(waku?: Waku): string[] {
-    const activeSubscriptions = waku?.relay?.getActiveSubscriptions();
-    if (!activeSubscriptions) {
-      return [];
+  static getCurrentContentTopics(waku?: RelayNode): string[] {
+    // @ts-expect-error - 'observers' is private.
+    const observers = waku?.relay?.observers as Map<ContentTopic, Set<unknown>>;
+
+    const contentTopics: string[] = [];
+    for (const observer of observers.keys()) {
+      contentTopics.push(observer);
     }
-    const observers: string[] = [];
-    for (const observerList of activeSubscriptions.values()) {
-      observers.push(...observerList);
-    }
-    return observers;
+    return contentTopics;
   }
 }

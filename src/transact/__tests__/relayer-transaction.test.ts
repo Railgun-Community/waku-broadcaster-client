@@ -1,7 +1,7 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  MOCK_CHAIN,
+  MOCK_CHAIN_ETHEREUM,
   MOCK_FALLBACK_PROVIDER_JSON_CONFIG,
   MOCK_RAILGUN_WALLET_ADDRESS,
 } from '../../tests/mocks.test';
@@ -20,7 +20,7 @@ const { expect } = chai;
 
 let wakuRelayerRelayMessageStub: SinonStub;
 
-const chain = MOCK_CHAIN;
+const chain = MOCK_CHAIN_ETHEREUM;
 
 const MOCK_TX_HASH = 'txid';
 

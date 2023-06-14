@@ -2,7 +2,7 @@
 import { CachedTokenFee } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { MOCK_CHAIN } from '../../tests/mocks.test';
+import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test';
 import { RelayerFeeCache, RelayerFeeCacheState } from '../relayer-fee-cache';
 
 chai.use(chaiAsPromised);
@@ -12,7 +12,7 @@ const initialState: RelayerFeeCacheState = {
   forNetwork: {},
 };
 
-const chain = MOCK_CHAIN;
+const chain = MOCK_CHAIN_ETHEREUM;
 
 const tokenAddress = '0x1234567890';
 const cachedTokenFee: CachedTokenFee = {
@@ -67,7 +67,7 @@ describe('relayer-fee-cache', () => {
     RelayerFeeCache.resetCache(chain);
 
     RelayerFeeCache.addTokenFees(
-      { ...MOCK_CHAIN, id: 2 },
+      { ...MOCK_CHAIN_ETHEREUM, id: 2 },
       railgunAddress,
       feeExpiration,
       tokenFeeMap,

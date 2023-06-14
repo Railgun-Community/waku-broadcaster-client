@@ -1,16 +1,12 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Waku, Protocols, IMessage } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { utf8ToBytes } from '../utils/conversion';
 import { bootstrap } from '@libp2p/bootstrap';
 import { createRelayNode } from '@waku/create';
-import {
-  Fleet,
-  getPredefinedBootstrapNodes,
-} from '@waku/core/lib/predefined_bootstrap_nodes';
 import { RelayerOptions } from '../models';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS,
@@ -20,7 +16,7 @@ import {
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static waku: Optional<Waku>;
+  static waku: Optional<RelayNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
@@ -74,21 +70,6 @@ export class WakuRelayerWakuCore {
     WakuRelayerWakuCore.waku = undefined;
   };
 
-  // Unused because these don't support RAILGUN topic.
-  private static getDefaultWakuPeers = (): string[] => {
-    // As many as they have available.
-    const wantedNumber = 3;
-    const prodBootstrapNodes = getPredefinedBootstrapNodes(
-      Fleet.Prod,
-      wantedNumber,
-    );
-    const testBootstrapNodes = getPredefinedBootstrapNodes(
-      Fleet.Test,
-      wantedNumber,
-    );
-    return [...prodBootstrapNodes, ...testBootstrapNodes];
-  };
-
   private static connect = async (): Promise<void> => {
     try {
       WakuRelayerWakuCore.hasError = false;
@@ -100,7 +81,7 @@ export class WakuRelayerWakuCore {
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: Waku = await createRelayNode({
+      const waku: RelayNode = await createRelayNode({
         pubSubTopic: WakuRelayerWakuCore.pubSubTopic,
         libp2p: {
           peerDiscovery: [
@@ -140,10 +121,10 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.waku?.relay?.getMeshPeers().length ?? 0;
+    return this.waku?.relay.getMeshPeers().length ?? 0;
   }
 
-  private static async waitForRemotePeer(waku: Waku) {
+  private static async waitForRemotePeer(waku: RelayNode) {
     try {
       const protocols = [Protocols.Relay];
       await promiseTimeout(

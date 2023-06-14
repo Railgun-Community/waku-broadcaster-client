@@ -14,7 +14,7 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonStub } from 'sinon';
 import {
-  MOCK_CHAIN,
+  MOCK_CHAIN_ETHEREUM,
   MOCK_DB_ENCRYPTION_KEY,
   MOCK_MNEMONIC,
   MOCK_MNEMONIC_2,
@@ -28,7 +28,7 @@ import { RelayerFeeCache } from '../relayer-fee-cache';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const chain = MOCK_CHAIN;
+const chain = MOCK_CHAIN_ETHEREUM;
 const contentTopic = contentTopics.fees(chain);
 
 const validTimestamp = new Date();

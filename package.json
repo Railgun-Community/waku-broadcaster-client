@@ -24,16 +24,16 @@
   },
   "dependencies": {
     "@libp2p/bootstrap": "^6.0.0",
-    "@waku/core": "0.0.16",
-    "@waku/create": "0.0.12"
+    "@waku/core": "0.0.19",
+    "@waku/create": "0.0.15",
+    "@waku/relay": "0.0.2"
   },
   "peerDependencies": {
-    "ethers": "^6.4.0",
     "@railgun-community/shared-models": "5.1.4",
-    "@railgun-community/wallet": "5.1.2"
+    "@railgun-community/wallet": "5.1.2",
+    "ethers": "^6.4.0"
   },
   "devDependencies": {
-    "ethers": "^6.4.0",
     "@railgun-community/shared-models": "5.1.4",
     "@railgun-community/wallet": "5.1.2",
     "@types/chai": "^4.3.4",
@@ -51,6 +51,7 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.26.0",
+    "ethers": "^6.4.0",
     "leveldown": "^6.1.1",
     "madge": "^5.0.1",
     "mocha": "^10.2.0",

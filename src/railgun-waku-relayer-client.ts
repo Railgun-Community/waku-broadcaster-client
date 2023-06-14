@@ -75,8 +75,8 @@ export class RailgunWakuRelayerClient {
     RailgunWakuRelayerClient.updateStatus();
   }
 
-  static getObservers(): string[] {
-    return WakuObservers.getCurrentObservers(WakuRelayerWakuCore.waku);
+  static getContentTopics(): string[] {
+    return WakuObservers.getCurrentContentTopics(WakuRelayerWakuCore.waku);
   }
 
   static getMeshPeerCount(): number {

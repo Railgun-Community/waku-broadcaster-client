@@ -4,14 +4,17 @@ import {
   FallbackProviderJsonConfig,
 } from '@railgun-community/shared-models';
 
-export const MOCK_CHAIN: Chain = {
+export const MOCK_CHAIN_ETHEREUM: Chain = {
   type: ChainType.EVM,
   id: 1,
 };
-
 export const MOCK_CHAIN_GOERLI: Chain = {
   type: ChainType.EVM,
   id: 5,
+};
+export const MOCK_CHAIN_POLYGON: Chain = {
+  type: ChainType.EVM,
+  id: 137,
 };
 
 export const MOCK_DB_ENCRYPTION_KEY =
