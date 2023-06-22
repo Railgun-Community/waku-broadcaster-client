@@ -5,6 +5,7 @@ import {
   versionCompare,
 } from '@railgun-community/shared-models';
 import { RelayerConfig } from '../models/relayer-config';
+import { isDefined } from './is-defined';
 
 const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
 
@@ -23,7 +24,7 @@ export const nameForRelayer = (
   identifier: Optional<string>,
 ) => {
   const shortAddress = shortenAddress(railgunAddress);
-  if (identifier) {
+  if (isDefined(identifier)) {
     return `${shortAddress}: ${identifier}`;
   }
   return shortAddress;
