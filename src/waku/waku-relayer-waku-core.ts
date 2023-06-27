@@ -5,6 +5,7 @@ import { WakuObservers } from './waku-observers';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { utf8ToBytes } from '../utils/conversion';
+import { isDefined } from '../utils/is-defined';
 import { bootstrap } from '@libp2p/bootstrap';
 import { createRelayNode } from '@waku/create';
 import { RelayerOptions } from '../models';
@@ -41,7 +42,10 @@ export class WakuRelayerWakuCore {
   };
 
   static reinitWaku = async (chain: Chain) => {
-    if (WakuRelayerWakuCore.waku?.isStarted()) {
+    if (
+      isDefined(WakuRelayerWakuCore.waku) &&
+      WakuRelayerWakuCore.waku.isStarted()
+    ) {
       await WakuRelayerWakuCore.disconnect();
     }
 
@@ -52,14 +56,14 @@ export class WakuRelayerWakuCore {
   };
 
   static setRelayerOptions(relayerOptions: RelayerOptions) {
-    if (relayerOptions.pubSubTopic) {
+    if (isDefined(relayerOptions.pubSubTopic)) {
       WakuRelayerWakuCore.pubSubTopic = relayerOptions.pubSubTopic;
     }
     if (relayerOptions.additionalDirectPeers) {
       WakuRelayerWakuCore.additionalDirectPeers =
         relayerOptions.additionalDirectPeers;
     }
-    if (relayerOptions.peerDiscoveryTimeout) {
+    if (isDefined(relayerOptions.peerDiscoveryTimeout)) {
       WakuRelayerWakuCore.peerDiscoveryTimeout =
         relayerOptions.peerDiscoveryTimeout;
     }
@@ -99,7 +103,7 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!waku.relay) {
+      if (!isDefined(waku.relay)) {
         throw new Error('No Waku Relay instantiated.');
       }
 

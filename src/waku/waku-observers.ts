@@ -6,6 +6,7 @@ import { handleRelayerFeesMessage } from '../fees/handle-fees-message';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response';
 import { RelayerDebug } from '../utils/relayer-debug';
 import { ContentTopic } from '@waku/relay';
+import { isDefined } from '../utils/is-defined';
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
@@ -37,7 +38,7 @@ export class WakuObservers {
   };
 
   private static removeAllObservers = (waku: RelayNode) => {
-    if (!waku.relay) {
+    if (!isDefined(waku.relay)) {
       return;
     }
     // @ts-ignore
@@ -45,7 +46,7 @@ export class WakuObservers {
   };
 
   private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
-    if (!waku.relay) {
+    if (!isDefined(waku.relay)) {
       return;
     }
 

@@ -2,6 +2,7 @@ import { decryptAESGCM256 } from '@railgun-community/wallet';
 import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '../utils/conversion';
 import { RelayerDebug } from '../utils/relayer-debug';
+import { isDefined } from '../utils/is-defined';
 
 export type WakuTransactResponse = {
   id: string;
@@ -27,7 +28,7 @@ export class RelayerTransactResponse {
     if (!RelayerTransactResponse.sharedKey) {
       return;
     }
-    if (!message.payload) {
+    if (!isDefined(message.payload)) {
       return;
     }
     try {

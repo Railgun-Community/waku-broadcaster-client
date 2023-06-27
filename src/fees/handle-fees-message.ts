@@ -15,6 +15,7 @@ import { RelayerConfig } from '../models/relayer-config';
 import { RelayerFeeCache } from './relayer-fee-cache';
 import { invalidRelayerVersion } from '../utils/relayer-util';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion';
+import { isDefined } from '../utils/is-defined';
 
 const isExpiredTimestamp = (timestamp: Optional<Date>) => {
   if (!timestamp) {
@@ -36,7 +37,7 @@ export const handleRelayerFeesMessage = async (
   contentTopic: string,
 ) => {
   try {
-    if (!message.payload) {
+    if (!isDefined(message.payload)) {
       return;
     }
     if (contentTopic !== contentTopics.fees(chain)) {
@@ -54,7 +55,7 @@ export const handleRelayerFeesMessage = async (
     const utf8String = hexToUTF8String(data);
     const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
 
-    if (!crypto.subtle && RelayerConfig.IS_DEV) {
+    if (!isDefined(crypto.subtle) && RelayerConfig.IS_DEV) {
       RelayerDebug.log(
         'Skipping Relayer fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
       );

@@ -6,6 +6,7 @@ import {
   cachedFeeUnavailableOrExpired,
   shortenAddress,
 } from '../utils/relayer-util';
+import { isDefined } from '../utils/is-defined';
 
 export class RelayerSearch {
   static findBestRelayer(
@@ -54,7 +55,7 @@ export class RelayerSearch {
           return;
         }
         const fee = BigInt(nextCachedFee.feePerUnitGas);
-        if (!minFee || fee < minFee) {
+        if (!isDefined(minFee) || fee < minFee) {
           minFee = fee;
           bestRelayerAddress = relayerAddress;
           bestRelayerIdentifier = identifier;
@@ -62,7 +63,7 @@ export class RelayerSearch {
       });
     });
 
-    if (!bestRelayerAddress || !bestRelayerIdentifier) {
+    if (!isDefined(bestRelayerAddress) || !isDefined(bestRelayerIdentifier)) {
       return undefined;
     }
 

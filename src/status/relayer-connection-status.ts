@@ -7,6 +7,7 @@ import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { AddressFilter } from '../filters/address-filter';
 import { cachedFeeExpired } from '../utils/relayer-util';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
+import { isDefined } from '../utils/is-defined';
 
 export class RelayerStatus {
   static getRelayerConnectionStatus(chain: Chain): RelayerConnectionStatus {
@@ -34,7 +35,7 @@ export class RelayerStatus {
 
   private static hasRelayerFeesForNetwork(chain: Chain) {
     const relayerFees = RelayerFeeCache.feesForChain(chain);
-    if (!relayerFees || !relayerFees.forToken) {
+    if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
       return false;
     }
 
@@ -55,7 +56,7 @@ export class RelayerStatus {
 
   private static getAggregatedInfoForRelayers(chain: Chain) {
     const relayerFees = RelayerFeeCache.feesForChain(chain);
-    if (!relayerFees || !relayerFees.forToken) {
+    if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
       return { allRelayerFeesExpired: false, anyRelayersAvailable: false };
     }
 

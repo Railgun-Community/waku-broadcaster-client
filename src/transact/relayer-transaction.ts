@@ -13,6 +13,7 @@ import {
 import { RelayerConfig } from '../models/relayer-config';
 import { bytesToHex } from '../utils/conversion';
 import { RelayerDebug } from '../utils/relayer-debug';
+import { isDefined } from '../utils/is-defined';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 import { contentTopics } from '../waku/waku-topics';
 import {
@@ -169,7 +170,7 @@ export class RelayerTransaction {
     }
 
     const nullifiersTxid = await this.findMatchingNullifierTxid();
-    if (nullifiersTxid) {
+    if (isDefined(nullifiersTxid)) {
       return {
         id: 'nullifier-transaction',
         txHash: nullifiersTxid,
@@ -225,12 +226,12 @@ export class RelayerTransaction {
       POLL_DELAY_SECONDS * 1000,
       pollIterations,
     );
-    if (response) {
-      if (response.txHash) {
+    if (isDefined(response)) {
+      if (isDefined(response.txHash)) {
         RelayerTransactResponse.clearSharedKey();
         return response.txHash;
       }
-      if (response.error) {
+      if (isDefined(response.error)) {
         RelayerTransactResponse.clearSharedKey();
         throw new Error(response.error);
       }
