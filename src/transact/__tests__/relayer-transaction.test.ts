@@ -32,7 +32,9 @@ const encryptResponseData = (
 };
 
 describe('relayer-transaction', () => {
-  before(async () => {
+  before(async function run() {
+    this.timeout(5000);
+
     initTestEngine();
 
     const network = networkForChain(chain);

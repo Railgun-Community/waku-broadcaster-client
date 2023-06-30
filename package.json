@@ -24,41 +24,41 @@
   },
   "dependencies": {
     "@libp2p/bootstrap": "^6.0.0",
-    "@waku/core": "0.0.19",
+    "@waku/core": "0.0.20",
     "@waku/create": "0.0.15",
-    "@waku/relay": "0.0.2"
+    "@waku/relay": "0.0.3"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "5.1.4",
-    "@railgun-community/wallet": "5.1.2",
-    "ethers": "^6.4.0"
+    "@railgun-community/shared-models": "5.2.4",
+    "@railgun-community/wallet": "5.2.11",
+    "ethers": "6.6.2"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "5.1.4",
-    "@railgun-community/wallet": "5.1.2",
-    "@types/chai": "^4.3.4",
+    "@railgun-community/shared-models": "5.2.4",
+    "@railgun-community/wallet": "5.2.11",
+    "ethers": "6.6.2",
+    "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.7.23",
-    "@types/sinon": "^10.0.13",
-    "@typescript-eslint/eslint-plugin": "^5.38.1",
-    "@typescript-eslint/parser": "^5.38.1",
-    "c8": "^7.12.0",
+    "@types/node": "^20.3.2",
+    "@types/sinon": "^10.0.15",
+    "@typescript-eslint/eslint-plugin": "^5.60.1",
+    "@typescript-eslint/parser": "^5.60.1",
+    "c8": "^8.0.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^8.24.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint": "^8.43.0",
+    "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
-    "eslint-plugin-import": "^2.26.0",
-    "ethers": "^6.4.0",
+    "eslint-plugin-import": "^2.27.5",
     "leveldown": "^6.1.1",
-    "madge": "^5.0.1",
+    "madge": "^6.1.0",
     "mocha": "^10.2.0",
-    "prettier": "^2.8.3",
-    "sinon": "^15.0.1",
+    "prettier": "^2.8.8",
+    "sinon": "^15.2.0",
     "ts-node": "^10.9.1",
-    "tsc-alias": "^1.8.2",
-    "typescript": "^4.8.3"
+    "tsc-alias": "^1.8.6",
+    "typescript": "^5.1.6"
   }
 }
