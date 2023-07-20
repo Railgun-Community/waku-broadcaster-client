@@ -29,36 +29,36 @@
     "@waku/relay": "0.0.3"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "5.2.4",
-    "@railgun-community/wallet": "5.2.11",
-    "ethers": "6.6.2"
+    "@railgun-community/shared-models": "5.2.8",
+    "@railgun-community/wallet": "5.3.2",
+    "ethers": "6.6.4"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "5.2.4",
-    "@railgun-community/wallet": "5.2.11",
-    "ethers": "6.6.2",
+    "@railgun-community/shared-models": "5.2.8",
+    "@railgun-community/wallet": "5.3.2",
+    "ethers": "6.6.4",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.3.2",
+    "@types/node": "^20.4.2",
     "@types/sinon": "^10.0.15",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
     "c8": "^8.0.0",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^8.43.0",
+    "eslint": "^8.45.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.27.5",
     "leveldown": "^6.1.1",
     "madge": "^6.1.0",
     "mocha": "^10.2.0",
-    "prettier": "^2.8.8",
+    "prettier": "^3.0.0",
     "sinon": "^15.2.0",
     "ts-node": "^10.9.1",
-    "tsc-alias": "^1.8.6",
+    "tsc-alias": "^1.8.7",
     "typescript": "^5.1.6"
   }
 }
