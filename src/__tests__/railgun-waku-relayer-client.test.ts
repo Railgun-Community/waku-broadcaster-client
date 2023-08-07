@@ -51,7 +51,7 @@ describe('railgun-waku-relayer-client', () => {
       20,
       20000 / 20, // 20 sec.
     );
-    if (!statusInitialConnection) {
+    if (statusInitialConnection !== RelayerConnectionStatus.Connected) {
       throw new Error('Could not establish initial connection with fees.');
     }
 
@@ -84,7 +84,7 @@ describe('railgun-waku-relayer-client', () => {
       20,
       1000 / 20, // 1 sec.
     );
-    if (!statusError) {
+    if (statusError !== RelayerConnectionStatus.Error) {
       throw new Error(`Should be error, got ${currentStatus}`);
     }
 
@@ -95,7 +95,7 @@ describe('railgun-waku-relayer-client', () => {
       20,
       2000 / 20, // 2 sec.
     );
-    if (!statusDisconnected) {
+    if (statusDisconnected !== RelayerConnectionStatus.Disconnected) {
       throw new Error(`Should be disconnected, got ${currentStatus}`);
     }
 
@@ -106,7 +106,7 @@ describe('railgun-waku-relayer-client', () => {
       20,
       20000 / 20, // 20 sec.
     );
-    if (!statusConnected) {
+    if (statusConnected !== RelayerConnectionStatus.Connected) {
       throw new Error(
         `Should be re-connected after disconnection, got ${currentStatus}`,
       );

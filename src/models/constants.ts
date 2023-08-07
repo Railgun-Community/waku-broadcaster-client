@@ -1,6 +1,6 @@
 export const WAKU_RAILGUN_PUB_SUB_TOPIC = '/waku/2/railgun-relayer';
 
 export const WAKU_RAILGUN_DEFAULT_PEERS: string[] = [
-  '/dns4/relayer.crabdance.com/tcp/8000/wss/p2p/16Uiu2HAm9TiCU9ZRPoKMUyo6QQvZTSceSH5ZtX6u353NHgVCtr1W',
-  '/dns4/relayer.chickenkiller.com/tcp/8000/wss/p2p/16Uiu2HAmNy49QzXVWHMdhz7DQHXCpk9sHvVua99j3QcShUK8PVSD',
+  '/dns4/relayerv4.wecamefromapes.com/tcp/8000/wss/p2p/16Uiu2HAmCMBVq9am26T61B7FyZ6JbEDusH4c7M7AYVMwNnRuP2cg',
+  '/dns4/rel.cribbagerelayer.xyz/tcp/8000/wss/p2p/16Uiu2HAkv4fxpy3ScCogjPcw1voropnmy37UJxRdAC2DfW5F7ssZ',
 ];
