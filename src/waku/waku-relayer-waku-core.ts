@@ -7,6 +7,7 @@ import { RelayerFeeCache } from '../fees/relayer-fee-cache';
 import { utf8ToBytes } from '../utils/conversion';
 import { isDefined } from '../utils/is-defined';
 import { bootstrap } from '@libp2p/bootstrap';
+import { tcp } from '@libp2p/tcp';
 import { createRelayNode } from '@waku/create';
 import { RelayerOptions } from '../models';
 import {
@@ -22,6 +23,7 @@ export class WakuRelayerWakuCore {
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
+  private static useTcp = false;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -67,6 +69,9 @@ export class WakuRelayerWakuCore {
       WakuRelayerWakuCore.peerDiscoveryTimeout =
         relayerOptions.peerDiscoveryTimeout;
     }
+    if (isDefined(relayerOptions.useTcp)) {
+      WakuRelayerWakuCore.useTcp = relayerOptions.useTcp;
+    }
   }
 
   static disconnect = async () => {
@@ -88,6 +93,7 @@ export class WakuRelayerWakuCore {
       const waku: RelayNode = await createRelayNode({
         pubSubTopic: WakuRelayerWakuCore.pubSubTopic,
         libp2p: {
+          ...(WakuRelayerWakuCore.useTcp ? { transports: [tcp()] } : null),
           peerDiscovery: [
             bootstrap({
               list: peers,
