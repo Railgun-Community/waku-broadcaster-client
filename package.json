@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@libp2p/bootstrap": "^6.0.0",
+    "@libp2p/tcp": "^6.0.0",
     "@waku/core": "0.0.20",
     "@waku/create": "0.0.15",
     "@waku/relay": "0.0.3"
