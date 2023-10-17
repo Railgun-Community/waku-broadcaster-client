@@ -92,6 +92,7 @@ describe('handle-fees-message', () => {
       availableWallets,
       version,
       relayAdapt,
+      requiredPOIListKeys: ['test_list'],
     };
   });
 

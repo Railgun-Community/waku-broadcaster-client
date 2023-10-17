@@ -7,8 +7,10 @@ import {
   Chain,
   EncryptDataWithSharedKeyResponse,
   poll,
+  PreTransactionPOIsPerTxidLeafPerList,
   RelayerEncryptedMethodParams,
   RelayerRawParamsTransact,
+  TXIDVersion,
 } from '@railgun-community/shared-models';
 import { RelayerConfig } from '../models/relayer-config';
 import { bytesToHex } from '../utils/conversion';
@@ -64,11 +66,13 @@ const POST_ALERT_TOTAL_WAITING_SECONDS = 60;
 export class RelayerTransaction {
   private messageData: RelayMessageData;
   private contentTopic: string;
+  private txidVersionForInputs: TXIDVersion;
   private chain: Chain;
   private nullifiers: string[];
 
   private constructor(
     encryptedDataResponse: EncryptDataWithSharedKeyResponse,
+    txidVersionForInputs: TXIDVersion,
     chain: Chain,
     nullifiers: string[],
   ) {
@@ -80,12 +84,14 @@ export class RelayerTransaction {
       },
     };
     this.contentTopic = contentTopics.transact(chain);
+    this.txidVersionForInputs = txidVersionForInputs;
     this.chain = chain;
     this.nullifiers = nullifiers;
     RelayerTransactResponse.setSharedKey(encryptedDataResponse.sharedKey);
   }
 
   static async create(
+    txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
     relayerRailgunAddress: string,
@@ -94,8 +100,10 @@ export class RelayerTransaction {
     nullifiers: string[],
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
+    preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
   ): Promise<RelayerTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
+      txidVersionForInputs,
       to,
       data,
       relayerRailgunAddress,
@@ -103,11 +111,18 @@ export class RelayerTransaction {
       chain,
       overallBatchMinGasPrice,
       useRelayAdapt,
+      preTransactionPOIsPerTxidLeafPerList,
     );
-    return new RelayerTransaction(encryptedDataResponse, chain, nullifiers);
+    return new RelayerTransaction(
+      encryptedDataResponse,
+      txidVersionForInputs,
+      chain,
+      nullifiers,
+    );
   }
 
   private static async encryptTransaction(
+    txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
     relayerRailgunAddress: string,
@@ -115,6 +130,7 @@ export class RelayerTransaction {
     chain: Chain,
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
+    preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
@@ -125,6 +141,7 @@ export class RelayerTransaction {
     );
 
     const transactData: RelayerRawParamsTransact = {
+      txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
       relayerViewingKey: bytesToHex(relayerViewingKey),
@@ -136,6 +153,7 @@ export class RelayerTransaction {
       devLog: RelayerConfig.IS_DEV,
       minVersion: RelayerConfig.MINIMUM_RELAYER_VERSION,
       maxVersion: RelayerConfig.MAXIMUM_RELAYER_VERSION,
+      preTransactionPOIsPerTxidLeafPerList,
     };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
@@ -149,6 +167,7 @@ export class RelayerTransaction {
   private async findMatchingNullifierTxid(): Promise<Optional<string>> {
     try {
       const { txid } = await getCompletedTxidFromNullifiers(
+        this.txidVersionForInputs,
         this.chain,
         this.nullifiers,
       );

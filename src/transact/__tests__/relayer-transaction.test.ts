@@ -8,7 +8,11 @@ import {
 import sinon, { SinonStub } from 'sinon';
 import { WakuRelayerWakuCore } from '../../waku/waku-relayer-waku-core';
 import { RelayerTransaction } from '../relayer-transaction';
-import { delay, networkForChain } from '@railgun-community/shared-models';
+import {
+  TXIDVersion,
+  delay,
+  networkForChain,
+} from '@railgun-community/shared-models';
 import { RelayerTransactResponse } from '../relayer-transact-response';
 import { utf8ToBytes } from '../../utils/conversion';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
@@ -64,6 +68,7 @@ describe('relayer-transaction', () => {
     const useRelayAdapt = true;
 
     const relayerTransaction = await RelayerTransaction.create(
+      TXIDVersion.V2_PoseidonMerkle,
       '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
       '0x1234abcdef', // data
       relayerRailgunAddress,
@@ -72,6 +77,7 @@ describe('relayer-transaction', () => {
       nullifiers,
       overallBatchMinGasPrice,
       useRelayAdapt,
+      {}, // preTransactionPOIsPerTxidLeafPerList
     );
 
     const mockDelayedResponse = async () => {
