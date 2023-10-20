@@ -1,6 +1,7 @@
 import {
   Chain,
   delay,
+  POI_REQUIRED_LISTS,
   RelayerConnectionStatus,
   SelectedRelayer,
 } from '@railgun-community/shared-models';
@@ -40,7 +41,10 @@ export class WakuRelayerClient {
       RelayerDebug.setDebugger(relayerDebugger);
     }
 
-    RelayerFeeCache.init(relayerOptions.poiActiveListKeys);
+    RelayerFeeCache.init(
+      relayerOptions.poiActiveListKeys ??
+        POI_REQUIRED_LISTS.map(list => list.key),
+    );
 
     try {
       this.started = false;

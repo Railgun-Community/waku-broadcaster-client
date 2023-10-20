@@ -4,7 +4,7 @@ import {
 } from '@railgun-community/shared-models';
 
 export type RelayerOptions = {
-  poiActiveListKeys: string[];
+  poiActiveListKeys?: string[];
   pubSubTopic?: string;
   additionalDirectPeers?: string[];
   peerDiscoveryTimeout?: number;

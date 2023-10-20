@@ -11,18 +11,13 @@ import { WakuRelayerClient } from '../waku-relayer-client';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 import { RelayerOptions } from '../models';
-import { POI_REQUIRED_LISTS } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
-const pubSubTopic = '/waku/2/railgun-relayer'; // default: '/waku/2/default-waku/proto'
-const relayerOptions: RelayerOptions = {
-  poiActiveListKeys: POI_REQUIRED_LISTS.map(list => list.key),
-  pubSubTopic,
-};
+const relayerOptions: RelayerOptions = {};
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
