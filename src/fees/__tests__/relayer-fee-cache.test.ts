@@ -31,6 +31,7 @@ const feeExpiration = Date.now() + 10000000;
 
 describe('relayer-fee-cache', () => {
   it('Should return relayer-fee-cache initial state', () => {
+    RelayerFeeCache.init(['test_list']);
     RelayerFeeCache.resetCache(chain);
 
     // @ts-ignore
@@ -49,6 +50,7 @@ describe('relayer-fee-cache', () => {
       tokenFeeMap,
       identifier,
       '3.99', // too low
+      ['test_list'],
     );
 
     RelayerFeeCache.addTokenFees(
@@ -58,6 +60,7 @@ describe('relayer-fee-cache', () => {
       tokenFeeMap,
       identifier,
       '5.0.0', // too high
+      ['test_list'],
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
@@ -73,6 +76,23 @@ describe('relayer-fee-cache', () => {
       tokenFeeMap,
       identifier,
       '4.22',
+      ['test_list'],
+    );
+
+    expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
+  });
+
+  it('Should not update relayer fees for invalid list keys', () => {
+    RelayerFeeCache.resetCache(chain);
+
+    RelayerFeeCache.addTokenFees(
+      chain,
+      railgunAddress,
+      feeExpiration,
+      tokenFeeMap,
+      identifier,
+      '4.22',
+      ['test_list_INVALID'],
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
@@ -88,6 +108,7 @@ describe('relayer-fee-cache', () => {
       tokenFeeMap,
       identifier,
       '4.2.2.99', // version
+      ['test_list'],
     );
 
     expect(RelayerFeeCache.feesForChain(chain)).to.deep.equal({

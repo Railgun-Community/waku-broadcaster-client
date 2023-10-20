@@ -17,7 +17,7 @@ import { RelayerDebug } from './utils/relayer-debug';
 import { WakuObservers } from './waku/waku-observers';
 import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
 
-export class RailgunWakuRelayerClient {
+export class WakuRelayerClient {
   private static chain: Chain;
   private static statusCallback: RelayerConnectionStatusCallback;
   private static started = false;
@@ -39,6 +39,8 @@ export class RailgunWakuRelayerClient {
     if (relayerDebugger) {
       RelayerDebug.setDebugger(relayerDebugger);
     }
+
+    RelayerFeeCache.init(relayerOptions.poiActiveListKeys);
 
     try {
       this.started = false;
@@ -66,13 +68,13 @@ export class RailgunWakuRelayerClient {
   }
 
   static async setChain(chain: Chain): Promise<void> {
-    if (!RailgunWakuRelayerClient.started) {
+    if (!WakuRelayerClient.started) {
       return;
     }
 
-    RailgunWakuRelayerClient.chain = chain;
+    WakuRelayerClient.chain = chain;
     await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
-    RailgunWakuRelayerClient.updateStatus();
+    WakuRelayerClient.updateStatus();
   }
 
   static getContentTopics(): string[] {
@@ -88,7 +90,7 @@ export class RailgunWakuRelayerClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ): Optional<SelectedRelayer> {
-    if (!RailgunWakuRelayerClient.started) {
+    if (!WakuRelayerClient.started) {
       return;
     }
 
@@ -105,10 +107,10 @@ export class RailgunWakuRelayerClient {
 
   static async tryReconnect(): Promise<void> {
     // Reset fees, which will reset status to "Searching".
-    RelayerFeeCache.resetCache(RailgunWakuRelayerClient.chain);
-    RailgunWakuRelayerClient.updateStatus();
+    RelayerFeeCache.resetCache(WakuRelayerClient.chain);
+    WakuRelayerClient.updateStatus();
 
-    await RailgunWakuRelayerClient.restart();
+    await WakuRelayerClient.restart();
   }
 
   static supportsToken(
@@ -143,7 +145,7 @@ export class RailgunWakuRelayerClient {
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
 
-    await delay(RailgunWakuRelayerClient.pollDelay);
+    await delay(WakuRelayerClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();

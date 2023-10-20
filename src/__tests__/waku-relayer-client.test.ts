@@ -7,10 +7,11 @@ import {
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { RailgunWakuRelayerClient } from '../railgun-waku-relayer-client';
+import { WakuRelayerClient } from '../waku-relayer-client';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
 import { RelayerOptions } from '../models';
+import { POI_REQUIRED_LISTS } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -19,6 +20,7 @@ const chain = MOCK_CHAIN_ETHEREUM;
 
 const pubSubTopic = '/waku/2/railgun-relayer'; // default: '/waku/2/default-waku/proto'
 const relayerOptions: RelayerOptions = {
+  poiActiveListKeys: POI_REQUIRED_LISTS.map(list => list.key),
   pubSubTopic,
 };
 
@@ -31,15 +33,15 @@ const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
   currentStatus = status;
 };
 
-describe('railgun-waku-relayer-client', () => {
+describe('waku-relayer-client', () => {
   after(async () => {
-    await RailgunWakuRelayerClient.stop();
+    await WakuRelayerClient.stop();
   });
 
   it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
-    RailgunWakuRelayerClient.pollDelay = 500;
+    WakuRelayerClient.pollDelay = 500;
 
-    await RailgunWakuRelayerClient.start(chain, relayerOptions, statusCallback);
+    await WakuRelayerClient.start(chain, relayerOptions, statusCallback);
 
     expect(currentChain).to.deep.equal(chain);
     expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
@@ -57,11 +59,7 @@ describe('railgun-waku-relayer-client', () => {
 
     const useRelayAdapt = true;
     const selectedRelayer: Optional<SelectedRelayer> =
-      RailgunWakuRelayerClient.findBestRelayer(
-        chain,
-        WETH_ADDRESS,
-        useRelayAdapt,
-      );
+      WakuRelayerClient.findBestRelayer(chain, WETH_ADDRESS, useRelayAdapt);
 
     expect(selectedRelayer).to.be.an('object');
     expect(selectedRelayer?.railgunAddress).to.be.a('string');
@@ -113,11 +111,11 @@ describe('railgun-waku-relayer-client', () => {
     }
 
     // expect(
-    //   RailgunWakuRelayerClient.getMeshPeerCount(),
+    //   WakuRelayerClient.getMeshPeerCount(),
     // ).to.be.greaterThanOrEqual(1);
 
-    await RailgunWakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
-    expect(RailgunWakuRelayerClient.getContentTopics()).to.deep.equal([
+    await WakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
+    expect(WakuRelayerClient.getContentTopics()).to.deep.equal([
       '/railgun/v2/0/5/fees/json',
       '/railgun/v2/0/5/transact-response/json',
     ]);

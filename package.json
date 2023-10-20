@@ -23,8 +23,8 @@
     "test": "npm run compile-test && NODE_ENV=test mocha"
   },
   "dependencies": {
-    "@railgun-community/shared-models": "5.7.11",
-    "@railgun-community/wallet": "5.13.6",
+    "@railgun-community/shared-models": "5.7.16",
+    "@railgun-community/wallet": "5.13.22",
     "ethers": "github:Railgun-Community/ethers.js#v6.7.6",
     "@libp2p/bootstrap": "^6.0.0",
     "@libp2p/tcp": "^6.0.0",

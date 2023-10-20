@@ -88,8 +88,7 @@ export const handleRelayerFeesMessage = async (
     }
 
     RelayerDebug.log('Error handling Relayer fees');
-    const ignoreInTests = true;
-    RelayerDebug.error(err, ignoreInTests);
+    RelayerDebug.error(err);
   }
 };
 
@@ -120,5 +119,6 @@ const updateFeesForRelayer = (
     tokenFeeMap,
     feeMessageData.identifier,
     feeMessageData.version,
+    feeMessageData.requiredPOIListKeys ?? [],
   );
 };

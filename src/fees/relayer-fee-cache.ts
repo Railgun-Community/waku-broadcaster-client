@@ -31,6 +31,12 @@ export type RelayerFeeCacheState = {
 export class RelayerFeeCache {
   private static cache: RelayerFeeCacheState = { forNetwork: {} };
 
+  private static poiActiveListKeys: Optional<string[]>;
+
+  static init(poiActiveListKeys: string[]) {
+    this.poiActiveListKeys = poiActiveListKeys;
+  }
+
   static addTokenFees(
     chain: Chain,
     railgunAddress: string,
@@ -38,10 +44,25 @@ export class RelayerFeeCache {
     tokenFeeMap: MapType<CachedTokenFee>,
     identifier: Optional<string>,
     version: string,
+    requiredPOIListKeys: string[],
   ) {
     const network = networkForChain(chain);
     if (!network) {
       return;
+    }
+
+    if (!this.poiActiveListKeys) {
+      throw new Error(
+        'Must define active POI list keys before adding any fees.',
+      );
+    }
+    for (const listKey of requiredPOIListKeys) {
+      if (!this.poiActiveListKeys.includes(listKey)) {
+        RelayerDebug.log(
+          `[Fees] Relayer ${railgunAddress} requires POI list key ${listKey}, which is not active.`,
+        );
+        return;
+      }
     }
 
     const relayerName = nameForRelayer(railgunAddress, identifier);
