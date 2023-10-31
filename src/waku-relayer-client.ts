@@ -5,18 +5,18 @@ import {
   RelayerConnectionStatus,
   SelectedRelayer,
 } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from './fees/relayer-fee-cache';
-import { AddressFilter } from './filters/address-filter';
+import { RelayerFeeCache } from './fees/relayer-fee-cache.js';
+import { AddressFilter } from './filters/address-filter.js';
 import {
   RelayerConnectionStatusCallback,
   RelayerDebugger,
   RelayerOptions,
-} from './models/export-models';
-import { RelayerSearch } from './search/best-relayer';
-import { RelayerStatus } from './status/relayer-connection-status';
-import { RelayerDebug } from './utils/relayer-debug';
-import { WakuObservers } from './waku/waku-observers';
-import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core';
+} from './models/export-models.js';
+import { RelayerSearch } from './search/best-relayer.js';
+import { RelayerStatus } from './status/relayer-connection-status.js';
+import { RelayerDebug } from './utils/relayer-debug.js';
+import { WakuObservers } from './waku/waku-observers.js';
+import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core.js';
 
 export class WakuRelayerClient {
   private static chain: Chain;

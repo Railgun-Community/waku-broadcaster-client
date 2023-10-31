@@ -9,13 +9,13 @@ import {
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
 import { IMessage } from '@waku/interfaces';
-import { contentTopics } from '../waku/waku-topics';
-import { RelayerDebug } from '../utils/relayer-debug';
-import { RelayerConfig } from '../models/relayer-config';
-import { RelayerFeeCache } from './relayer-fee-cache';
-import { invalidRelayerVersion } from '../utils/relayer-util';
-import { bytesToUtf8, hexToUTF8String } from '../utils/conversion';
-import { isDefined } from '../utils/is-defined';
+import { contentTopics } from '../waku/waku-topics.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
+import { RelayerConfig } from '../models/relayer-config.js';
+import { RelayerFeeCache } from './relayer-fee-cache.js';
+import { invalidRelayerVersion } from '../utils/relayer-util.js';
+import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
+import { isDefined } from '../utils/is-defined.js';
 
 const isExpiredTimestamp = (timestamp: Optional<Date>) => {
   if (!timestamp) {

@@ -1,19 +1,19 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
-import { WakuObservers } from './waku-observers';
-import { RelayerDebug } from '../utils/relayer-debug';
-import { RelayerFeeCache } from '../fees/relayer-fee-cache';
-import { utf8ToBytes } from '../utils/conversion';
-import { isDefined } from '../utils/is-defined';
+import { WakuObservers } from './waku-observers.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
+import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
+import { utf8ToBytes } from '../utils/conversion.js';
+import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
 import { createRelayNode } from '@waku/create';
-import { RelayerOptions } from '../models';
+import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
-} from '../models/constants';
+} from '../models/constants.js';
 
 export class WakuRelayerWakuCore {
   static hasError = false;

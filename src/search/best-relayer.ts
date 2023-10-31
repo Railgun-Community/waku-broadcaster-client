@@ -1,12 +1,12 @@
 import { Chain, SelectedRelayer } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from '../fees/relayer-fee-cache';
-import { AddressFilter } from '../filters/address-filter';
-import { RelayerDebug } from '../utils/relayer-debug';
+import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
+import { AddressFilter } from '../filters/address-filter.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
 import {
   cachedFeeUnavailableOrExpired,
   shortenAddress,
-} from '../utils/relayer-util';
-import { isDefined } from '../utils/is-defined';
+} from '../utils/relayer-util.js';
+import { isDefined } from '../utils/is-defined.js';
 
 export class RelayerSearch {
   static findBestRelayer(
