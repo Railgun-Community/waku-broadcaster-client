@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { WakuRelayerClient } from '../index';
+import { WakuRelayerClient } from '../index.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

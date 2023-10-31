@@ -18,12 +18,12 @@ import {
   MOCK_DB_ENCRYPTION_KEY,
   MOCK_MNEMONIC,
   MOCK_MNEMONIC_2,
-} from '../../tests/mocks.test';
-import { initTestEngine } from '../../tests/setup.test';
-import { utf8ToBytes } from '../../utils/conversion';
-import { contentTopics } from '../../waku/waku-topics';
-import { handleRelayerFeesMessage } from '../handle-fees-message';
-import { RelayerFeeCache } from '../relayer-fee-cache';
+} from '../../tests/mocks.test.js';
+import { initTestEngine } from '../../tests/setup.test.js';
+import { utf8ToBytes } from '../../utils/conversion.js';
+import { contentTopics } from '../../waku/waku-topics.js';
+import { handleRelayerFeesMessage } from '../handle-fees-message.js';
+import { RelayerFeeCache } from '../relayer-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

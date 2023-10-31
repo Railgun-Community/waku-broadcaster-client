@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { cachedFeeExpired, nameForRelayer } from '../relayer-util';
+import { cachedFeeExpired, nameForRelayer } from '../relayer-util.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

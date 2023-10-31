@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { AddressFilter } from '../address-filter';
+import { AddressFilter } from '../address-filter.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
