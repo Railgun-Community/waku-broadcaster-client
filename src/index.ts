@@ -1,3 +1,3 @@
-export * from './waku-relayer-client';
-export * from './models';
-export * from './transact';
+export * from './waku-relayer-client.js';
+export * from './models/index.js';
+export * from './transact/index.js';

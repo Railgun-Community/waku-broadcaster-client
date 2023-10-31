@@ -4,8 +4,8 @@ import {
   networkForChain,
   versionCompare,
 } from '@railgun-community/shared-models';
-import { RelayerConfig } from '../models/relayer-config';
-import { isDefined } from './is-defined';
+import { RelayerConfig } from '../models/relayer-config.js';
+import { isDefined } from './is-defined.js';
 
 const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
 

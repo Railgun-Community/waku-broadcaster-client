@@ -3,16 +3,16 @@ import {
   Chain,
   networkForChain,
 } from '@railgun-community/shared-models';
-import { AddressFilter } from '../filters/address-filter';
-import { RelayerConfig } from '../models/relayer-config';
-import { RelayerDebug } from '../utils/relayer-debug';
+import { AddressFilter } from '../filters/address-filter.js';
+import { RelayerConfig } from '../models/relayer-config.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
 import {
   nameForRelayer,
   cachedFeeExpired,
   DEFAULT_RELAYER_IDENTIFIER,
   invalidRelayerVersion,
   cachedFeeUnavailableOrExpired,
-} from '../utils/relayer-util';
+} from '../utils/relayer-util.js';
 
 // {forNetwork: {forToken: {forRelayer: (fee, updatedAt)}}}
 type RelayerFeeNetworkTokenRelayerCacheMap = {

@@ -12,16 +12,16 @@ import {
   RelayerRawParamsTransact,
   TXIDVersion,
 } from '@railgun-community/shared-models';
-import { RelayerConfig } from '../models/relayer-config';
-import { bytesToHex } from '../utils/conversion';
-import { RelayerDebug } from '../utils/relayer-debug';
-import { isDefined } from '../utils/is-defined';
-import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core';
-import { contentTopics } from '../waku/waku-topics';
+import { RelayerConfig } from '../models/relayer-config.js';
+import { bytesToHex } from '../utils/conversion.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
+import { isDefined } from '../utils/is-defined.js';
+import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core.js';
+import { contentTopics } from '../waku/waku-topics.js';
 import {
   WakuTransactResponse,
   RelayerTransactResponse,
-} from './relayer-transact-response';
+} from './relayer-transact-response.js';
 import { getAddress, isHexString } from 'ethers';
 
 //

@@ -1,12 +1,12 @@
 import { Chain, compareChains } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
-import { contentTopics } from './waku-topics';
+import { contentTopics } from './waku-topics.js';
 import { RelayNode, IMessage } from '@waku/interfaces';
-import { handleRelayerFeesMessage } from '../fees/handle-fees-message';
-import { RelayerTransactResponse } from '../transact/relayer-transact-response';
-import { RelayerDebug } from '../utils/relayer-debug';
+import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
+import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
+import { RelayerDebug } from '../utils/relayer-debug.js';
 import { ContentTopic } from '@waku/relay';
-import { isDefined } from '../utils/is-defined';
+import { isDefined } from '../utils/is-defined.js';
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
