@@ -4,19 +4,19 @@ import {
   MOCK_CHAIN_ETHEREUM,
   MOCK_FALLBACK_PROVIDER_JSON_CONFIG,
   MOCK_RAILGUN_WALLET_ADDRESS,
-} from '../../tests/mocks.test';
+} from '../../tests/mocks.test.js';
 import sinon, { SinonStub } from 'sinon';
-import { WakuRelayerWakuCore } from '../../waku/waku-relayer-waku-core';
-import { RelayerTransaction } from '../relayer-transaction';
+import { WakuRelayerWakuCore } from '../../waku/waku-relayer-waku-core.js';
+import { RelayerTransaction } from '../relayer-transaction.js';
 import {
   TXIDVersion,
   delay,
   networkForChain,
 } from '@railgun-community/shared-models';
-import { RelayerTransactResponse } from '../relayer-transact-response';
-import { utf8ToBytes } from '../../utils/conversion';
+import { RelayerTransactResponse } from '../relayer-transact-response.js';
+import { utf8ToBytes } from '../../utils/conversion.js';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
-import { initTestEngine } from '../../tests/setup.test';
+import { initTestEngine } from '../../tests/setup.test.js';
 import { loadProvider } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);

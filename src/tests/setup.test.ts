@@ -4,6 +4,7 @@ import fs from 'fs';
 import { ArtifactStore, startRailgunEngine } from '@railgun-community/wallet';
 
 const TEST_DB = 'test.db';
+// @ts-ignore
 const db = new LevelDOWN(TEST_DB);
 
 before(() => {});

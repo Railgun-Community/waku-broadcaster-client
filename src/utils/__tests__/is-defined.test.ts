@@ -1,6 +1,6 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { isDefined } from '../is-defined';
+import { isDefined } from '../is-defined.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

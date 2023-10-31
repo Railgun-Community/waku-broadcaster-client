@@ -1,9 +1,9 @@
-/// <reference types="../../types/index" />
+/// <reference types="../../types/index.js" />
 import { CachedTokenFee } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test';
-import { RelayerFeeCache, RelayerFeeCacheState } from '../relayer-fee-cache';
+import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test.js';
+import { RelayerFeeCache, RelayerFeeCacheState } from '../relayer-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

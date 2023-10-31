@@ -1,7 +1,7 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { contentTopics } from '../waku-topics';
-import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test';
+import { contentTopics } from '../waku-topics.js';
+import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
