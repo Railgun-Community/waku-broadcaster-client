@@ -30,14 +30,14 @@
     "@waku/relay": "0.0.3"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "5.8.x",
-    "@railgun-community/wallet": "5.14.x",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.8"
+    "@railgun-community/shared-models": "6.1.x",
+    "@railgun-community/wallet": "6.1.x",
+    "ethers": "github:Railgun-Community/ethers.js#v6.7.9"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "5.8.x",
-    "@railgun-community/wallet": "5.14.x",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.8",
+    "@railgun-community/shared-models": "6.1.x",
+    "@railgun-community/wallet": "6.1.x",
+    "ethers": "github:Railgun-Community/ethers.js#v6.7.9",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
