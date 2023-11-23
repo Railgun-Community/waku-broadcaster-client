@@ -57,7 +57,7 @@ export const cachedFeeUnavailableOrExpired = (
     }
     const network = networkForChain(chain);
     if (!network) {
-      throw new Error('Unrecognized chain');
+      throw new Error(`Unrecognized chain ${chain}`);
     }
     const expectedRelayAdapt = network.relayAdaptContract;
     if (relayAdapt && relayAdapt !== expectedRelayAdapt) {

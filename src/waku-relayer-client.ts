@@ -53,11 +53,11 @@ export class WakuRelayerClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
-      throw new Error(`Cannot connect to Relayer network: ${err.message}`);
+      throw new Error('Cannot connect to Relayer network.', { cause });
     }
   }
 
@@ -133,13 +133,14 @@ export class WakuRelayerClient {
     try {
       await WakuRelayerWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
-    } catch (err) {
+    } catch (cause) {
       this.isRestarting = false;
-      if (!(err instanceof Error)) {
+      if (!(cause instanceof Error)) {
         return;
       }
-      RelayerDebug.log('Error reinitializing Waku Relayer Client');
-      RelayerDebug.error(err);
+      RelayerDebug.error(
+        new Error('Error reinitializing Waku Relayer Client', { cause }),
+      );
     }
   }
 

@@ -51,12 +51,13 @@ export class RelayerTransactResponse {
 
       RelayerTransactResponse.storedTransactionResponse =
         decrypted as WakuTransactResponse;
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
-      RelayerDebug.log(`Could not handle Relayer tx response message`);
-      RelayerDebug.error(err);
+      RelayerDebug.error(
+        new Error('Could not handle Relayer tx response message', { cause }),
+      );
     }
   }
 }
