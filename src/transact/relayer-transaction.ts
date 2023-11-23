@@ -172,11 +172,13 @@ export class RelayerTransaction {
         this.nullifiers,
       );
       return txid;
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
-      RelayerDebug.error(err);
+      RelayerDebug.error(
+        new Error('Failed to find matching nullifier txid', { cause }),
+      );
       return undefined;
     }
   }
@@ -252,7 +254,9 @@ export class RelayerTransaction {
       }
       if (isDefined(response.error)) {
         RelayerTransactResponse.clearSharedKey();
-        throw new Error(response.error);
+        throw new Error('Failed to relay transaction on Waku', {
+          cause: new Error(response.error),
+        });
       }
     }
 

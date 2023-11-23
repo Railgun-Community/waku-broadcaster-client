@@ -82,13 +82,12 @@ export const handleRelayerFeesMessage = async (
     }
 
     updateFeesForRelayer(chain, feeMessageData);
-  } catch (err) {
-    if (!(err instanceof Error)) {
-      throw err;
+  } catch (cause) {
+    if (!(cause instanceof Error)) {
+      throw new Error('Unexpected non-error thrown', { cause });
     }
 
-    RelayerDebug.log('Error handling Relayer fees');
-    RelayerDebug.error(err);
+    RelayerDebug.error(new Error('Error handling Relayer fees', { cause }));
   }
 };
 

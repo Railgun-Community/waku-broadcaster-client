@@ -34,10 +34,11 @@ export class WakuRelayerWakuCore {
       }
       WakuObservers.resetCurrentChain();
       await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
+      const err = new Error('Failed to initialize Waku Core.', { cause });
       RelayerDebug.error(err);
       throw err;
     }
@@ -121,12 +122,12 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Connected to Waku');
       WakuRelayerWakuCore.waku = waku;
       WakuRelayerWakuCore.hasError = false;
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
       WakuRelayerWakuCore.hasError = true;
-      throw err;
+      throw new Error('Failed to connect to Waku network.', { cause });
     }
   };
 
@@ -141,12 +142,13 @@ export class WakuRelayerWakuCore {
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
       );
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
+      const err = new Error('Failed to wait for remote peer.', { cause });
       RelayerDebug.error(err);
-      throw new Error(err.message);
+      throw err;
     }
   }
 
@@ -164,11 +166,11 @@ export class WakuRelayerWakuCore {
         createEncoder({ contentTopic }),
         message,
       );
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
       }
-      RelayerDebug.error(err);
+      RelayerDebug.error(new Error('Failed to relay message.', { cause }));
     }
   }
 }
