@@ -43,6 +43,6 @@ export const initTestEngine = (useNativeArtifacts = false) => {
     testArtifactStore,
     useNativeArtifacts,
     false, // skipMerkletreeScans
-    'mock-poi-url', // poiNodeURL
+    ['mock-poi-url'], // poiNodeURLs
   );
 };
