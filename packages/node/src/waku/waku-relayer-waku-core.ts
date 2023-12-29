@@ -34,11 +34,10 @@ export class WakuRelayerWakuCore {
       }
       WakuObservers.resetCurrentChain();
       await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
-    } catch (cause) {
-      if (!(cause instanceof Error)) {
-        throw new Error('Unexpected non-error thrown', { cause });
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
       }
-      const err = new Error('Failed to initialize Waku Core.', { cause });
       RelayerDebug.error(err);
       throw err;
     }
@@ -70,9 +69,6 @@ export class WakuRelayerWakuCore {
       WakuRelayerWakuCore.peerDiscoveryTimeout =
         relayerOptions.peerDiscoveryTimeout;
     }
-    if (isDefined(relayerOptions.useTcp)) {
-      WakuRelayerWakuCore.useTcp = relayerOptions.useTcp;
-    }
   }
 
   static disconnect = async () => {
@@ -94,7 +90,7 @@ export class WakuRelayerWakuCore {
       const waku: RelayNode = await createRelayNode({
         pubSubTopic: WakuRelayerWakuCore.pubSubTopic,
         libp2p: {
-          ...(WakuRelayerWakuCore.useTcp ? { transports: [tcp()] } : null),
+          transports: [tcp()],
           peerDiscovery: [
             bootstrap({
               list: peers,
@@ -122,12 +118,12 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Connected to Waku');
       WakuRelayerWakuCore.waku = waku;
       WakuRelayerWakuCore.hasError = false;
-    } catch (cause) {
-      if (!(cause instanceof Error)) {
-        throw new Error('Unexpected non-error thrown', { cause });
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
       }
       WakuRelayerWakuCore.hasError = true;
-      throw new Error('Failed to connect to Waku network.', { cause });
+      throw err;
     }
   };
 
@@ -142,13 +138,12 @@ export class WakuRelayerWakuCore {
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
       );
-    } catch (cause) {
-      if (!(cause instanceof Error)) {
-        throw new Error('Unexpected non-error thrown', { cause });
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
       }
-      const err = new Error('Failed to wait for remote peer.', { cause });
       RelayerDebug.error(err);
-      throw err;
+      throw new Error(err.message);
     }
   }
 
@@ -166,11 +161,11 @@ export class WakuRelayerWakuCore {
         createEncoder({ contentTopic }),
         message,
       );
-    } catch (cause) {
-      if (!(cause instanceof Error)) {
-        throw new Error('Unexpected non-error thrown', { cause });
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
       }
-      RelayerDebug.error(new Error('Failed to relay message.', { cause }));
+      RelayerDebug.error(err);
     }
   }
 }
