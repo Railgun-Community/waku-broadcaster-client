@@ -10,9 +10,11 @@ const db = new LevelDOWN(TEST_DB);
 before(() => {});
 
 after(() => {
-  const { warn } = console;
-  fs.rm(TEST_DB, { recursive: true }, () => {
-    warn('Error removing test db.');
+  db.close((err: any) => {
+    if (err) console.warn('Error closing test db.', err);
+    fs.rm(TEST_DB, { recursive: true }, (err: any) => {
+      if (err) console.warn('Error removing test db.', err);
+    });
   });
 });
 
