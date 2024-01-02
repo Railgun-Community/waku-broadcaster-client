@@ -1,20 +1,14 @@
 #!/bin/bash
 set +e;
 
-# Common
-echo "WILL YARN IN COMMON"
 pushd packages/common
 yarn
 popd
 
-# Node
-echo "WILL YARN IN NODE"
 pushd packages/node
 yarn
 popd
 
-# Web
-echo "WILL YARN IN WEB"
 pushd packages/web
 yarn
 popd
