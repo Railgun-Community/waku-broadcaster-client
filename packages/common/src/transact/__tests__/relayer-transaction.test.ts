@@ -17,7 +17,7 @@ import { RelayerTransactResponse } from '../relayer-transact-response.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test.js';
-import { loadProvider } from '@railgun-community/wallet';
+import { loadProvider, stopRailgunEngine, unloadProvider } from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -56,8 +56,10 @@ describe('relayer-transaction', () => {
     wakuRelayerRelayMessageStub.resetHistory();
   });
 
-  after(() => {
+  after(async () => {
     wakuRelayerRelayMessageStub.restore();
+    await unloadProvider(networkForChain(chain)!.name);
+    stopRailgunEngine();
   });
 
   it('Should generate and relay a Relayer transaction', async () => {
