@@ -20,6 +20,9 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: install
-      - name: Yarn test
+      - name: Unit test node package
         shell: bash
-        run: yarn test
+        run: cd packages/node && yarn test
+      - name: Unit test web package
+        shell: bash
+        run: cd packages/web && yarn test
