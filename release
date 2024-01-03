@@ -17,9 +17,7 @@ npm version $VERSION_TYPE;
 VERSION=$(cat package.json | jq -r '.version');
 for PACKAGE in common node web; do
   FILE=packages/$PACKAGE/package.json
-  jq --arg new_version "$VERSION" \
-    '.version = $new_version' \
-    $FILE > $FILE
+  jq --arg new_version "$VERSION" '.version = $new_version' $FILE > $FILE.tmp && mv $FILE.tmp $FILE
 done
 # git push -f;
 # git checkout main;
