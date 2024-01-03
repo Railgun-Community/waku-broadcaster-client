@@ -1,13 +1,6 @@
-[![Unit Tests](https://github.com/Railgun-Community/waku-relayer-client/actions/workflows/unit-tests.yml/badge.svg?branch=main)](https://github.com/Railgun-Community/waku-relayer-client/actions)
-
 # RAILGUN Relayer Client with Waku networking layer
 
-- [Node.js-specific package](./packages/node/README.md)
-- [Browser-specific package](./packages/web/README.md)
-
-`yarn add @railgun-community/waku-relayer-client-node`
-
-OR
+This package is meant specifically for browsers.
 
 `yarn add @railgun-community/waku-relayer-client-web`
 
