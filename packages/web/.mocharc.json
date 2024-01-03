@@ -1,0 +1,4 @@
+{
+  "spec": ["dist/**/__tests__/*.test.js"],
+  "exit": true
+}
