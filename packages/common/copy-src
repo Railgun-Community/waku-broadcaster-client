@@ -3,26 +3,7 @@ set -e
 
 PACKAGES="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && cd .. && pwd )"
 
-NODE=$PACKAGES/node/src
-WEB=$PACKAGES/web/src
-
-mkdir -p $PACKAGES/node/src
-mkdir -p $PACKAGES/web/src
-
-# Delete all files prior to copy
-# (find $PACKAGES/node/src -depth -mindepth 1 ! -name 'waku-relayer-waku-core.ts' -exec rm -rf "{}" \;);
-# (find $PACKAGES/web/src -depth -mindepth 1 ! -name 'waku-relayer-waku-core.ts' -exec rm -rf "{}" \;);
-
-# Copy
-cp --recursive --symbolic-link --no-clobber $PACKAGES/common/src/* $PACKAGES/node/src/
-cp --recursive --symbolic-link --no-clobber $PACKAGES/common/src/* $PACKAGES/web/src/
-# find ./src -type f -exec bash -c 'ln -s "$(realpath "$0")" "$NODE/$(basename "$0")"' {} \;
-# find ./src -type f -exec bash -c 'ln -s "$(realpath "$0")" "$WEB/$(basename "$0")"' {} \;
-# rsync --archive --link-dest="$(realpath ./src)" ./src/ $NODE
-# rsync --archive --link-dest="$(realpath ./src)" ./src/ $WEB
-# rsync --archive --verbose --exclude='*/waku-relayer-waku-core.ts' --link-dest=./src/ ./src/ $NODE
-# rsync --archive --verbose --exclude='*/waku-relayer-waku-core.ts' --link-dest=./src/ ./src/ $WEB
-
-# # Delete test files in parent apps
-# (find $WEB -name "__tests__" -type d -prune -exec rm -rf "{}" \;);
-# (find $MOBILE -name "__tests__" -type d -prune -exec rm -rf "{}" \;);
+for PACKAGE in node web; do
+  mkdir -p $PACKAGES/$PACKAGE/src
+  cp --recursive --symbolic-link --no-clobber $PACKAGES/common/src/* $PACKAGES/$PACKAGE/src/
+done
