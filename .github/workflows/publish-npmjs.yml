@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      # Setup .npmrc file to publish to npm
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
@@ -18,6 +17,13 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: install
-      - run: yarn publish --access public
+      - name: Publish "node" package
+        run: yarn publish --access public
+        working-directory: ./packages/node
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish "web" package
+        run: yarn publish --access public
+        working-directory: ./packages/web
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
