@@ -21,6 +21,8 @@ for PACKAGE in common node web; do
 done
 git add .
 git commit --amend --no-edit;
+git tag -d v$VERSION;
+git tag v$VERSION;
 # git push -f;
 # git checkout main;
 # git rebase origin/release;
