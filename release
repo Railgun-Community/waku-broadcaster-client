@@ -19,6 +19,8 @@ for PACKAGE in common node web; do
   FILE=packages/$PACKAGE/package.json
   jq --arg new_version "$VERSION" '.version = $new_version' $FILE > $FILE.tmp && mv $FILE.tmp $FILE
 done
+git add .
+git commit --amend --no-edit;
 # git push -f;
 # git checkout main;
 # git rebase origin/release;
