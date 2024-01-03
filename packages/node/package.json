@@ -20,7 +20,7 @@
     "tsc-test": "tsc -p tsconfig.test.json && tsc-alias -p tsconfig.test.json",
     "compile-test": "npm run clean && npm run tsc-test",
     "test-coverage": "npm run compile-test && c8 mocha",
-    "test": "npm run compile-test && NODE_ENV=test mocha --exit 'dist/**/*.test.js'"
+    "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'"
   },
   "dependencies": {
     "@libp2p/bootstrap": "^6.0.0",
