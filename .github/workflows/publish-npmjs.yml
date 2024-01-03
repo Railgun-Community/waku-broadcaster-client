@@ -17,11 +17,17 @@ jobs:
         uses: borales/actions-yarn@v4
         with:
           cmd: install
+      - name: Build "node" package
+        run: yarn build
+        working-directory: ./packages/node
       - name: Publish "node" package
         run: yarn publish --access public
         working-directory: ./packages/node
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build "web" package
+        run: yarn build
+        working-directory: ./packages/web
       - name: Publish "web" package
         run: yarn publish --access public
         working-directory: ./packages/web
