@@ -10,22 +10,29 @@ fi
 # Use `./release minor` or `./release major`.
 VERSION_TYPE=${1-patch}
 
-# git fetch;
-# git checkout release --;
-# git rebase main;
+# Sync
+git fetch;
+git checkout release --;
+git rebase main;
+
+# Update version in root package.json
 npm version $VERSION_TYPE;
+# Propagate version to packages
 VERSION=$(cat package.json | jq -r '.version');
 for PACKAGE in common node web; do
   FILE=packages/$PACKAGE/package.json
   jq --arg new_version "$VERSION" '.version = $new_version' $FILE > $FILE.tmp && mv $FILE.tmp $FILE
 done
+# Amend the version commit
 git add .
 git commit --amend --no-edit;
 git tag -d v$VERSION;
 git tag v$VERSION;
-# git push -f;
-# git checkout main;
-# git rebase origin/release;
-# git push --tags --no-verify;
-# git push --no-verify;
-# echo https://github.com/Railgun-Community/waku-relayer-client/actions;
+
+# Push
+git push -f;
+git checkout main;
+git rebase origin/release;
+git push --tags --no-verify;
+git push --no-verify;
+echo "The release will be made from https://github.com/Railgun-Community/waku-relayer-client/actions";
