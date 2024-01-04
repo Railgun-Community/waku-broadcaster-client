@@ -3,7 +3,7 @@
   "version": "4.8.5",
   "license": "MIT",
   "scripts": {
-    "postinstall": "./copy-src",
+    "postinstall": "node copy-src.js",
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
     "check-circular-deps": "madge --circular .",
