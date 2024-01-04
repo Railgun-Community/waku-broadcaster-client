@@ -1,9 +1,0 @@
-#!/bin/bash
-set -e
-
-PACKAGES="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && cd .. && pwd )"
-
-for PACKAGE in node web; do
-  mkdir -p $PACKAGES/$PACKAGE/src
-  cp --recursive --symbolic-link --no-clobber $PACKAGES/common/src/* $PACKAGES/$PACKAGE/src/
-done
