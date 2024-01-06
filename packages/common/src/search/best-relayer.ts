@@ -8,17 +8,25 @@ import {
 } from '../utils/relayer-util.js';
 import { isDefined } from '../utils/is-defined.js';
 
+const SelectedRelayerAscendingFee = (a: SelectedRelayer, b: SelectedRelayer) => {
+  const feeAmount = BigInt(a.tokenFee.feePerUnitGas) - BigInt(b.tokenFee.feePerUnitGas);
+  if (feeAmount === BigInt(0)) {
+    return 0;
+  }
+  return feeAmount > BigInt(0) ? 1 : -1;
+}
 export class RelayerSearch {
-  static findBestRelayer(
+
+  static findRelayersForToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer> {
+  ): Optional<SelectedRelayer[]> {
     const tokenAddressLowercase = tokenAddress.toLowerCase();
     const relayerTokenFees =
       RelayerFeeCache.feesForChain(chain)?.forToken[tokenAddressLowercase]
         ?.forRelayer;
-    if (!relayerTokenFees) {
+    if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
 
@@ -29,18 +37,14 @@ export class RelayerSearch {
         address => !relayerAddresses.includes(address),
       );
       RelayerDebug.log(
-        `Filtered RAILGUN relayer addresses ${
-          removedAddresses.length
+        `Filtered RAILGUN relayer addresses ${removedAddresses.length
         }: ${removedAddresses
           .map(address => shortenAddress(address))
           .join(', ')}`,
       );
     }
 
-    let bestRelayerAddress: Optional<string>;
-    let bestRelayerIdentifier: Optional<string>;
-
-    let minFee: Optional<bigint>;
+    const selectedRelayers: SelectedRelayer[] = [];
 
     relayerAddresses.forEach((relayerAddress: string) => {
       const identifiers: string[] = Object.keys(
@@ -54,28 +58,84 @@ export class RelayerSearch {
         ) {
           return;
         }
-        const fee = BigInt(nextCachedFee.feePerUnitGas);
-        if (!isDefined(minFee) || fee < minFee) {
-          minFee = fee;
-          bestRelayerAddress = relayerAddress;
-          bestRelayerIdentifier = identifier;
-        }
+        const selectedRelayer: SelectedRelayer = {
+          railgunAddress: relayerAddress,
+          tokenFee: nextCachedFee,
+          tokenAddress,
+        };
+        selectedRelayers.push(selectedRelayer);
       });
     });
 
-    if (!isDefined(bestRelayerAddress) || !isDefined(bestRelayerIdentifier)) {
+    return selectedRelayers;
+  }
+
+  static findAllRelayersForChain(
+    chain: Chain,
+    useRelayAdapt: boolean,
+  ): Optional<SelectedRelayer[]> {
+
+    const relayerTokenFees =
+      RelayerFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(relayerTokenFees)) {
+      return undefined;
+    }
+    const allTokens = Object.keys(relayerTokenFees);
+    const selectedRelayers: SelectedRelayer[] = [];
+    allTokens.forEach((tokenAddress: string) => {
+      const relayersForToken = this.findRelayersForToken(chain, tokenAddress, useRelayAdapt);
+      if (!relayersForToken) {
+        return;
+      }
+      selectedRelayers.push(...relayersForToken);
+    });
+    return selectedRelayers;
+  }
+
+  static findRandomRelayerForToken(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+    percentageThreshold: number,
+  ): Optional<SelectedRelayer> {
+    const relayerTokenFees =
+      RelayerFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
 
-    const selectedRelayer: SelectedRelayer = {
-      railgunAddress: bestRelayerAddress,
-      tokenFee:
-        relayerTokenFees[bestRelayerAddress].forIdentifier[
-          bestRelayerIdentifier
-        ],
-      tokenAddress,
-    };
+    const relayersForToken = this.findRelayersForToken(chain, tokenAddress, useRelayAdapt);
+    if (!isDefined(relayersForToken)) {
+      return undefined;
+    }
 
-    return selectedRelayer;
+    const sortedRelayers = relayersForToken.sort(SelectedRelayerAscendingFee);
+
+    const minFee = BigInt(sortedRelayers[0].tokenFee.feePerUnitGas);
+    const feeThreshold = (minFee * (100n + BigInt(percentageThreshold))) / 100n;
+    const eligibleRelayers = sortedRelayers.filter(relayer => BigInt(relayer.tokenFee.feePerUnitGas) <= feeThreshold);
+    const randomIndex = Math.floor(Math.random() * eligibleRelayers.length);
+
+    return eligibleRelayers[randomIndex];
+  }
+
+  static findBestRelayer(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+  ): Optional<SelectedRelayer> {
+    const relayerTokenFees = RelayerFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(relayerTokenFees)) {
+      return undefined;
+    }
+
+    const relayersForToken = this.findRelayersForToken(chain, tokenAddress, useRelayAdapt);
+    if (!isDefined(relayersForToken)) {
+      return undefined;
+    }
+
+    const sortedRelayers = relayersForToken.sort(SelectedRelayerAscendingFee);
+
+    return sortedRelayers[0];
   }
 }
