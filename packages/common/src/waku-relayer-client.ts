@@ -43,7 +43,7 @@ export class WakuRelayerClient {
 
     RelayerFeeCache.init(
       relayerOptions.poiActiveListKeys ??
-        POI_REQUIRED_LISTS.map(list => list.key),
+      POI_REQUIRED_LISTS.map(list => list.key),
     );
 
     try {
@@ -89,6 +89,15 @@ export class WakuRelayerClient {
     return WakuRelayerWakuCore.getMeshPeerCount();
   }
 
+  /**
+   * The function `findBestRelayer` finds the relayer with the lowest fees for a given chain and token.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
+   * address of an ERC20 Token on the network, a relayer broadcasting fees for this token will be selected.
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * support RelayAdapt transactions.
+   * @returns an Optional<SelectedRelayer> object.
+   */
   static findBestRelayer(
     chain: Chain,
     tokenAddress: string,
@@ -99,6 +108,80 @@ export class WakuRelayerClient {
     }
 
     return RelayerSearch.findBestRelayer(chain, tokenAddress, useRelayAdapt);
+  }
+
+  /**
+   * The function `findAllRelayersForChain` returns an array of all available relayers fee-tokens for a given chain.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find all relayers for.
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * support RelayAdapt transactions.
+   * @returns an Optional<SelectedRelayer[]> object.
+   */
+  static findAllRelayersForChain(
+    chain: Chain,
+    useRelayAdapt: boolean,
+  ): Optional<SelectedRelayer[]> {
+    if (!WakuRelayerClient.started) {
+      return [];
+    }
+
+    return RelayerSearch.findAllRelayersForChain(chain, useRelayAdapt);
+  }
+
+  /**
+   * The function `findRandomRelayerForToken` selects a random relayer from a list of relayers that is based on
+   * their fees for a specific token, and how much higher their fees are compared to the relayer with
+   * the lowest fees.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
+   * address of an ERC20 Token on the network, a relayer broadcasting fees for this token will be selected.
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * support RelayAdapt transactions.
+   * @param {number} [percentageThreshold=5] - The `percentageThreshold` parameter is a number that
+   * represents the maximum percentage increase in fees that a relayer can have compared to the relayer
+   * with the lowest fees. For example, if the `percentageThreshold` is set to 5, it means that a
+   * relayer can have a maximum of 5% higher fees than the relayer with the lowest fees and still be selected.
+   * Defaults to 5.
+   * @returns an Optional<SelectedRelayer> object.
+   */
+  static findRandomRelayerForToken(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+    percentageThreshold: number = 5,
+  ): Optional<SelectedRelayer> {
+    if (!WakuRelayerClient.started) {
+      return;
+    }
+
+    return RelayerSearch.findRandomRelayerForToken(
+      chain,
+      tokenAddress,
+      useRelayAdapt,
+      percentageThreshold,
+    );
+  }
+
+  /**
+   * The function `findRelayersForToken` takes in a chain, token address, and a boolean flag, and
+   * returns an array of selected relayers based on the provided parameters.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
+   * address of an ERC20 Token on the network; a relayer broadcasting fees for this token will be selected.
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * support RelayAdapt transactions.
+   * @returns an Optional<SelectedRelayer[]> object.
+   */
+  static findRelayersForToken(
+    chain: Chain,
+    tokenAddress: string,
+    useRelayAdapt: boolean,
+  ): Optional<SelectedRelayer[]> {
+    if (!WakuRelayerClient.started) {
+      return;
+    }
+
+    return RelayerSearch.findRelayersForToken(chain, tokenAddress, useRelayAdapt);
   }
 
   static setAddressFilters(
