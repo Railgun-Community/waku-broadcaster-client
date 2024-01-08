@@ -78,7 +78,6 @@ export class WakuObservers {
 
     const contentTopics: string[] = [];
     for (const observer of observers.keys()) {
-      // contentTopics.push(observer); // FIXME:
       const pubsubTopic = observers.get(observer);
       if (isDefined(pubsubTopic)) {
         const pubSubContent = pubsubTopic.keys() ?? [];
