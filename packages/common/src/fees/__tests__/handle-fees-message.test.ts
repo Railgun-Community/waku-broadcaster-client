@@ -9,7 +9,7 @@ import {
   fullWalletForID,
 } from '@railgun-community/wallet';
 import { RelayerFeeMessageData } from '@railgun-community/shared-models';
-import { IMessage } from '@waku/interfaces';
+import { IMessage } from '@waku/sdk';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonStub } from 'sinon';

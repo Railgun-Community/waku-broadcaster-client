@@ -1,11 +1,9 @@
 import { Chain, compareChains } from '@railgun-community/shared-models';
-import { createDecoder } from '@waku/core';
+import { IMessage, RelayNode, ContentTopic, createDecoder } from '@waku/sdk';
 import { contentTopics } from './waku-topics.js';
-import { RelayNode, IMessage } from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
-import { ContentTopic } from '@waku/relay';
 import { isDefined } from '../utils/is-defined.js';
 
 export class WakuObservers {

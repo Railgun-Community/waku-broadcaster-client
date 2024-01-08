@@ -8,7 +8,7 @@ import {
   RelayerFeeMessageData,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
-import { IMessage } from '@waku/interfaces';
+import { IMessage } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerConfig } from '../models/relayer-config.js';
