@@ -113,7 +113,7 @@ export class WakuRelayerWakuCore {
       }
 
       RelayerDebug.log('Waku peers:');
-      for (const peer of waku.relay.getMeshPeers()) {
+      for (const peer of waku.libp2p.getPeers()) {
         RelayerDebug.log(JSON.stringify(peer));
       }
 
