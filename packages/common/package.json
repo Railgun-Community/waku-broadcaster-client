@@ -1,6 +1,6 @@
 {
   "name": "@railgun-community/waku-relayer-client-common",
-  "version": "4.8.6",
+  "version": "5.0.0",
   "license": "MIT",
   "scripts": {
     "postinstall": "node copy-src.js",

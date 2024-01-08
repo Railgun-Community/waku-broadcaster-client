@@ -1,6 +1,6 @@
 {
   "name": "waku-relayer-client",
-  "version": "4.8.6",
+  "version": "5.0.0",
   "license": "MIT",
   "scripts": {
     "postinstall": "./setup"
