@@ -1,11 +1,12 @@
 import { Chain, compareChains } from '@railgun-community/shared-models';
-import { IMessage, RelayNode, ContentTopic, createDecoder } from '@waku/sdk';
+import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
+import { RelayNode, IMessage } from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
+import { ContentTopic } from '@waku/relay';
 import { isDefined } from '../utils/is-defined.js';
-import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
@@ -51,16 +52,13 @@ export class WakuObservers {
 
     const contentTopicFees = contentTopics.fees(chain);
     await waku.relay.subscribe(
-      createDecoder(contentTopicFees, WAKU_RAILGUN_PUB_SUB_TOPIC),
+      createDecoder(contentTopicFees),
       (message: IMessage) =>
         handleRelayerFeesMessage(chain, message, contentTopicFees),
     );
 
     await waku.relay.subscribe(
-      createDecoder(
-        contentTopics.transactResponse(chain),
-        WAKU_RAILGUN_PUB_SUB_TOPIC,
-      ),
+      createDecoder(contentTopics.transactResponse(chain)),
       RelayerTransactResponse.handleRelayerTransactionResponseMessage,
     );
 
@@ -78,13 +76,7 @@ export class WakuObservers {
 
     const contentTopics: string[] = [];
     for (const observer of observers.keys()) {
-      const pubsubTopic = observers.get(observer);
-      if (isDefined(pubsubTopic)) {
-        const pubSubContent = pubsubTopic.keys() ?? [];
-        for (const contentTopic of pubSubContent) {
-          contentTopics.push(String(contentTopic));
-        }
-      }
+      contentTopics.push(observer);
     }
     return contentTopics;
   }

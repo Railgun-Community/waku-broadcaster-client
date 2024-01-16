@@ -8,7 +8,7 @@ import {
   RelayerFeeMessageData,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
-import { IMessage } from '@waku/sdk';
+import { IMessage } from '@waku/interfaces';
 import { contentTopics } from '../waku/waku-topics.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerConfig } from '../models/relayer-config.js';
@@ -44,9 +44,6 @@ export const handleRelayerFeesMessage = async (
       return;
     }
     if (isExpiredTimestamp(message.timestamp)) {
-      return;
-    }
-    if (message.payload.length === 0) {
       return;
     }
 
