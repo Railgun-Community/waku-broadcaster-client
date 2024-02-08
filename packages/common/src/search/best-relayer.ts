@@ -108,6 +108,9 @@ export class RelayerSearch {
     if (!isDefined(relayersForToken)) {
       return undefined;
     }
+    if (relayersForToken.length === 0) {
+      return undefined;
+    }
 
     const sortedRelayers = relayersForToken.sort(SelectedRelayerAscendingFee);
 
