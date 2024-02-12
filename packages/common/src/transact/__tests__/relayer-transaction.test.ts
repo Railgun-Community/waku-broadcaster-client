@@ -17,7 +17,11 @@ import { RelayerTransactResponse } from '../relayer-transact-response.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test.js';
-import { loadProvider, stopRailgunEngine, unloadProvider } from '@railgun-community/wallet';
+import {
+  loadProvider,
+  stopRailgunEngine,
+  unloadProvider,
+} from '@railgun-community/wallet';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -39,7 +43,7 @@ describe('relayer-transaction', () => {
   before(async function run() {
     this.timeout(5000);
 
-    initTestEngine();
+    await initTestEngine();
 
     const network = networkForChain(chain);
     if (network == null) {

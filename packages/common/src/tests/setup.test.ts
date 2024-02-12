@@ -20,11 +20,11 @@ const testArtifactStore = new ArtifactStore(
   fileExists,
 );
 
-export const initTestEngine = (useNativeArtifacts = false) => {
+export const initTestEngine = async (useNativeArtifacts = false) => {
   const TEST_DB = 'test.db';
   if (fs.existsSync(TEST_DB)) fs.rmSync(TEST_DB, { recursive: true });
 
-  startRailgunEngine(
+  await startRailgunEngine(
     'TESTS',
     // @ts-ignore
     new LevelDOWN(TEST_DB),

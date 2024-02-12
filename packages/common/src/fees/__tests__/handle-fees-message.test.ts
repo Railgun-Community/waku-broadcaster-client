@@ -65,7 +65,7 @@ const createPayload = async (
 
 describe('handle-fees-message', () => {
   before(async () => {
-    initTestEngine();
+    await initTestEngine();
 
     relayerFeeCacheStub = sinon.stub(RelayerFeeCache, 'addTokenFees').returns();
 
