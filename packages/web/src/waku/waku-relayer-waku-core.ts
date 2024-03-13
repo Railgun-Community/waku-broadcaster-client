@@ -7,10 +7,10 @@ import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
-import { createRelayNode } from '@waku/create';
+import { createRelayNode } from '@waku/sdk';
 import { RelayerOptions } from '../models/index.js';
 import {
-  WAKU_RAILGUN_DEFAULT_PEERS,
+  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 
@@ -81,12 +81,12 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log(`Creating waku relay client`);
 
       const peers: string[] = [
-        ...WAKU_RAILGUN_DEFAULT_PEERS,
+        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: RelayNode = await createRelayNode({
-        pubSubTopic: WakuRelayerWakuCore.pubSubTopic,
+        pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
         libp2p: {
           peerDiscovery: [
             bootstrap({
@@ -108,7 +108,7 @@ export class WakuRelayerWakuCore {
       }
 
       RelayerDebug.log('Waku peers:');
-      for (const peer of waku.relay.getMeshPeers()) {
+      for (const peer of waku.libp2p.getPeers()) {
         RelayerDebug.log(JSON.stringify(peer));
       }
 
