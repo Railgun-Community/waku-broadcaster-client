@@ -23,7 +23,6 @@ export class WakuRelayerWakuCore {
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
-  private static useTcp = false;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -93,7 +92,6 @@ export class WakuRelayerWakuCore {
           transports: [tcp()],
           peerDiscovery: [
             bootstrap({
-              // ts-expect-errror - bootstrap is not part of the libp2p types
               list: peers,
               timeout: waitTimeoutBeforeBootstrap,
             }),
@@ -129,7 +127,8 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.waku?.relay.getMeshPeers().length ?? 0;
+    const peers = this.waku?.libp2p.getPeers() ?? []
+    return peers.length;
   }
 
   private static async waitForRemotePeer(waku: FullNode) {
@@ -150,7 +149,7 @@ export class WakuRelayerWakuCore {
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
     if (!WakuRelayerWakuCore.waku?.lightPush) {
-      throw new Error('No Waku Relay found.');
+      throw new Error('No Waku LightPush found.');
     }
 
     const dataString = JSON.stringify(data);
