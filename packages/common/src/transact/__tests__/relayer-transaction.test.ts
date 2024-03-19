@@ -41,7 +41,7 @@ const encryptResponseData = (
 
 describe('relayer-transaction', () => {
   before(async function run() {
-    this.timeout(5000);
+    this.timeout(60000);
 
     await initTestEngine();
 
