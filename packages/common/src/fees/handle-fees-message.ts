@@ -50,10 +50,6 @@ export const handleRelayerFeesMessage = async (
       RelayerDebug.log('Skipping Relayer fees message: WRONG TOPIC');
       return;
     }
-    if (!isDefined(message.timestamp)) {
-      RelayerDebug.log('Skipping Relayer fees message: NO TIMESTAMP');
-      return;
-    }
     const payload = bytesToUtf8(message.payload);
     const { data, signature } = JSON.parse(payload) as {
       data: string;
