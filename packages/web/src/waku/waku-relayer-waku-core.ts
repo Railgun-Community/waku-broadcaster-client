@@ -1,4 +1,4 @@
-import { Chain, promiseTimeout } from '@railgun-community/shared-models';
+import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Protocols, IMessage, FullNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
@@ -39,7 +39,18 @@ export class WakuRelayerWakuCore {
       RelayerDebug.error(err);
       throw err;
     }
+    WakuRelayerWakuCore.checkConnectionPoller(chain);
   };
+  static checkConnectionPoller = async (chain: Chain) => {
+    const peerCount = WakuRelayerWakuCore.getMeshPeerCount();
+    if (peerCount === 0) {
+      WakuRelayerWakuCore.reinitWaku(chain);
+      return;
+    } else {
+    }
+    await delay(5 * 1000);
+    WakuRelayerWakuCore.checkConnectionPoller(chain);
+  }
 
   static reinitWaku = async (chain: Chain) => {
     if (
@@ -87,8 +98,6 @@ export class WakuRelayerWakuCore {
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: FullNode = await createFullNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
-        relayKeepAlive: 10,
-        pingKeepAlive: 10,
         libp2p: {
           peerDiscovery: [
             bootstrap({
@@ -128,6 +137,21 @@ export class WakuRelayerWakuCore {
 
   static getMeshPeerCount(): number {
     return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
+  }
+
+  static getPubSubPeerCount(): number {
+    const peers = this.waku?.libp2p.getPeers() ?? []
+    return peers.length
+  }
+
+  static async getLightPushPeerCount(): Promise<number> {
+    const peers = (await this.waku?.lightPush.peers()) ?? [];
+    return peers.length;
+  }
+
+  static async getFilterPeerCount(): Promise<number> {
+    const peers = (await this.waku?.filter.peers()) ?? [];
+    return peers.length;
   }
 
   private static async waitForRemotePeer(waku: FullNode) {
