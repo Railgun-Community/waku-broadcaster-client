@@ -129,8 +129,8 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    const peers = this.waku?.libp2p.getPeers() ?? []
-    return peers.length;
+    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
+
   }
 
   private static async waitForRemotePeer(waku: FullNode) {
