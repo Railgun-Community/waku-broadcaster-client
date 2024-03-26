@@ -82,7 +82,7 @@ export class WakuRelayerClient {
   }
 
   static getContentTopics(): string[] {
-    return WakuObservers.getCurrentContentTopics();
+    return WakuObservers.getCurrentContentTopics(WakuRelayerWakuCore.waku);
   }
 
   static getMeshPeerCount(): number {

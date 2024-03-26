@@ -1,13 +1,13 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
+import { Protocols, IMessage, FullNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
-import { createLightNode } from '@waku/sdk';
+import { createFullNode } from '@waku/sdk';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
@@ -17,7 +17,7 @@ import {
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static waku: Optional<LightNode>;
+  static waku: Optional<FullNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
@@ -85,7 +85,7 @@ export class WakuRelayerWakuCore {
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: LightNode = await createLightNode({
+      const waku: FullNode = await createFullNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
         libp2p: {
           peerDiscovery: [
@@ -103,7 +103,7 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!isDefined(waku.lightPush)) {
+      if (!isDefined(waku.relay)) {
         throw new Error('No Waku Relay instantiated.');
       }
 
@@ -125,13 +125,12 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    const peers = WakuRelayerWakuCore.waku?.libp2p.getPeers() ?? []
-    return peers.length;
+    return this.waku?.relay.getMeshPeers().length ?? 0;
   }
 
-  private static async waitForRemotePeer(waku: LightNode) {
+  private static async waitForRemotePeer(waku: FullNode) {
     try {
-      const protocols = [Protocols.LightPush, Protocols.Filter];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
