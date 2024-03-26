@@ -1,19 +1,19 @@
-import { Chain, compareChains } from '@railgun-community/shared-models';
+import { Chain, compareChains, delay } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
-import { FullNode, IMessage } from '@waku/interfaces';
+import { LightNode, IMessage, IFilterSubscription } from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
-import { ContentTopic } from '@waku/relay';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
-
+  private static currentContentTopics: string[] = [];
+  private static currentSubscription: IFilterSubscription[] | undefined;
   static setObserversForChain = async (
-    waku: Optional<FullNode>,
+    waku: Optional<LightNode>,
     chain: Chain,
   ) => {
     if (!waku) {
@@ -32,59 +32,83 @@ export class WakuObservers {
     RelayerDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
     );
+    WakuObservers.pingAllSubscriptions(waku);
   };
 
   static resetCurrentChain = () => {
     this.currentChain = undefined;
   };
-
-  private static removeAllObservers = (waku: FullNode) => {
-    if (!isDefined(waku.relay)) {
+  private static isPinging = false;
+  private static pingAllSubscriptions = async (waku: LightNode) => {
+    if (this.isPinging) {
       return;
     }
-    // @ts-ignore
-    waku.relay.observers = new Map();
+    if (!isDefined(waku.filter)) {
+      return;
+    }
+    this.isPinging = true;
+    if (isDefined(this.currentSubscription)) {
+      for (const subscription of this.currentSubscription) {
+        await subscription.ping();
+      }
+    }
+    await delay(10000);
+    this.isPinging = false;
+    await WakuObservers.pingAllSubscriptions(waku);
+  }
+
+  private static removeAllObservers = (waku: LightNode) => {
+    if (!isDefined(waku.filter)) {
+      return;
+    }
+
+    if (isDefined(this.currentSubscription)) {
+      for (const subscription of this.currentSubscription) {
+        subscription.unsubscribeAll();
+      }
+      this.currentSubscription = undefined;
+      this.currentContentTopics = [];
+    }
   };
 
-  private static addChainObservers = async (waku: FullNode, chain: Chain) => {
-    if (!isDefined(waku.relay)) {
+  private static addChainObservers = async (waku: LightNode, chain: Chain) => {
+    if (!isDefined(waku.filter)) {
       return;
     }
 
     const contentTopicFees = contentTopics.fees(chain);
-    await waku.relay.subscribe(
-      createDecoder(contentTopicFees, WAKU_RAILGUN_PUB_SUB_TOPIC) as any,
-      (message: IMessage) =>
-        handleRelayerFeesMessage(chain, message, contentTopicFees),
-    );
+    const peers = waku.libp2p.getPeers();
+    this.currentContentTopics.push(contentTopicFees);
+    this.currentContentTopics.push(contentTopics.transactResponse(chain));
 
-    await waku.relay.subscribe(
-      createDecoder(contentTopics.transactResponse(chain), WAKU_RAILGUN_PUB_SUB_TOPIC) as any,
-      RelayerTransactResponse.handleRelayerTransactionResponseMessage,
-    );
+    peers.forEach(async (peerId) => {
+      const filterSubscription = await waku.filter.createSubscription(WAKU_RAILGUN_PUB_SUB_TOPIC, peerId);
+
+      await filterSubscription.subscribe(
+        createDecoder(contentTopicFees, WAKU_RAILGUN_PUB_SUB_TOPIC) as any,
+        (message: IMessage) =>
+          handleRelayerFeesMessage(chain, message, contentTopicFees),
+      );
+
+      await filterSubscription.subscribe(
+        createDecoder(contentTopics.transactResponse(chain), WAKU_RAILGUN_PUB_SUB_TOPIC) as any,
+        RelayerTransactResponse.handleRelayerTransactionResponseMessage,
+      );
+      this.currentSubscription ??= []
+      this.currentSubscription.push(filterSubscription);
+    })
+
 
     // Log current list of observers
-    const currentContentTopics = WakuObservers.getCurrentContentTopics(waku);
+    const currentContentTopics = WakuObservers.getCurrentContentTopics();
     RelayerDebug.log('Waku content topics:');
     for (const observer of currentContentTopics) {
       RelayerDebug.log(observer);
     }
   };
 
-  static getCurrentContentTopics(waku?: FullNode): string[] {
-    // @ts-expect-error - 'observers' is private.
-    const observers = waku?.relay?.observers as Map<ContentTopic, Set<unknown>>;
+  static getCurrentContentTopics(): string[] {
 
-    const contentTopics: string[] = [];
-    for (const observer of observers.keys()) {
-      const pubsubTopic = observers.get(observer);
-      if (isDefined(pubsubTopic)) {
-        const pubSubContent = pubsubTopic.keys() ?? [];
-        for (const contentTopic of pubSubContent) {
-          contentTopics.push(String(contentTopic));
-        }
-      }
-    }
-    return contentTopics;
+    return this.currentContentTopics;
   }
 }
