@@ -88,6 +88,8 @@ export class WakuRelayerWakuCore {
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: FullNode = await createFullNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
+        relayKeepAlive: 10,
+        pingKeepAlive: 10,
         libp2p: {
           transports: [tcp()],
           peerDiscovery: [
@@ -133,7 +135,7 @@ export class WakuRelayerWakuCore {
 
   private static async waitForRemotePeer(waku: FullNode) {
     try {
-      const protocols = [Protocols.Relay];
+      const protocols = [Protocols.LightPush, Protocols.Relay];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
