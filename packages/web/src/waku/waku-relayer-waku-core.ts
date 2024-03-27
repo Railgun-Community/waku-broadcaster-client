@@ -57,7 +57,7 @@ export class WakuRelayerWakuCore {
     await delay(30 * 1000);
     WakuRelayerWakuCore.alreadyPolling = false;
     WakuRelayerWakuCore.checkConnectionPoller();
-  }
+  };
 
   static reinitWaku = async (chain: Chain) => {
     if (
@@ -143,12 +143,14 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
+    return (
+      this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    );
   }
 
   static getPubSubPeerCount(): number {
-    const peers = this.waku?.libp2p.getPeers() ?? []
-    return peers.length
+    const peers = this.waku?.libp2p.getPeers() ?? [];
+    return peers.length;
   }
 
   static async getLightPushPeerCount(): Promise<number> {
@@ -179,7 +181,7 @@ export class WakuRelayerWakuCore {
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
     if (!WakuRelayerWakuCore.waku?.lightPush) {
-      throw new Error('No Waku Relay found.');
+      throw new Error('Relayer did not receive message. Please try again.');
     }
 
     const dataString = JSON.stringify(data);
@@ -188,7 +190,10 @@ export class WakuRelayerWakuCore {
 
     try {
       await WakuRelayerWakuCore.waku.lightPush.send(
-        createEncoder({ contentTopic, pubsubTopic: WakuRelayerWakuCore.pubSubTopic }),
+        createEncoder({
+          contentTopic,
+          pubsubTopic: WakuRelayerWakuCore.pubSubTopic,
+        }),
         message,
       );
     } catch (err) {
