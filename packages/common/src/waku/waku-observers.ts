@@ -38,6 +38,10 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
+  static getCurrentChain = () => {
+    return this.currentChain
+  };
+
   private static removeAllObservers = (waku: FullNode) => {
     if (!isDefined(waku.relay)) {
       return;

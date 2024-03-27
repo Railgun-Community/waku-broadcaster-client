@@ -39,17 +39,24 @@ export class WakuRelayerWakuCore {
       RelayerDebug.error(err);
       throw err;
     }
-    WakuRelayerWakuCore.checkConnectionPoller(chain);
   };
-  static checkConnectionPoller = async (chain: Chain) => {
-    const peerCount = WakuRelayerWakuCore.getMeshPeerCount();
-    if (peerCount === 0) {
-      WakuRelayerWakuCore.reinitWaku(chain);
+
+  private static alreadyPolling = false;
+  static checkConnectionPoller = async () => {
+    if (WakuRelayerWakuCore.alreadyPolling) {
       return;
-    } else {
     }
-    await delay(5 * 1000);
-    WakuRelayerWakuCore.checkConnectionPoller(chain);
+    WakuRelayerWakuCore.alreadyPolling = true;
+    const peerCount = WakuRelayerWakuCore.getMeshPeerCount();
+    if (peerCount < 1) {
+      const currentChain = WakuObservers.getCurrentChain();
+      if (isDefined(currentChain)) {
+        await WakuRelayerWakuCore.reinitWaku(currentChain);
+      }
+    }
+    await delay(30 * 1000);
+    WakuRelayerWakuCore.alreadyPolling = false;
+    WakuRelayerWakuCore.checkConnectionPoller();
   }
 
   static reinitWaku = async (chain: Chain) => {

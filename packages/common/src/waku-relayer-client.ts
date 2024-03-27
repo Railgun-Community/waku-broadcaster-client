@@ -53,6 +53,7 @@ export class WakuRelayerClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
+      WakuRelayerWakuCore.checkConnectionPoller();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
