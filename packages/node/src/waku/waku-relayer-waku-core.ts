@@ -12,6 +12,7 @@ import { createFullNode } from '@waku/sdk';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 
@@ -41,24 +42,6 @@ export class WakuRelayerWakuCore {
       throw err;
     }
   };
-
-  private static alreadyPolling = false;
-  static checkConnectionPoller = async () => {
-    if (WakuRelayerWakuCore.alreadyPolling) {
-      return;
-    }
-    WakuRelayerWakuCore.alreadyPolling = true;
-    const peerCount = WakuRelayerWakuCore.getMeshPeerCount();
-    if (peerCount < 1) {
-      const currentChain = WakuObservers.getCurrentChain();
-      if (isDefined(currentChain)) {
-        await WakuRelayerWakuCore.reinitWaku(currentChain);
-      }
-    }
-    await delay(30 * 1000);
-    WakuRelayerWakuCore.alreadyPolling = false;
-    WakuRelayerWakuCore.checkConnectionPoller();
-  }
 
   static reinitWaku = async (chain: Chain) => {
     if (
@@ -101,9 +84,10 @@ export class WakuRelayerWakuCore {
 
       const peers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
+      const waitTimeoutBeforeBootstrap = 1000; // 250 ms - default is 1000ms
       const waku: FullNode = await createFullNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
         libp2p: {

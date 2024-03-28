@@ -53,13 +53,29 @@ export class WakuRelayerClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
-      WakuRelayerWakuCore.checkConnectionPoller();
+      this.pollConnection();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
       throw new Error('Cannot connect to Relayer network.', { cause });
     }
+  }
+  private static peerRetryCount = 0;
+  private static pollConnection = async () => {
+    const peerCount = WakuRelayerWakuCore.getMeshPeerCount();
+    if (peerCount < 1) {
+      if (this.peerRetryCount > 2) {
+        this.peerRetryCount = 0;
+        await this.restart();
+      } else {
+        this.peerRetryCount += 1;
+      }
+    } else {
+      this.peerRetryCount = 0;
+    }
+    await delay(WakuRelayerClient.pollDelay);
+    this.pollConnection();
   }
 
   static async stop() {
