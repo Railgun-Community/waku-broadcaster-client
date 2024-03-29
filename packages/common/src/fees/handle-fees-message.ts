@@ -30,10 +30,16 @@ const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: O
   // check if fee expires within 45 seconds; if it doesn't ignore it.
   const nowTime = Date.now();
   const expirationMsec = nowTime - 45 * 1000;
-  const expirationFeeMsec = nowTime + 45 * 1000;
+  // const expirationFeeMsec = nowTime + 45 * 1000;
   const timestampExpired = messageTimestamp.getTime() < expirationMsec
-  const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
-  return timestampExpired || feeExpired;
+  if (timestampExpired) {
+    RelayerDebug.log(`Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+  } else {
+    RelayerDebug.log(`SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+
+  }
+  // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
+  return timestampExpired;//  || feeExpired;
 };
 
 export const handleRelayerFeesMessage = async (
@@ -59,6 +65,7 @@ export const handleRelayerFeesMessage = async (
     const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
     const feeExpirationTime = new Date(feeMessageData.feeExpiration);
     if (isExpiredTimestamp(message.timestamp, feeExpirationTime)) {
+      RelayerDebug.log('Skipping fee message. Timestamp Expired.')
       return;
     }
 

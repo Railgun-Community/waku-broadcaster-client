@@ -25,6 +25,7 @@ export class RelayerTransactResponse {
   };
 
   static async handleRelayerTransactionResponseMessage(message: IMessage) {
+    RelayerDebug.log("Transact Response received.")
     if (!RelayerTransactResponse.sharedKey) {
       return;
     }

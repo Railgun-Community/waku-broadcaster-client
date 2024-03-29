@@ -53,7 +53,7 @@ export class WakuRelayerClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
-      this.pollConnection();
+      // this.pollConnection();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -237,11 +237,12 @@ export class WakuRelayerClient {
   }
 
   private static async restart(): Promise<void> {
-    if (this.isRestarting) {
+    if (this.isRestarting || !this.started) {
       return;
     }
     this.isRestarting = true;
     try {
+      RelayerDebug.log("Restarting Waku...")
       await WakuRelayerWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
     } catch (cause) {
