@@ -140,12 +140,12 @@ export class WakuRelayerWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = (await this.waku?.lightPush.peers()) ?? [];
+    const peers = (await this.waku?.lightPush.allPeers()) ?? [];
     return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = (await this.waku?.filter.peers()) ?? [];
+    const peers = (await this.waku?.filter.allPeers()) ?? [];
     return peers.length;
   }
 

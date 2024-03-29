@@ -100,6 +100,7 @@ export class WakuObservers {
       }
       this.currentSubscription = undefined;
       this.currentContentTopics = [];
+      this.subscribedPeers = [];
     }
   };
 
