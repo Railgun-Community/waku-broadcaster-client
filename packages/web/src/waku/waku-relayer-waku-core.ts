@@ -1,13 +1,13 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
+import { Protocols, IMessage, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
-import { createRelayNode } from '@waku/sdk';
+import { createLightNode } from '@waku/sdk';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
@@ -18,7 +18,7 @@ import {
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static waku: Optional<RelayNode>;
+  static waku: Optional<LightNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
@@ -86,9 +86,12 @@ export class WakuRelayerWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
+
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: RelayNode = await createRelayNode({
+      const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
+        pingKeepAlive: 60,
+        relayKeepAlive: 60,
         libp2p: {
           peerDiscovery: [
             bootstrap({
@@ -105,7 +108,7 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!isDefined(waku.relay)) {
+      if (!isDefined(waku.lightPush)) {
         throw new Error('No Waku Relay instantiated.');
       }
 
@@ -127,9 +130,8 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return (
-      this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
-    );
+    // return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    return this.getPubSubPeerCount();
   }
 
   static getPubSubPeerCount(): number {
@@ -137,19 +139,19 @@ export class WakuRelayerWakuCore {
     return peers.length;
   }
 
-  // static async getLightPushPeerCount(): Promise<number> {
-  //   const peers = (await this.waku?.lightPush.peers()) ?? [];
-  //   return peers.length;
-  // }
+  static async getLightPushPeerCount(): Promise<number> {
+    const peers = (await this.waku?.lightPush.peers()) ?? [];
+    return peers.length;
+  }
 
-  // static async getFilterPeerCount(): Promise<number> {
-  //   const peers = (await this.waku?.filter.peers()) ?? [];
-  //   return peers.length;
-  // }
+  static async getFilterPeerCount(): Promise<number> {
+    const peers = (await this.waku?.filter.peers()) ?? [];
+    return peers.length;
+  }
 
-  private static async waitForRemotePeer(waku: RelayNode) {
+  private static async waitForRemotePeer(waku: LightNode) {
     try {
-      const protocols = [Protocols.Relay];
+      const protocols = [Protocols.LightPush, Protocols.Filter];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
@@ -164,8 +166,8 @@ export class WakuRelayerWakuCore {
   }
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
-    if (!WakuRelayerWakuCore.waku?.relay) {
-      throw new Error('No Waku Relay found.');
+    if (!WakuRelayerWakuCore.waku?.lightPush) {
+      throw new Error('Relayer did not receive message. Please try again.');
     }
 
     const dataString = JSON.stringify(data);
@@ -173,8 +175,11 @@ export class WakuRelayerWakuCore {
     const message: IMessage = { payload };
 
     try {
-      await WakuRelayerWakuCore.waku.relay.send(
-        createEncoder({ contentTopic }),
+      await WakuRelayerWakuCore.waku.lightPush.send(
+        createEncoder({
+          contentTopic,
+          pubsubTopic: WakuRelayerWakuCore.pubSubTopic,
+        }),
         message,
       );
     } catch (err) {
