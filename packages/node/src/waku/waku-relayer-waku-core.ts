@@ -1,6 +1,6 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, FullNode } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
@@ -8,7 +8,7 @@ import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
-import { createFullNode } from '@waku/sdk';
+import { createRelayNode } from '@waku/sdk';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
@@ -19,7 +19,7 @@ import {
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static waku: Optional<FullNode>;
+  static waku: Optional<RelayNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
@@ -87,8 +87,8 @@ export class WakuRelayerWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 1000; // 250 ms - default is 1000ms
-      const waku: FullNode = await createFullNode({
+      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
+      const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
         libp2p: {
           transports: [tcp()],
@@ -137,19 +137,19 @@ export class WakuRelayerWakuCore {
     return peers.length;
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
-    const peers = (await this.waku?.lightPush.peers()) ?? [];
-    return peers.length;
-  }
+  // static async getLightPushPeerCount(): Promise<number> {
+  //   const peers = (await this.waku?.lightPush.peers()) ?? [];
+  //   return peers.length;
+  // }
 
-  static async getFilterPeerCount(): Promise<number> {
-    const peers = (await this.waku?.filter.peers()) ?? [];
-    return peers.length;
-  }
+  // static async getFilterPeerCount(): Promise<number> {
+  //   const peers = (await this.waku?.filter.peers()) ?? [];
+  //   return peers.length;
+  // }
 
-  private static async waitForRemotePeer(waku: FullNode) {
+  private static async waitForRemotePeer(waku: RelayNode) {
     try {
-      const protocols = [Protocols.LightPush, Protocols.Relay];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
@@ -164,8 +164,8 @@ export class WakuRelayerWakuCore {
   }
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
-    if (!WakuRelayerWakuCore.waku?.lightPush) {
-      throw new Error('No Waku LightPush found.');
+    if (!WakuRelayerWakuCore.waku?.relay) {
+      throw new Error('No Waku Relay found.');
     }
 
     const dataString = JSON.stringify(data);
@@ -173,8 +173,8 @@ export class WakuRelayerWakuCore {
     const message: IMessage = { payload };
 
     try {
-      const results = await WakuRelayerWakuCore.waku.lightPush.send(
-        createEncoder({ contentTopic, pubsubTopic: WakuRelayerWakuCore.pubSubTopic }),
+      await WakuRelayerWakuCore.waku.relay.send(
+        createEncoder({ contentTopic }),
         message,
       );
     } catch (err) {

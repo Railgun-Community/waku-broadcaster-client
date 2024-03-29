@@ -33,9 +33,9 @@ const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: O
   // const expirationFeeMsec = nowTime + 45 * 1000;
   const timestampExpired = messageTimestamp.getTime() < expirationMsec
   if (timestampExpired) {
-    RelayerDebug.log(`Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+    RelayerDebug.log(`Relayer Fee STALE: Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
   } else {
-    RelayerDebug.log(`SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+    RelayerDebug.log(`Relayer Fee receipt SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
 
   }
   // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;

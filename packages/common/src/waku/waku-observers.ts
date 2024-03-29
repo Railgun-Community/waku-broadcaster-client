@@ -1,7 +1,7 @@
 import { Chain, compareChains } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
-import { FullNode, IMessage } from '@waku/interfaces';
+import { RelayNode, IMessage } from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
 import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
@@ -13,7 +13,7 @@ export class WakuObservers {
   private static currentChain: Optional<Chain>;
 
   static setObserversForChain = async (
-    waku: Optional<FullNode>,
+    waku: Optional<RelayNode>,
     chain: Chain,
   ) => {
     if (!waku) {
@@ -42,7 +42,7 @@ export class WakuObservers {
     return this.currentChain
   };
 
-  private static removeAllObservers = (waku: FullNode) => {
+  private static removeAllObservers = (waku: RelayNode) => {
     if (!isDefined(waku.relay)) {
       return;
     }
@@ -50,7 +50,7 @@ export class WakuObservers {
     waku.relay.observers = new Map();
   };
 
-  private static addChainObservers = async (waku: FullNode, chain: Chain) => {
+  private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
     if (!isDefined(waku.relay)) {
       return;
     }
@@ -75,7 +75,7 @@ export class WakuObservers {
     }
   };
 
-  static getCurrentContentTopics(waku?: FullNode): string[] {
+  static getCurrentContentTopics(waku?: RelayNode): string[] {
     // @ts-expect-error - 'observers' is private.
     const observers = waku?.relay?.observers as Map<ContentTopic, Set<unknown>>;
 

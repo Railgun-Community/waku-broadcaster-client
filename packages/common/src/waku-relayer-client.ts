@@ -110,13 +110,13 @@ export class WakuRelayerClient {
     return WakuRelayerWakuCore.getPubSubPeerCount();
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
-    return await WakuRelayerWakuCore.getLightPushPeerCount();
-  }
+  // static async getLightPushPeerCount(): Promise<number> {
+  //   return await WakuRelayerWakuCore.getLightPushPeerCount();
+  // }
 
-  static async getFilterPeerCount(): Promise<number> {
-    return await WakuRelayerWakuCore.getFilterPeerCount();
-  }
+  // static async getFilterPeerCount(): Promise<number> {
+  //   return await WakuRelayerWakuCore.getFilterPeerCount();
+  // }
   /**
    * The function `findBestRelayer` finds the relayer with the lowest fees for a given chain and token.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
