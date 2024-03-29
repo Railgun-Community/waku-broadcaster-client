@@ -17,11 +17,12 @@
   "dependencies": {
     "@libp2p/bootstrap": "^10.0.11",
     "@libp2p/interface-peer-id": "^2.0.2",
+    "@libp2p/peer-id": "^4.0.8",
     "@libp2p/tcp": "^8.0.13",
     "@waku/core": "0.0.27",
+    "@waku/interfaces": "0.0.22",
     "@waku/relay": "0.0.10",
     "@waku/sdk": "0.0.23",
-    "@waku/interfaces": "0.0.22",
     "libp2p": "^1.1.2"
   },
   "peerDependencies": {
@@ -32,7 +33,6 @@
   "devDependencies": {
     "@railgun-community/shared-models": "6.3.x",
     "@railgun-community/wallet": "7.0.x",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.8",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
@@ -48,6 +48,7 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.27.5",
+    "ethers": "github:Railgun-Community/ethers.js#v6.7.8",
     "leveldown": "^6.1.1",
     "madge": "^6.1.0",
     "mocha": "^10.2.0",
