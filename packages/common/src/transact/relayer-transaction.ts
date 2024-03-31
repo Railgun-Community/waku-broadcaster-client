@@ -58,7 +58,7 @@ type RelayMessageData = {
 };
 
 // NOTE: Relayer default transaction-send timeout is 45 seconds.
-const SECONDS_PER_RETRY = 23;
+const SECONDS_PER_RETRY = 12;
 const POLL_DELAY_SECONDS = 0.2;
 const RETRY_TRANSACTION_SECONDS = 45;
 const POST_ALERT_TOTAL_WAITING_SECONDS = 220;
