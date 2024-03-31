@@ -1,6 +1,6 @@
 {
   "name": "@railgun-community/waku-relayer-client-web",
-  "version": "6.2.8",
+  "version": "6.2.9",
   "license": "MIT",
   "main": "dist/index.js",
   "type": "module",
