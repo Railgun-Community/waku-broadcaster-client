@@ -50,11 +50,15 @@ export class WakuObservers {
       return;
     }
     this.isPinging = true;
-    await this.addSubscriptions(this.currentChain, waku).catch(err => {
-      RelayerDebug.error(new Error(`Error adding subscriptions. ${err.message}`),)
-    });
+    // await this.addSubscriptions(this.currentChain, waku).catch(err => {
+    //   RelayerDebug.error(new Error(`Error adding subscriptions. ${err.message}`),)
+    // });
     if (isDefined(this.currentSubscription)) {
       for (const { subscription, params } of this.currentSubscription) {
+        if (!this.isPinging) {
+          // removeAllObservers was called. Stop pinging.
+          break;
+        }
         await subscription.ping().then(() => {
           RelayerDebug.log("Ping Success")
         }).catch(async (err: Error) => {
@@ -91,11 +95,10 @@ export class WakuObservers {
     if (!isDefined(waku.filter)) {
       return;
     }
-
+    this.isPinging = false;
     if (isDefined(this.currentSubscription)) {
-      for (const { params, subscription } of this.currentSubscription) {
-        const topics = params.map(subParam => subParam.topic);
-        await subscription.unsubscribe(topics).catch((err: Error) => {
+      for (const { subscription } of this.currentSubscription) {
+        await subscription.unsubscribe(this.currentContentTopics).catch((err: Error) => {
           RelayerDebug.log(`Unsubscribe Error ${err.message}`)
         });
       }
