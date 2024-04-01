@@ -93,8 +93,9 @@ export class WakuObservers {
     }
 
     if (isDefined(this.currentSubscription)) {
-      for (const current of this.currentSubscription) {
-        await current.subscription.unsubscribeAll().catch((err: Error) => {
+      for (const { params, subscription } of this.currentSubscription) {
+        const topics = params.map(subParam => subParam.topic);
+        await subscription.unsubscribe(topics).catch((err: Error) => {
           RelayerDebug.log(`Unsubscribe Error ${err.message}`)
         });
       }
@@ -153,7 +154,8 @@ export class WakuObservers {
 
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
     const topics = subscriptionParams.map(subParam => subParam.topic);
-    this.currentContentTopics.push(...topics);
+    const newTopics = topics.filter(topic => !this.currentContentTopics.includes(topic));
+    this.currentContentTopics.push(...newTopics);
     const peers = await waku.filter.allPeers();
 
     for (const peer of peers) {
