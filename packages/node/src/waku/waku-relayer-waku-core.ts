@@ -93,7 +93,7 @@ export class WakuRelayerWakuCore {
         pingKeepAlive: 60,
         relayKeepAlive: 60,
         libp2p: {
-          // transports: [tcp()],
+          transports: [tcp()],
           peerDiscovery: [
             bootstrap({
               list: peers,
