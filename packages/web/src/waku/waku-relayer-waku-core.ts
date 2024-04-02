@@ -1,13 +1,13 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
-import { createLightNode } from '@waku/sdk';
+import { createRelayNode } from '@waku/sdk/relay';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
@@ -18,7 +18,7 @@ import {
 export class WakuRelayerWakuCore {
   static hasError = false;
 
-  static waku: Optional<LightNode>;
+  static waku: Optional<RelayNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
@@ -70,7 +70,11 @@ export class WakuRelayerWakuCore {
     }
   }
 
-  static disconnect = async () => {
+  static disconnect = async (removeObservers: boolean = false) => {
+    if (removeObservers) {
+      RelayerDebug.log('Disconnecting... Removing Observers.');
+      WakuObservers.removeAllObservers();
+    }
     await WakuRelayerWakuCore.waku?.stop();
     WakuRelayerWakuCore.waku = undefined;
   };
@@ -82,13 +86,13 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log(`Creating waku relay client`);
 
       const peers: string[] = [
-        ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+        // ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
 
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: LightNode = await createLightNode({
+      const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
         pingKeepAlive: 60,
         relayKeepAlive: 60,
@@ -108,7 +112,7 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!isDefined(waku.lightPush)) {
+      if (!isDefined(waku.relay)) {
         throw new Error('No Waku Relay instantiated.');
       }
 
@@ -130,8 +134,7 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    // return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
-    return this.getPubSubPeerCount();
+    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
   }
 
   static getPubSubPeerCount(): number {
@@ -140,18 +143,18 @@ export class WakuRelayerWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = (await this.waku?.lightPush.allPeers()) ?? [];
-    return peers.length;
+    // const peers = (await this.waku?.relay.allPeers()) ?? [];
+    return 0;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = (await this.waku?.filter.allPeers()) ?? [];
-    return peers.length;
+    // const peers = (await this.waku?.filter.allPeers()) ?? [];
+    return 0;
   }
 
-  private static async waitForRemotePeer(waku: LightNode) {
+  private static async waitForRemotePeer(waku: RelayNode) {
     try {
-      const protocols = [Protocols.LightPush, Protocols.Filter];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuRelayerWakuCore.peerDiscoveryTimeout,
@@ -166,7 +169,7 @@ export class WakuRelayerWakuCore {
   }
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
-    if (!WakuRelayerWakuCore.waku?.lightPush) {
+    if (!WakuRelayerWakuCore.waku?.relay) {
       throw new Error('Relayer did not receive message. Please try again.');
     }
 
@@ -175,7 +178,7 @@ export class WakuRelayerWakuCore {
     const message: IMessage = { payload };
 
     try {
-      await WakuRelayerWakuCore.waku.lightPush.send(
+      await WakuRelayerWakuCore.waku.relay.send(
         createEncoder({
           contentTopic,
           pubsubTopic: WakuRelayerWakuCore.pubSubTopic,
