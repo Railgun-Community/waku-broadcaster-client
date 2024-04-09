@@ -11,6 +11,8 @@ import { WakuRelayerClient } from '../waku-relayer-client.js';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
 import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core.js';
 import { RelayerOptions } from '../models/index.js';
+import { RelayNode } from '@waku/sdk';
+import { contentTopics } from '../waku/waku-topics.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -121,4 +123,34 @@ describe('waku-relayer-client', () => {
       '/railgun/v2/0/5/transact-response/json',
     ]);
   }).timeout(90000);
+
+  describe('addTransportSubscription', () => {
+    it('should add a transport subscription', async () => {
+      const waku: RelayNode = {} as RelayNode; // Mock RelayNode object
+      const topic = '/test-topic';
+      const callback = (message: any) => {
+        // Mock callback function
+      };
+
+      const formattedTopic = contentTopics.encrypted(topic)
+      // input waku is a placeholder, not used in the function here, it is used in waku-transport.
+      // need to keep same function abi as waku-transport
+      await WakuRelayerClient.addTransportSubscription(waku, topic, callback);
+
+      expect(WakuRelayerClient.getContentTopics()).to.include(formattedTopic);
+    });
+
+  });
+
+  // describe('sendTransport', () => {
+  //   it('should send transport data', () => {
+  //     const data = { message: 'Hello, world!' };
+  //     const topic = '/test-topic';
+
+  //     WakuRelayerClient.sendTransport(data, topic);
+
+  //     // check if the WakuRelayerWakuCore.waku.relay.send method was called
+
+  //   });
+  // });
 });

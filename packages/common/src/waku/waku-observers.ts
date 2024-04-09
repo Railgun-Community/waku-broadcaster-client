@@ -94,10 +94,14 @@ export class WakuObservers {
   };
 
   static async addTransportSubscription(
-    waku: RelayNode,
+    waku: Optional<RelayNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
+    if (!isDefined(waku)) {
+      RelayerDebug.log('No waku instance found, Transport Subscription not added.');
+      return;
+    }
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
     const unsubscribe = await waku.relay.subscribe(
@@ -105,7 +109,7 @@ export class WakuObservers {
       callback
     );
     this.currentSubscriptions.push(unsubscribe);
-    this.currentContentTopics.push(topic);
+    this.currentContentTopics.push(transportTopic);
   }
 
   private static async addSubscriptions(chain: Optional<Chain>, waku: Optional<RelayNode>) {

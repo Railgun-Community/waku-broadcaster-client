@@ -1,6 +1,7 @@
 import {
   Chain,
   delay,
+  isDefined,
   POI_REQUIRED_LISTS,
   RelayerConnectionStatus,
   SelectedRelayer,
@@ -17,6 +18,8 @@ import { RelayerStatus } from './status/relayer-connection-status.js';
 import { RelayerDebug } from './utils/relayer-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core.js';
+import { RelayNode } from '@waku/sdk';
+import { contentTopics } from './waku/waku-topics.js';
 
 export class WakuRelayerClient {
   private static chain: Chain;
@@ -264,6 +267,23 @@ export class WakuRelayerClient {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.restart();
     }
+  }
+  // Waku Transport functions
+  static async addTransportSubscription(
+    waku: Optional<RelayNode>,
+    topic: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
+    await WakuObservers.addTransportSubscription(
+      WakuRelayerWakuCore.waku,
+      topic,
+      callback,
+    );
+  }
+
+  static sendTransport(data: object, topic: string): void {
+    const customTopic = contentTopics.encrypted(topic);
+    WakuRelayerWakuCore.relayMessage(data, customTopic);
   }
 
 }
