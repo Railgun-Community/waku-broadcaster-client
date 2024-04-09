@@ -93,6 +93,21 @@ export class WakuObservers {
     }
   };
 
+  static async addTransportSubscription(
+    waku: RelayNode,
+    topic: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
+    const transportTopic = contentTopics.encrypted(topic);
+    const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
+    const unsubscribe = await waku.relay.subscribe(
+      decoder,
+      callback
+    );
+    this.currentSubscriptions.push(unsubscribe);
+    this.currentContentTopics.push(topic);
+  }
+
   private static async addSubscriptions(chain: Optional<Chain>, waku: Optional<RelayNode>) {
 
     if (!isDefined(chain) || !isDefined(waku)) {
