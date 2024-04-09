@@ -43,52 +43,6 @@ export class WakuObservers {
   static resetCurrentChain = () => {
     this.currentChain = undefined;
   };
-  // private static isPinging = false;
-  // static pingAllSubscriptions = async (waku: Optional<RelayNode>) => {
-  //   if (this.isPinging) {
-  //     return;
-  //   }
-  //   this.isPinging = true;
-  //   // await this.addSubscriptions(this.currentChain, waku).catch(err => {
-  //   //   RelayerDebug.error(new Error(`Error adding subscriptions. ${err.message}`),)
-  //   // });
-  //   if (isDefined(this.currentSubscription)) {
-  //     for (const { subscription, params } of this.currentSubscription) {
-  //       if (!this.isPinging) {
-  //         // removeAllObservers was called. Stop pinging.
-  //         break;
-  //       }
-  //       await subscription.ping().then(() => {
-  //         RelayerDebug.log("Ping Success")
-  //       }).catch(async (err: Error) => {
-  //         // No response received for request
-  //         // Failed to get a connection to the peer
-  //         // the connection is being closed
-  //         // peer has no subscriptions
-  //         RelayerDebug.error(new Error(`Ping Error: ${err.message}`))
-  //         if (
-  //           err instanceof Error &&
-  //           err.message.includes("peer has no subscriptions")
-  //         ) {
-  //           for (const subParam of params) {
-  //             const { decoder, callback } = subParam;
-  //             await subscription.subscribe(
-  //               decoder,
-  //               callback
-  //             ).then(() => {
-  //               RelayerDebug.log("Resubscribed")
-  //             }).catch((err) => {
-  //               RelayerDebug.error(new Error(`Error re-subscribing: ${err.message}`))
-  //             })
-  //           }
-  //         }
-  //       });
-  //     }
-  //   }
-  //   await delay(60 * 1000);
-  //   this.isPinging = false;
-  //   WakuObservers.pingAllSubscriptions(waku);
-  // }
 
   static removeAllObservers = () => {
 
@@ -138,6 +92,25 @@ export class WakuObservers {
       RelayerDebug.log(observer);
     }
   };
+
+  static async addTransportSubscription(
+    waku: Optional<RelayNode>,
+    topic: string,
+    callback: (message: any) => void,
+  ): Promise<void> {
+    if (!isDefined(waku)) {
+      RelayerDebug.log('No waku instance found, Transport Subscription not added.');
+      return;
+    }
+    const transportTopic = contentTopics.encrypted(topic);
+    const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
+    const unsubscribe = await waku.relay.subscribe(
+      decoder,
+      callback
+    );
+    this.currentSubscriptions.push(unsubscribe);
+    this.currentContentTopics.push(transportTopic);
+  }
 
   private static async addSubscriptions(chain: Optional<Chain>, waku: Optional<RelayNode>) {
 
