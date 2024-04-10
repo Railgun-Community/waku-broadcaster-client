@@ -1,6 +1,6 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { RelayerDebug } from '../utils/relayer-debug.js';
 import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
@@ -8,20 +8,19 @@ import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
-import { RelayNode } from '@waku/sdk';
+import { createRelayNode } from '@waku/sdk/relay';
 import { RelayerOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
-import { createRelayNode } from '@waku/sdk/relay';
 
 export class WakuRelayerWakuCore {
   static hasError = false;
 
   static waku: Optional<RelayNode>;
-
+  private static MAX_RELAY_RETRIES = 3;
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
@@ -89,7 +88,6 @@ export class WakuRelayerWakuCore {
 
       const peers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
-        // ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
@@ -140,7 +138,7 @@ export class WakuRelayerWakuCore {
   }
 
   static getPubSubPeerCount(): number {
-    const peers = this.waku?.libp2p.getPeers() ?? []
+    const peers = this.waku?.libp2p.getPeers() ?? [];
     return peers.length;
   }
 
@@ -168,7 +166,7 @@ export class WakuRelayerWakuCore {
     }
   }
 
-  static async relayMessage(data: object, contentTopic: string): Promise<void> {
+  static async relayMessage(data: object, contentTopic: string, retry: number = 0): Promise<void> {
     if (!WakuRelayerWakuCore.waku?.relay) {
       throw new Error('Relayer did not receive message. Please try again.');
     }
@@ -179,14 +177,22 @@ export class WakuRelayerWakuCore {
 
     try {
       await WakuRelayerWakuCore.waku.relay.send(
-        createEncoder({ contentTopic, pubsubTopic: WakuRelayerWakuCore.pubSubTopic }),
+        createEncoder({
+          contentTopic,
+          pubsubTopic: WakuRelayerWakuCore.pubSubTopic,
+        }),
         message,
       );
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
       }
-      RelayerDebug.error(err);
+      if (retry < WakuRelayerWakuCore.MAX_RELAY_RETRIES) {
+        await delay(1000);
+        return WakuRelayerWakuCore.relayMessage(data, contentTopic, retry + 1);
+      } else {
+        RelayerDebug.error(err);
+      }
     }
   }
 }

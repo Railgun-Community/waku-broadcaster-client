@@ -19,7 +19,7 @@ export class WakuRelayerWakuCore {
   static hasError = false;
 
   static waku: Optional<RelayNode>;
-
+  private static MAX_RELAY_RETRIES = 3;
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
@@ -86,11 +86,9 @@ export class WakuRelayerWakuCore {
       RelayerDebug.log(`Creating waku relay client`);
 
       const peers: string[] = [
-        // ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
@@ -134,7 +132,7 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
   }
 
   static getPubSubPeerCount(): number {
@@ -143,12 +141,10 @@ export class WakuRelayerWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    // const peers = (await this.waku?.relay.allPeers()) ?? [];
     return 0;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    // const peers = (await this.waku?.filter.allPeers()) ?? [];
     return 0;
   }
 
@@ -168,7 +164,7 @@ export class WakuRelayerWakuCore {
     }
   }
 
-  static async relayMessage(data: object, contentTopic: string): Promise<void> {
+  static async relayMessage(data: object, contentTopic: string, retry: number = 0): Promise<void> {
     if (!WakuRelayerWakuCore.waku?.relay) {
       throw new Error('Relayer did not receive message. Please try again.');
     }
@@ -189,7 +185,12 @@ export class WakuRelayerWakuCore {
       if (!(err instanceof Error)) {
         throw err;
       }
-      RelayerDebug.error(err);
+      if (retry < WakuRelayerWakuCore.MAX_RELAY_RETRIES) {
+        await delay(1000);
+        return WakuRelayerWakuCore.relayMessage(data, contentTopic, retry + 1);
+      } else {
+        RelayerDebug.error(err);
+      }
     }
   }
 }
