@@ -1,9 +1,4 @@
-import {
-  fromUTF8String,
-  hexlify,
-  hexStringToBytes,
-  RailgunWallet,
-} from '@railgun-community/engine';
+import { ByteUtils, RailgunWallet } from '@railgun-community/engine';
 import {
   createRailgunWallet,
   fullWalletForID,
@@ -52,9 +47,9 @@ const createPayload = async (
   signingWallet: RailgunWallet,
 ): Promise<Uint8Array> => {
   const utf8String = JSON.stringify(feeMessageData);
-  const hex = fromUTF8String(utf8String);
-  const signature = hexlify(
-    await signingWallet.signWithViewingKey(hexStringToBytes(hex)),
+  const hex = ByteUtils.hexlify(new TextEncoder().encode(utf8String));
+  const signature = ByteUtils.hexlify(
+    await signingWallet.signWithViewingKey(ByteUtils.hexStringToBytes(hex)),
   );
   const payload = {
     data: hex,
