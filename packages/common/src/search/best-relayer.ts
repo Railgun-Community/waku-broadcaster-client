@@ -26,18 +26,18 @@ export class BroadcasterSearch {
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster[]> {
     const tokenAddressLowercase = tokenAddress.toLowerCase();
-    const relayerTokenFees =
+    const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken[tokenAddressLowercase]
         ?.forBroadcaster;
-    if (!isDefined(relayerTokenFees)) {
+    if (!isDefined(broadcasterTokenFees)) {
       return undefined;
     }
 
-    const unfilteredAddresses = Object.keys(relayerTokenFees);
-    const relayerAddresses = AddressFilter.filter(unfilteredAddresses);
-    if (unfilteredAddresses.length !== relayerAddresses.length) {
+    const unfilteredAddresses = Object.keys(broadcasterTokenFees);
+    const broadcasterAddresses = AddressFilter.filter(unfilteredAddresses);
+    if (unfilteredAddresses.length !== broadcasterAddresses.length) {
       const removedAddresses = unfilteredAddresses.filter(
-        address => !relayerAddresses.includes(address),
+        address => !broadcasterAddresses.includes(address),
       );
       BroadcasterDebug.log(
         `Filtered RAILGUN broadcaster addresses ${
@@ -50,20 +50,20 @@ export class BroadcasterSearch {
 
     const selectedBroadcasters: SelectedBroadcaster[] = [];
 
-    relayerAddresses.forEach((relayerAddress: string) => {
+    broadcasterAddresses.forEach((broadcasterAddress: string) => {
       const identifiers: string[] = Object.keys(
-        relayerTokenFees[relayerAddress].forIdentifier,
+        broadcasterTokenFees[broadcasterAddress].forIdentifier,
       );
       identifiers.forEach((identifier: string) => {
         const nextCachedFee =
-          relayerTokenFees[relayerAddress].forIdentifier[identifier];
+          broadcasterTokenFees[broadcasterAddress].forIdentifier[identifier];
         if (
           cachedFeeUnavailableOrExpired(nextCachedFee, chain, useRelayAdapt)
         ) {
           return;
         }
         const selectedBroadcaster: SelectedBroadcaster = {
-          railgunAddress: relayerAddress,
+          railgunAddress: broadcasterAddress,
           tokenFee: nextCachedFee,
           tokenAddress,
         };
@@ -78,22 +78,23 @@ export class BroadcasterSearch {
     chain: Chain,
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster[]> {
-    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
-    if (!isDefined(relayerTokenFees)) {
+    const broadcasterTokenFees =
+      BroadcasterFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(broadcasterTokenFees)) {
       return undefined;
     }
-    const allTokens = Object.keys(relayerTokenFees);
+    const allTokens = Object.keys(broadcasterTokenFees);
     const selectedBroadcasters: SelectedBroadcaster[] = [];
     allTokens.forEach((tokenAddress: string) => {
-      const relayersForToken = this.findBroadcastersForToken(
+      const broadcastersForToken = this.findBroadcastersForToken(
         chain,
         tokenAddress,
         useRelayAdapt,
       );
-      if (!relayersForToken) {
+      if (!broadcastersForToken) {
         return;
       }
-      selectedBroadcasters.push(...relayersForToken);
+      selectedBroadcasters.push(...broadcastersForToken);
     });
     return selectedBroadcasters;
   }
@@ -104,24 +105,25 @@ export class BroadcasterSearch {
     useRelayAdapt: boolean,
     percentageThreshold: number,
   ): Optional<SelectedBroadcaster> {
-    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
-    if (!isDefined(relayerTokenFees)) {
+    const broadcasterTokenFees =
+      BroadcasterFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(broadcasterTokenFees)) {
       return undefined;
     }
 
-    const relayersForToken = this.findBroadcastersForToken(
+    const broadcastersForToken = this.findBroadcastersForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
     );
-    if (!isDefined(relayersForToken)) {
+    if (!isDefined(broadcastersForToken)) {
       return undefined;
     }
-    if (relayersForToken.length === 0) {
+    if (broadcastersForToken.length === 0) {
       return undefined;
     }
 
-    const sortedBroadcasters = relayersForToken.sort(
+    const sortedBroadcasters = broadcastersForToken.sort(
       SelectedBroadcasterAscendingFee,
     );
 
@@ -140,21 +142,22 @@ export class BroadcasterSearch {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster> {
-    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
-    if (!isDefined(relayerTokenFees)) {
+    const broadcasterTokenFees =
+      BroadcasterFeeCache.feesForChain(chain)?.forToken;
+    if (!isDefined(broadcasterTokenFees)) {
       return undefined;
     }
 
-    const relayersForToken = this.findBroadcastersForToken(
+    const broadcastersForToken = this.findBroadcastersForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
     );
-    if (!isDefined(relayersForToken)) {
+    if (!isDefined(broadcastersForToken)) {
       return undefined;
     }
 
-    const sortedBroadcasters = relayersForToken.sort(
+    const sortedBroadcasters = broadcastersForToken.sort(
       SelectedBroadcasterAscendingFee,
     );
 

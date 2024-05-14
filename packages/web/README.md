@@ -17,7 +17,7 @@ await WakuBroadcasterClient.start(...)
 const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(...)
 
 // Create Relayed transaction and send through selected Broadcaster.
-const relayerTransaction = await BroadcasterTransaction.create(...)
+const broadcasterTransaction = await BroadcasterTransaction.create(...)
 await BroadcasterTransaction.send(...)
 ```
 

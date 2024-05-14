@@ -65,26 +65,26 @@ export class BroadcasterFeeCache {
       }
     }
 
-    const relayerName = nameForBroadcaster(railgunAddress, identifier);
+    const broadcasterName = nameForBroadcaster(railgunAddress, identifier);
     const networkName = network.name;
 
     if (invalidBroadcasterVersion(version)) {
       BroadcasterDebug.log(
-        `[Fees] Broadcaster version ${version} invalid (req ${BroadcasterConfig.MINIMUM_RELAYER_VERSION}-${BroadcasterConfig.MAXIMUM_RELAYER_VERSION}): ${relayerName}`,
+        `[Fees] Broadcaster version ${version} invalid (req ${BroadcasterConfig.MINIMUM_RELAYER_VERSION}-${BroadcasterConfig.MAXIMUM_RELAYER_VERSION}): ${broadcasterName}`,
       );
       return;
     }
 
     if (cachedFeeExpired(feeExpiration)) {
       BroadcasterDebug.log(
-        `[Fees] Fees expired for ${networkName} (${relayerName})`,
+        `[Fees] Fees expired for ${networkName} (${broadcasterName})`,
       );
       return;
     }
 
     const tokenAddresses = Object.keys(tokenFeeMap);
     BroadcasterDebug.log(
-      `[Fees] Updating fees for ${networkName} (${relayerName}): ${tokenAddresses.length} tokens`,
+      `[Fees] Updating fees for ${networkName} (${broadcasterName}): ${tokenAddresses.length} tokens`,
     );
 
     this.cache.forNetwork[networkName] ??= { forToken: {} };

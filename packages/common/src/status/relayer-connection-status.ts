@@ -36,12 +36,12 @@ export class BroadcasterStatus {
   }
 
   private static hasBroadcasterFeesForNetwork(chain: Chain) {
-    const relayerFees = BroadcasterFeeCache.feesForChain(chain);
-    if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
+    const broadcasterFees = BroadcasterFeeCache.feesForChain(chain);
+    if (!isDefined(broadcasterFees) || !isDefined(broadcasterFees.forToken)) {
       return false;
     }
 
-    const cachedTokenBroadcasters = Object.values(relayerFees.forToken);
+    const cachedTokenBroadcasters = Object.values(broadcasterFees.forToken);
 
     return (
       cachedTokenBroadcasters.find(tokenBroadcasterMap => {
@@ -57,15 +57,15 @@ export class BroadcasterStatus {
   }
 
   private static getAggregatedInfoForBroadcasters(chain: Chain) {
-    const relayerFees = BroadcasterFeeCache.feesForChain(chain);
-    if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
+    const broadcasterFees = BroadcasterFeeCache.feesForChain(chain);
+    if (!isDefined(broadcasterFees) || !isDefined(broadcasterFees.forToken)) {
       return {
         allBroadcasterFeesExpired: false,
         anyBroadcastersAvailable: false,
       };
     }
 
-    const cachedTokenBroadcasters = Object.values(relayerFees.forToken);
+    const cachedTokenBroadcasters = Object.values(broadcasterFees.forToken);
 
     let allBroadcasterFeesExpired = true;
     let anyBroadcastersAvailable = false;

@@ -31,21 +31,21 @@ export class WakuBroadcasterClient {
 
   static async start(
     chain: Chain,
-    relayerOptions: BroadcasterOptions,
+    broadcasterOptions: BroadcasterOptions,
     statusCallback: BroadcasterConnectionStatusCallback,
-    relayerDebugger?: BroadcasterDebugger,
+    broadcasterDebugger?: BroadcasterDebugger,
   ) {
     this.chain = chain;
     this.statusCallback = statusCallback;
 
-    WakuBroadcasterWakuCore.setBroadcasterOptions(relayerOptions);
+    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
 
-    if (relayerDebugger) {
-      BroadcasterDebug.setDebugger(relayerDebugger);
+    if (broadcasterDebugger) {
+      BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
     BroadcasterFeeCache.init(
-      relayerOptions.poiActiveListKeys ??
+      broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
     );
 
@@ -111,7 +111,7 @@ export class WakuBroadcasterClient {
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
    * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
-   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedBroadcaster> object.
    */
@@ -132,9 +132,9 @@ export class WakuBroadcasterClient {
   }
 
   /**
-   * The function `findAllBroadcastersForChain` returns an array of all available relayers fee-tokens for a given chain.
-   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find all relayers for.
-   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * The function `findAllBroadcastersForChain` returns an array of all available broadcasters fee-tokens for a given chain.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find all broadcasters for.
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedBroadcaster[]> object.
    */
@@ -150,13 +150,13 @@ export class WakuBroadcasterClient {
   }
 
   /**
-   * The function `findRandomBroadcasterForToken` selects a random broadcaster from a list of relayers that is based on
+   * The function `findRandomBroadcasterForToken` selects a random broadcaster from a list of broadcasters that is based on
    * their fees for a specific token, and how much higher their fees are compared to the broadcaster with
    * the lowest fees.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
    * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
-   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @param {number} [percentageThreshold=5] - The `percentageThreshold` parameter is a number that
    * represents the maximum percentage increase in fees that a broadcaster can have compared to the broadcaster
@@ -185,11 +185,11 @@ export class WakuBroadcasterClient {
 
   /**
    * The function `findBroadcastersForToken` takes in a chain, token address, and a boolean flag, and
-   * returns an array of selected relayers based on the provided parameters.
+   * returns an array of selected broadcasters based on the provided parameters.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
    * address of an ERC20 Token on the network; a broadcaster broadcasting fees for this token will be selected.
-   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
+   * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedBroadcaster[]> object.
    */

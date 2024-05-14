@@ -94,8 +94,8 @@ export class BroadcasterTransaction {
     txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
-    relayerRailgunAddress: string,
-    relayerFeesID: string,
+    broadcasterRailgunAddress: string,
+    broadcasterFeesID: string,
     chain: Chain,
     nullifiers: string[],
     overallBatchMinGasPrice: bigint,
@@ -106,8 +106,8 @@ export class BroadcasterTransaction {
       txidVersionForInputs,
       to,
       data,
-      relayerRailgunAddress,
-      relayerFeesID,
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
       chain,
       overallBatchMinGasPrice,
       useRelayAdapt,
@@ -125,8 +125,8 @@ export class BroadcasterTransaction {
     txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
-    relayerRailgunAddress: string,
-    relayerFeesID: string,
+    broadcasterRailgunAddress: string,
+    broadcasterFeesID: string,
     chain: Chain,
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
@@ -136,19 +136,18 @@ export class BroadcasterTransaction {
       throw new Error('Data field must be a hex string.');
     }
 
-    const { viewingPublicKey: relayerViewingKey } = getRailgunWalletAddressData(
-      relayerRailgunAddress,
-    );
+    const { viewingPublicKey: broadcasterViewingKey } =
+      getRailgunWalletAddressData(broadcasterRailgunAddress);
 
     const transactData: BroadcasterRawParamsTransact = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
-      relayerViewingKey: bytesToHex(relayerViewingKey),
+      broadcasterViewingKey: bytesToHex(broadcasterViewingKey),
       chainID: chain.id,
       chainType: chain.type,
       minGasPrice: overallBatchMinGasPrice.toString(),
-      feesID: relayerFeesID,
+      feesID: broadcasterFeesID,
       useRelayAdapt,
       devLog: BroadcasterConfig.IS_DEV,
       minVersion: BroadcasterConfig.MINIMUM_RELAYER_VERSION,
@@ -158,7 +157,7 @@ export class BroadcasterTransaction {
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
       transactData,
-      relayerViewingKey,
+      broadcasterViewingKey,
     );
 
     return encryptedDataResponse;

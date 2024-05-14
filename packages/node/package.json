@@ -1,1 +1,1 @@
-/Users/zy0n/github/waku-relayer-client/packages/common/.prettierrc.cjs
+/Users/zy0n/github/waku-broadcaster-client/packages/common/.prettierrc.cjs

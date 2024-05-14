@@ -40,7 +40,7 @@ let walletA: RailgunWallet;
 let walletB: RailgunWallet;
 let validFeeMessageData: BroadcasterFeeMessageData;
 
-let relayerFeeCacheStub: SinonStub;
+let broadcasterFeeCacheStub: SinonStub;
 
 const createPayload = async (
   feeMessageData: BroadcasterFeeMessageData,
@@ -62,7 +62,7 @@ describe('handle-fees-message', () => {
   before(async () => {
     await initTestEngine();
 
-    relayerFeeCacheStub = sinon
+    broadcasterFeeCacheStub = sinon
       .stub(BroadcasterFeeCache, 'addTokenFees')
       .returns();
 
@@ -94,11 +94,11 @@ describe('handle-fees-message', () => {
   });
 
   afterEach(() => {
-    relayerFeeCacheStub.resetHistory();
+    broadcasterFeeCacheStub.resetHistory();
   });
 
   after(() => {
-    relayerFeeCacheStub.restore();
+    broadcasterFeeCacheStub.restore();
   });
 
   it('Should not cache fees with invalid signature', async () => {
@@ -108,7 +108,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid payloads', async () => {
@@ -119,7 +119,7 @@ describe('handle-fees-message', () => {
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
 
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid contentTopic', async () => {
@@ -133,7 +133,7 @@ describe('handle-fees-message', () => {
       message,
       contentTopics.transact(chain),
     );
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid timestamp', async () => {
@@ -143,7 +143,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid version', async () => {
@@ -159,7 +159,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should cache fees with valid fields and signature', async () => {
@@ -169,7 +169,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.calledOnce).to.be.true;
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 
   it('Should cache fees with valid fields, no timestamp', async () => {
@@ -178,6 +178,6 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.calledOnce).to.be.true;
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 });

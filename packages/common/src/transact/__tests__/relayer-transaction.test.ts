@@ -67,18 +67,18 @@ describe('broadcaster-transaction', () => {
   });
 
   it('Should generate and relay a Broadcaster transaction', async () => {
-    const relayerRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
-    const relayerFeesID = 'abc';
+    const broadcasterRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
+    const broadcasterFeesID = 'abc';
     const nullifiers = ['0x012345'];
     const overallBatchMinGasPrice = BigInt('0x0100');
     const useRelayAdapt = true;
 
-    const relayerTransaction = await BroadcasterTransaction.create(
+    const broadcasterTransaction = await BroadcasterTransaction.create(
       TXIDVersion.V2_PoseidonMerkle,
       '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
       '0x1234abcdef', // data
-      relayerRailgunAddress,
-      relayerFeesID,
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
       chain,
       nullifiers,
       overallBatchMinGasPrice,
@@ -105,7 +105,7 @@ describe('broadcaster-transaction', () => {
     };
 
     const [response] = await Promise.all([
-      relayerTransaction.send(),
+      broadcasterTransaction.send(),
       mockDelayedResponse(),
     ]);
 

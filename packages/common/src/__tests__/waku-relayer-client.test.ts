@@ -19,7 +19,7 @@ const { expect } = chai;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
-const relayerOptions: BroadcasterOptions = {};
+const broadcasterOptions: BroadcasterOptions = {};
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const WETH_ADDRESS_GOERLI = '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6';
@@ -40,7 +40,11 @@ describe('waku-broadcaster-client', () => {
   it('Should start up the client, pull live fees and find best Broadcaster, then error and reconnect', async () => {
     WakuBroadcasterClient.pollDelay = 500;
 
-    await WakuBroadcasterClient.start(chain, relayerOptions, statusCallback);
+    await WakuBroadcasterClient.start(
+      chain,
+      broadcasterOptions,
+      statusCallback,
+    );
 
     expect(currentChain).to.deep.equal(chain);
     expect(currentStatus).to.equal(BroadcasterConnectionStatus.Searching);
