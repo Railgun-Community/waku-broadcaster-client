@@ -6,14 +6,14 @@ import {
   MOCK_RAILGUN_WALLET_ADDRESS,
 } from '../../tests/mocks.test.js';
 import sinon, { SinonStub } from 'sinon';
-import { WakuRelayerWakuCore } from '../../waku/waku-relayer-waku-core.js';
-import { RelayerTransaction } from '../relayer-transaction.js';
+import { WakuRelayerWakuCore } from '../../waku/waku-broadcaster-waku-core.js';
+import { RelayerTransaction } from '../broadcaster-transaction.js';
 import {
   TXIDVersion,
   delay,
   networkForChain,
 } from '@railgun-community/shared-models';
-import { RelayerTransactResponse } from '../relayer-transact-response.js';
+import { RelayerTransactResponse } from '../broadcaster-transact-response.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test.js';
@@ -39,7 +39,7 @@ const encryptResponseData = (
   return encryptJSONDataWithSharedKey(data, sharedKey);
 };
 
-describe('relayer-transaction', () => {
+describe('broadcaster-transaction', () => {
   before(async function run() {
     this.timeout(60000);
 

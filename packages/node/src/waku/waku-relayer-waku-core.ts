@@ -2,8 +2,8 @@ import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
-import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
+import { RelayerDebug } from '../utils/broadcaster-debug.js';
+import { RelayerFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
@@ -134,7 +134,9 @@ export class WakuRelayerWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
+    return (
+      this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    );
   }
 
   static getPubSubPeerCount(): number {
@@ -166,7 +168,11 @@ export class WakuRelayerWakuCore {
     }
   }
 
-  static async relayMessage(data: object, contentTopic: string, retry: number = 0): Promise<void> {
+  static async relayMessage(
+    data: object,
+    contentTopic: string,
+    retry: number = 0,
+  ): Promise<void> {
     if (!WakuRelayerWakuCore.waku?.relay) {
       throw new Error('Relayer did not receive message. Please try again.');
     }

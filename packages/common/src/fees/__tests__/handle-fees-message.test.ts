@@ -18,7 +18,7 @@ import { initTestEngine } from '../../tests/setup.test.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { contentTopics } from '../../waku/waku-topics.js';
 import { handleRelayerFeesMessage } from '../handle-fees-message.js';
-import { RelayerFeeCache } from '../relayer-fee-cache.js';
+import { RelayerFeeCache } from '../broadcaster-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

@@ -1,7 +1,7 @@
 import { decryptAESGCM256 } from '@railgun-community/wallet';
 import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '../utils/conversion.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
+import { RelayerDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 
 export type WakuTransactResponse = {

@@ -7,9 +7,9 @@ import {
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { WakuRelayerClient } from '../waku-relayer-client.js';
+import { WakuRelayerClient } from '../waku-broadcaster-client.js';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
-import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core.js';
+import { WakuRelayerWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { RelayerOptions } from '../models/index.js';
 import { RelayNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
@@ -32,7 +32,7 @@ const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
   currentStatus = status;
 };
 
-describe('waku-relayer-client', () => {
+describe('waku-broadcaster-client', () => {
   after(async () => {
     await WakuRelayerClient.stop();
   });

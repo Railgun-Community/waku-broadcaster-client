@@ -3,7 +3,7 @@ import { CachedTokenFee } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test.js';
-import { RelayerFeeCache, RelayerFeeCacheState } from '../relayer-fee-cache.js';
+import { RelayerFeeCache, RelayerFeeCacheState } from '../broadcaster-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -29,8 +29,8 @@ const railgunAddress = '1234';
 const identifier = 'abc';
 const feeExpiration = Date.now() + 10000000;
 
-describe('relayer-fee-cache', () => {
-  it('Should return relayer-fee-cache initial state', () => {
+describe('broadcaster-fee-cache', () => {
+  it('Should return broadcaster-fee-cache initial state', () => {
     RelayerFeeCache.init(['test_list']);
     RelayerFeeCache.resetCache(chain);
 
@@ -40,7 +40,7 @@ describe('relayer-fee-cache', () => {
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
-  it('Should not update relayer fees for bad relayer versions', () => {
+  it('Should not update broadcaster fees for bad broadcaster versions', () => {
     RelayerFeeCache.resetCache(chain);
 
     RelayerFeeCache.addTokenFees(
@@ -66,7 +66,7 @@ describe('relayer-fee-cache', () => {
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
-  it('Should not update relayer fees for incorrect chain', () => {
+  it('Should not update broadcaster fees for incorrect chain', () => {
     RelayerFeeCache.resetCache(chain);
 
     RelayerFeeCache.addTokenFees(
@@ -82,7 +82,7 @@ describe('relayer-fee-cache', () => {
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
-  it('Should not update relayer fees for invalid list keys', () => {
+  it('Should not update broadcaster fees for invalid list keys', () => {
     RelayerFeeCache.resetCache(chain);
 
     RelayerFeeCache.addTokenFees(
@@ -98,7 +98,7 @@ describe('relayer-fee-cache', () => {
     expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
-  it('Should update relayer fees for chain', () => {
+  it('Should update broadcaster fees for chain', () => {
     RelayerFeeCache.resetCache(chain);
 
     RelayerFeeCache.addTokenFees(

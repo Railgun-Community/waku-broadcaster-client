@@ -6,18 +6,18 @@ import {
   RelayerConnectionStatus,
   SelectedRelayer,
 } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from './fees/relayer-fee-cache.js';
+import { RelayerFeeCache } from './fees/broadcaster-fee-cache.js';
 import { AddressFilter } from './filters/address-filter.js';
 import {
   RelayerConnectionStatusCallback,
   RelayerDebugger,
   RelayerOptions,
 } from './models/export-models.js';
-import { RelayerSearch } from './search/best-relayer.js';
-import { RelayerStatus } from './status/relayer-connection-status.js';
-import { RelayerDebug } from './utils/relayer-debug.js';
+import { RelayerSearch } from './search/best-broadcaster.js';
+import { RelayerStatus } from './status/broadcaster-connection-status.js';
+import { RelayerDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
-import { WakuRelayerWakuCore } from './waku/waku-relayer-waku-core.js';
+import { WakuRelayerWakuCore } from './waku/waku-broadcaster-waku-core.js';
 import { RelayNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 
@@ -46,7 +46,7 @@ export class WakuRelayerClient {
 
     RelayerFeeCache.init(
       relayerOptions.poiActiveListKeys ??
-      POI_REQUIRED_LISTS.map(list => list.key),
+        POI_REQUIRED_LISTS.map(list => list.key),
     );
 
     try {
@@ -56,7 +56,6 @@ export class WakuRelayerClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
-
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -105,10 +104,10 @@ export class WakuRelayerClient {
     return await WakuRelayerWakuCore.getFilterPeerCount();
   }
   /**
-   * The function `findBestRelayer` finds the relayer with the lowest fees for a given chain and token.
-   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * The function `findBestRelayer` finds the broadcaster with the lowest fees for a given chain and token.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network, a relayer broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedRelayer> object.
@@ -144,18 +143,18 @@ export class WakuRelayerClient {
   }
 
   /**
-   * The function `findRandomRelayerForToken` selects a random relayer from a list of relayers that is based on
-   * their fees for a specific token, and how much higher their fees are compared to the relayer with
+   * The function `findRandomRelayerForToken` selects a random broadcaster from a list of relayers that is based on
+   * their fees for a specific token, and how much higher their fees are compared to the broadcaster with
    * the lowest fees.
-   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network, a relayer broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
    * @param {number} [percentageThreshold=5] - The `percentageThreshold` parameter is a number that
-   * represents the maximum percentage increase in fees that a relayer can have compared to the relayer
+   * represents the maximum percentage increase in fees that a broadcaster can have compared to the broadcaster
    * with the lowest fees. For example, if the `percentageThreshold` is set to 5, it means that a
-   * relayer can have a maximum of 5% higher fees than the relayer with the lowest fees and still be selected.
+   * broadcaster can have a maximum of 5% higher fees than the broadcaster with the lowest fees and still be selected.
    * Defaults to 5.
    * @returns an Optional<SelectedRelayer> object.
    */
@@ -180,9 +179,9 @@ export class WakuRelayerClient {
   /**
    * The function `findRelayersForToken` takes in a chain, token address, and a boolean flag, and
    * returns an array of selected relayers based on the provided parameters.
-   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a relayer for.
+   * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network; a relayer broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network; a broadcaster broadcasting fees for this token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedRelayer[]> object.
@@ -196,7 +195,11 @@ export class WakuRelayerClient {
       return;
     }
 
-    return RelayerSearch.findRelayersForToken(chain, tokenAddress, useRelayAdapt);
+    return RelayerSearch.findRelayersForToken(
+      chain,
+      tokenAddress,
+      useRelayAdapt,
+    );
   }
 
   static setAddressFilters(
@@ -229,7 +232,7 @@ export class WakuRelayerClient {
     }
     this.isRestarting = true;
     try {
-      RelayerDebug.log("Restarting Waku...")
+      RelayerDebug.log('Restarting Waku...');
       await WakuRelayerWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
     } catch (cause) {
@@ -286,4 +289,7 @@ export class WakuRelayerClient {
     WakuRelayerWakuCore.relayMessage(data, customTopic);
   }
 
+  static getWakuCore(): Optional<RelayNode> {
+    return WakuRelayerWakuCore.waku;
+  }
 }

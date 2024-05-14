@@ -1,5 +1,5 @@
 {
-  "name": "@railgun-community/waku-relayer-client-common",
+  "name": "@railgun-community/waku-broadcaster-client-common",
   "version": "6.2.13",
   "license": "MIT",
   "scripts": {

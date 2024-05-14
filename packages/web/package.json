@@ -1,5 +1,5 @@
 {
-  "name": "@railgun-community/waku-relayer-client-web",
+  "name": "@railgun-community/waku-broadcaster-client-web",
   "version": "6.2.13",
   "license": "MIT",
   "main": "dist/index.js",

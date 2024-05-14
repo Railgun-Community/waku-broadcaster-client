@@ -2,7 +2,7 @@
 
 This package is meant specifically for browsers.
 
-`yarn add @railgun-community/waku-relayer-client-web`
+`yarn add @railgun-community/waku-broadcaster-client-web`
 
 ## The Basics
 
@@ -13,7 +13,7 @@ await WakuRelayerClient.start(...)
 // Wait for Relayers to connect (5-10 sec) and client to collect fees.
 // Relayers broadcast fees through the privacy-safe Waku network.
 
-// Get relayer with lowest fee for a given ERC20 token.
+// Get broadcaster with lowest fee for a given ERC20 token.
 const selectedRelayer = await WakuRelayerClient.findBestRelayer(...)
 
 // Create Relayed transaction and send through selected Relayer.

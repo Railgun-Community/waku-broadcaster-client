@@ -3,10 +3,10 @@ import {
   Chain,
   RelayerConnectionStatus,
 } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from '../fees/relayer-fee-cache.js';
+import { RelayerFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { AddressFilter } from '../filters/address-filter.js';
-import { cachedFeeExpired } from '../utils/relayer-util.js';
-import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core.js';
+import { cachedFeeExpired } from '../utils/broadcaster-util.js';
+import { WakuRelayerWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { isDefined } from '../utils/is-defined.js';
 
 export class RelayerStatus {

@@ -1,10 +1,16 @@
 import { Chain, compareChains, delay } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
-import { IMessage, IFilterSubscription, IDecoder, RelayNode, Unsubscribe } from '@waku/interfaces';
+import {
+  IMessage,
+  IFilterSubscription,
+  IDecoder,
+  RelayNode,
+  Unsubscribe,
+} from '@waku/interfaces';
 import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
-import { RelayerTransactResponse } from '../transact/relayer-transact-response.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
+import { RelayerTransactResponse } from '../transact/broadcaster-transact-response.js';
+import { RelayerDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 
@@ -12,12 +18,12 @@ type SubscriptionParams = {
   topic: string;
   decoder: IDecoder<any> | IDecoder<any>[];
   callback: (message: any) => void;
-}
+};
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
-  private static currentSubscriptions: (Unsubscribe)[] = [];
+  private static currentSubscriptions: Unsubscribe[] = [];
   static setObserversForChain = async (
     waku: Optional<RelayNode>,
     chain: Chain,
@@ -45,7 +51,6 @@ export class WakuObservers {
   };
 
   static removeAllObservers = () => {
-
     for (const unsubscribe of this.currentSubscriptions ?? []) {
       unsubscribe();
     }
@@ -56,23 +61,31 @@ export class WakuObservers {
   private static getDecodersForChain = (chain: Chain) => {
     const contentTopicFees = contentTopics.fees(chain);
     const contentTopicTransactResponse = contentTopics.transactResponse(chain);
-    const feesDecoder = createDecoder(contentTopicFees, WAKU_RAILGUN_PUB_SUB_TOPIC);
-    const transactResponseDecoder = createDecoder(contentTopicTransactResponse, WAKU_RAILGUN_PUB_SUB_TOPIC);
-    const feesCallback = (message: IMessage) => handleRelayerFeesMessage(chain, message, contentTopicFees);
-    const transactResponseCallback = RelayerTransactResponse.handleRelayerTransactionResponseMessage;
+    const feesDecoder = createDecoder(
+      contentTopicFees,
+      WAKU_RAILGUN_PUB_SUB_TOPIC,
+    );
+    const transactResponseDecoder = createDecoder(
+      contentTopicTransactResponse,
+      WAKU_RAILGUN_PUB_SUB_TOPIC,
+    );
+    const feesCallback = (message: IMessage) =>
+      handleRelayerFeesMessage(chain, message, contentTopicFees);
+    const transactResponseCallback =
+      RelayerTransactResponse.handleRelayerTransactionResponseMessage;
 
     const feesSubscriptionParams = {
       topic: contentTopicFees,
       decoder: feesDecoder,
-      callback: feesCallback
-    }
+      callback: feesCallback,
+    };
     const transactResponseSubscriptionParams = {
       topic: contentTopicTransactResponse,
       decoder: transactResponseDecoder,
-      callback: transactResponseCallback
-    }
+      callback: transactResponseCallback,
+    };
     return [feesSubscriptionParams, transactResponseSubscriptionParams];
-  }
+  };
 
   static subscribedPeers: string[] = [];
 
@@ -82,8 +95,8 @@ export class WakuObservers {
     }
 
     await WakuObservers.addSubscriptions(chain, waku).catch(err => {
-      RelayerDebug.log(`Error adding Observers. ${err.message}`)
-    })
+      RelayerDebug.log(`Error adding Observers. ${err.message}`);
+    });
 
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
@@ -99,38 +112,38 @@ export class WakuObservers {
     callback: (message: any) => void,
   ): Promise<void> {
     if (!isDefined(waku)) {
-      RelayerDebug.log('No waku instance found, Transport Subscription not added.');
+      RelayerDebug.log(
+        'No waku instance found, Transport Subscription not added.',
+      );
       return;
     }
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
-    const unsubscribe = await waku.relay.subscribe(
-      decoder,
-      callback
-    );
+    const unsubscribe = await waku.relay.subscribe(decoder, callback);
     this.currentSubscriptions.push(unsubscribe);
     this.currentContentTopics.push(transportTopic);
   }
 
-  private static async addSubscriptions(chain: Optional<Chain>, waku: Optional<RelayNode>) {
-
+  private static async addSubscriptions(
+    chain: Optional<Chain>,
+    waku: Optional<RelayNode>,
+  ) {
     if (!isDefined(chain) || !isDefined(waku)) {
-      RelayerDebug.log("AddSubscription: No Waku or Chain defined.")
+      RelayerDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
 
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
     const topics = subscriptionParams.map(subParam => subParam.topic);
-    const newTopics = topics.filter(topic => !this.currentContentTopics.includes(topic));
+    const newTopics = topics.filter(
+      topic => !this.currentContentTopics.includes(topic),
+    );
     this.currentContentTopics.push(...newTopics);
 
     this.currentSubscriptions ??= [];
     for (const subParam of subscriptionParams) {
       const { decoder, callback } = subParam;
-      const unsubscribe = await waku.relay.subscribe(
-        decoder,
-        callback
-      );
+      const unsubscribe = await waku.relay.subscribe(decoder, callback);
       this.currentSubscriptions.push(unsubscribe);
     }
   }
