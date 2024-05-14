@@ -59,7 +59,7 @@ export class RelayerFeeCache {
     for (const listKey of requiredPOIListKeys) {
       if (!this.poiActiveListKeys.includes(listKey)) {
         RelayerDebug.log(
-          `[Fees] Relayer ${railgunAddress} requires POI list key ${listKey}, which is not active.`,
+          `[Fees] Broadcaster ${railgunAddress} requires POI list key ${listKey}, which is not active.`,
         );
         return;
       }
@@ -70,7 +70,7 @@ export class RelayerFeeCache {
 
     if (invalidRelayerVersion(version)) {
       RelayerDebug.log(
-        `[Fees] Relayer version ${version} invalid (req ${RelayerConfig.MINIMUM_RELAYER_VERSION}-${RelayerConfig.MAXIMUM_RELAYER_VERSION}): ${relayerName}`,
+        `[Fees] Broadcaster version ${version} invalid (req ${RelayerConfig.MINIMUM_RELAYER_VERSION}-${RelayerConfig.MAXIMUM_RELAYER_VERSION}): ${relayerName}`,
       );
       return;
     }

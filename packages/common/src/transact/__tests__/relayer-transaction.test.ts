@@ -66,7 +66,7 @@ describe('broadcaster-transaction', () => {
     stopRailgunEngine();
   });
 
-  it('Should generate and relay a Relayer transaction', async () => {
+  it('Should generate and relay a Broadcaster transaction', async () => {
     const relayerRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
     const relayerFeesID = 'abc';
     const nullifiers = ['0x012345'];

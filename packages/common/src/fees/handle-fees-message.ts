@@ -17,7 +17,10 @@ import { invalidRelayerVersion } from '../utils/broadcaster-util.js';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 
-const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: Optional<Date>) => {
+const isExpiredTimestamp = (
+  timestamp: Optional<Date>,
+  expirationFeeTimestamp: Optional<Date>,
+) => {
   if (!timestamp || !expirationFeeTimestamp) {
     return false;
   }
@@ -31,15 +34,22 @@ const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: O
   const nowTime = Date.now();
   const expirationMsec = nowTime - 45 * 1000;
   // const expirationFeeMsec = nowTime + 45 * 1000;
-  const timestampExpired = messageTimestamp.getTime() < expirationMsec
+  const timestampExpired = messageTimestamp.getTime() < expirationMsec;
   if (timestampExpired) {
-    RelayerDebug.log(`Relayer Fee STALE: Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+    RelayerDebug.log(
+      `Broadcaster Fee STALE: Difference was ${
+        (Date.now() - messageTimestamp.getTime()) / 1000
+      }s`,
+    );
   } else {
-    RelayerDebug.log(`Relayer Fee receipt SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
-
+    RelayerDebug.log(
+      `Broadcaster Fee receipt SUCCESS in ${
+        (Date.now() - messageTimestamp.getTime()) / 1000
+      }s`,
+    );
   }
   // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
-  return timestampExpired;//  || feeExpired;
+  return timestampExpired; //  || feeExpired;
 };
 
 export const handleRelayerFeesMessage = async (
@@ -49,11 +59,11 @@ export const handleRelayerFeesMessage = async (
 ) => {
   try {
     if (!isDefined(message.payload)) {
-      RelayerDebug.log('Skipping Relayer fees message: NO PAYLOAD');
+      RelayerDebug.log('Skipping Broadcaster fees message: NO PAYLOAD');
       return;
     }
     if (contentTopic !== contentTopics.fees(chain)) {
-      RelayerDebug.log('Skipping Relayer fees message: WRONG TOPIC');
+      RelayerDebug.log('Skipping Broadcaster fees message: WRONG TOPIC');
       return;
     }
     const payload = bytesToUtf8(message.payload);
@@ -65,13 +75,13 @@ export const handleRelayerFeesMessage = async (
     const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
     const feeExpirationTime = new Date(feeMessageData.feeExpiration);
     if (isExpiredTimestamp(message.timestamp, feeExpirationTime)) {
-      RelayerDebug.log('Skipping fee message. Timestamp Expired.')
+      RelayerDebug.log('Skipping fee message. Timestamp Expired.');
       return;
     }
 
     if (!isDefined(crypto.subtle) && RelayerConfig.IS_DEV) {
       RelayerDebug.log(
-        'Skipping Relayer fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
+        'Skipping Broadcaster fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
       );
       updateFeesForRelayer(chain, feeMessageData);
       return;
@@ -79,7 +89,7 @@ export const handleRelayerFeesMessage = async (
 
     if (invalidRelayerVersion(feeMessageData.version)) {
       RelayerDebug.log(
-        `Skipping Relayer outside version range: ${feeMessageData.version}, ${feeMessageData.railgunAddress}`,
+        `Skipping Broadcaster outside version range: ${feeMessageData.version}, ${feeMessageData.railgunAddress}`,
       );
       return;
     }
@@ -101,7 +111,7 @@ export const handleRelayerFeesMessage = async (
       throw new Error('Unexpected non-error thrown', { cause });
     }
 
-    RelayerDebug.error(new Error('Error handling Relayer fees', { cause }));
+    RelayerDebug.error(new Error('Error handling Broadcaster fees', { cause }));
   }
 };
 

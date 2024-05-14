@@ -37,7 +37,7 @@ describe('waku-broadcaster-client', () => {
     await WakuRelayerClient.stop();
   });
 
-  it('Should start up the client, pull live fees and find best Relayer, then error and reconnect', async () => {
+  it('Should start up the client, pull live fees and find best Broadcaster, then error and reconnect', async () => {
     WakuRelayerClient.pollDelay = 500;
 
     await WakuRelayerClient.start(chain, relayerOptions, statusCallback);
@@ -132,14 +132,13 @@ describe('waku-broadcaster-client', () => {
         // Mock callback function
       };
 
-      const formattedTopic = contentTopics.encrypted(topic)
+      const formattedTopic = contentTopics.encrypted(topic);
       // input waku is a placeholder, not used in the function here, it is used in waku-transport.
       // need to keep same function abi as waku-transport
       await WakuRelayerClient.addTransportSubscription(waku, topic, callback);
 
       expect(WakuRelayerClient.getContentTopics()).to.include(formattedTopic);
     });
-
   });
 
   // describe('sendTransport', () => {

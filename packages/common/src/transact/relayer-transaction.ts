@@ -29,13 +29,13 @@ import { getAddress, isHexString } from 'ethers';
 //
 // Client:
 // 1. Generates random 16 bytes: `responseKey` and adds to transact data
-// 2. Generates a `sharedKey` from a random `privkey` and the Relayer's `pubkey`
+// 2. Generates a `sharedKey` from a random `privkey` and the Broadcaster's `pubkey`
 // 3. Encrypts the transact data asymmetrically, using `sharedKey` (`encryptedData = encrypt(transactData, sharedKey)`)
 // 4. Includes `publicKey` and `encryptedData` in transact message
 // 5. Sends the message
 //
-// Relayer:
-// 1. Decrypts the `encryptedData` using Relayer privkey and `sharedKey` (if error, it's not addressed to us)
+// Broadcaster:
+// 1. Decrypts the `encryptedData` using Broadcaster privkey and `sharedKey` (if error, it's not addressed to us)
 // 2. Processes transaction
 // 3. Encrypts response (`txHash` or `error`) using `responseKey` (symmetric: AES-GCM-256)
 // 4. Sends back encrypted response on transact-response: {encryptedData}
@@ -57,7 +57,7 @@ type RelayMessageData = {
   params: RelayerEncryptedMethodParams;
 };
 
-// NOTE: Relayer default transaction-send timeout is 45 seconds.
+// NOTE: Broadcaster default transaction-send timeout is 45 seconds.
 const SECONDS_PER_RETRY = 12;
 const POLL_DELAY_SECONDS = 0.2;
 const RETRY_TRANSACTION_SECONDS = 45;

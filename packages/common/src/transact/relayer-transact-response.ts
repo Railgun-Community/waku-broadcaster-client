@@ -47,7 +47,7 @@ export class RelayerTransactResponse {
         return;
       }
 
-      RelayerDebug.log('Handle Relayer transact-response message:');
+      RelayerDebug.log('Handle Broadcaster transact-response message:');
       RelayerDebug.log(JSON.stringify(decrypted));
 
       RelayerTransactResponse.storedTransactionResponse =
@@ -57,7 +57,7 @@ export class RelayerTransactResponse {
         throw new Error('Unexpected non-error thrown', { cause });
       }
       RelayerDebug.error(
-        new Error('Could not handle Relayer tx response message', { cause }),
+        new Error('Could not handle Broadcaster tx response message', { cause }),
       );
     }
   }

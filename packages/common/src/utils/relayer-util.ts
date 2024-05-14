@@ -32,7 +32,7 @@ export const nameForRelayer = (
 
 export const cachedFeeExpired = (feeExpiration: number) => {
   // Minimum of 40sec until expiration, in order to run the proof and submit.
-  // If submitted after feeCacheID expires, it risks "Bad token fee" error from Relayer.
+  // If submitted after feeCacheID expires, it risks "Bad token fee" error from Broadcaster.
   return feeExpiration < Date.now() + FEE_EXPIRATION_MINIMUM_MSEC;
 };
 

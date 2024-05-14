@@ -60,7 +60,7 @@ export class WakuRelayerClient {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
-      throw new Error('Cannot connect to Relayer network.', { cause });
+      throw new Error('Cannot connect to Broadcaster network.', { cause });
     }
   }
 
@@ -241,13 +241,13 @@ export class WakuRelayerClient {
         return;
       }
       RelayerDebug.error(
-        new Error('Error reinitializing Waku Relayer Client', { cause }),
+        new Error('Error reinitializing Waku Broadcaster Client', { cause }),
       );
     }
   }
 
   /**
-   * Start keep-alive poller which checks Relayer status every few seconds.
+   * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
