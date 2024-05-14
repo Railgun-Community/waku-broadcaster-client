@@ -1528,10 +1528,10 @@
   resolved "https://registry.yarnpkg.com/@railgun-community/poseidon-hash-wasm/-/poseidon-hash-wasm-1.0.1.tgz#bfd3b3f915391a59486d8c9d632069f029e152d6"
   integrity sha512-zDAbMu095ZjMqsKIoyOnuKR4Zofnqqx4eTCtnA6qYglnexX5cadxItvJa3ozhDDTmFkDGAidDssQ7Pzl3wwLDA==
 
-"@railgun-community/shared-models@6.4.x":
-  version "6.4.3"
-  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-6.4.3.tgz#7d9b4e57f0b507f3612f97dba780f638f1954f05"
-  integrity sha512-eGC3gDBJKAFOwSuriSfXEdY82xkrT/AAzeuWSOnsC2jwFw7fGPNdWAKA3yPDM3Nrdo/4EgPO8ezqydeweOFUzw==
+"@railgun-community/shared-models@7.0.x":
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-7.0.2.tgz#ae95be26cdbd9c20c701c8e2f92398bef183a89f"
+  integrity sha512-kDTmhfIRl7cSLlVA6Fa1XObG8WJRQ3jx/+4elscCwJIi6KBnCMFDFKiI+EsP9XNRkvnqIv6mv4+eLQYn3kCqXw==
 
 "@railgun-community/shared-models@~6.4.5":
   version "6.4.6"
