@@ -4,7 +4,7 @@ import {
   networkForChain,
   versionCompare,
 } from '@railgun-community/shared-models';
-import { RelayerConfig } from '../models/broadcaster-config.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { isDefined } from './is-defined.js';
 
 const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
@@ -19,7 +19,7 @@ export const shortenAddress = (address: string): string => {
   return `${address.slice(0, 8)}...${address.slice(-4)}`;
 };
 
-export const nameForRelayer = (
+export const nameForBroadcaster = (
   railgunAddress: string,
   identifier: Optional<string>,
 ) => {
@@ -36,12 +36,16 @@ export const cachedFeeExpired = (feeExpiration: number) => {
   return feeExpiration < Date.now() + FEE_EXPIRATION_MINIMUM_MSEC;
 };
 
-export const invalidRelayerVersion = (version: Optional<string>) => {
+export const invalidBroadcasterVersion = (version: Optional<string>) => {
   return (
-    versionCompare(version ?? '0.0.0', RelayerConfig.MINIMUM_RELAYER_VERSION) <
-      0 ||
-    versionCompare(version ?? '0.0.0', RelayerConfig.MAXIMUM_RELAYER_VERSION) >
-      0
+    versionCompare(
+      version ?? '0.0.0',
+      BroadcasterConfig.MINIMUM_RELAYER_VERSION,
+    ) < 0 ||
+    versionCompare(
+      version ?? '0.0.0',
+      BroadcasterConfig.MAXIMUM_RELAYER_VERSION,
+    ) > 0
   );
 };
 

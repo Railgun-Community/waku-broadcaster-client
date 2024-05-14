@@ -1,21 +1,21 @@
 import {
   Chain,
-  RelayerConnectionStatus,
+  BroadcasterConnectionStatus,
 } from '@railgun-community/shared-models';
 
-export type RelayerOptions = {
+export type BroadcasterOptions = {
   poiActiveListKeys?: string[];
   pubSubTopic?: string;
   additionalDirectPeers?: string[];
   peerDiscoveryTimeout?: number;
 };
 
-export type RelayerConnectionStatusCallback = (
+export type BroadcasterConnectionStatusCallback = (
   chain: Chain,
-  status: RelayerConnectionStatus,
+  status: BroadcasterConnectionStatus,
 ) => void;
 
-export type RelayerDebugger = {
+export type BroadcasterDebugger = {
   log: (msg: string) => void;
   error: (error: Error) => void;
 };

@@ -3,12 +3,15 @@ import { CachedTokenFee } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { MOCK_CHAIN_ETHEREUM } from '../../tests/mocks.test.js';
-import { RelayerFeeCache, RelayerFeeCacheState } from '../broadcaster-fee-cache.js';
+import {
+  BroadcasterFeeCache,
+  BroadcasterFeeCacheState,
+} from '../broadcaster-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const initialState: RelayerFeeCacheState = {
+const initialState: BroadcasterFeeCacheState = {
   forNetwork: {},
 };
 
@@ -31,19 +34,19 @@ const feeExpiration = Date.now() + 10000000;
 
 describe('broadcaster-fee-cache', () => {
   it('Should return broadcaster-fee-cache initial state', () => {
-    RelayerFeeCache.init(['test_list']);
-    RelayerFeeCache.resetCache(chain);
+    BroadcasterFeeCache.init(['test_list']);
+    BroadcasterFeeCache.resetCache(chain);
 
     // @ts-ignore
-    expect(RelayerFeeCache.cache).to.deep.equal(initialState);
+    expect(BroadcasterFeeCache.cache).to.deep.equal(initialState);
 
-    expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
   it('Should not update broadcaster fees for bad broadcaster versions', () => {
-    RelayerFeeCache.resetCache(chain);
+    BroadcasterFeeCache.resetCache(chain);
 
-    RelayerFeeCache.addTokenFees(
+    BroadcasterFeeCache.addTokenFees(
       chain,
       railgunAddress,
       feeExpiration,
@@ -53,7 +56,7 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    RelayerFeeCache.addTokenFees(
+    BroadcasterFeeCache.addTokenFees(
       chain,
       railgunAddress,
       feeExpiration,
@@ -63,13 +66,13 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
   it('Should not update broadcaster fees for incorrect chain', () => {
-    RelayerFeeCache.resetCache(chain);
+    BroadcasterFeeCache.resetCache(chain);
 
-    RelayerFeeCache.addTokenFees(
+    BroadcasterFeeCache.addTokenFees(
       { ...MOCK_CHAIN_ETHEREUM, id: 2 },
       railgunAddress,
       feeExpiration,
@@ -79,13 +82,13 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
   it('Should not update broadcaster fees for invalid list keys', () => {
-    RelayerFeeCache.resetCache(chain);
+    BroadcasterFeeCache.resetCache(chain);
 
-    RelayerFeeCache.addTokenFees(
+    BroadcasterFeeCache.addTokenFees(
       chain,
       railgunAddress,
       feeExpiration,
@@ -95,13 +98,13 @@ describe('broadcaster-fee-cache', () => {
       ['test_list_INVALID'],
     );
 
-    expect(RelayerFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
   it('Should update broadcaster fees for chain', () => {
-    RelayerFeeCache.resetCache(chain);
+    BroadcasterFeeCache.resetCache(chain);
 
-    RelayerFeeCache.addTokenFees(
+    BroadcasterFeeCache.addTokenFees(
       chain,
       railgunAddress,
       feeExpiration,
@@ -111,10 +114,10 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(RelayerFeeCache.feesForChain(chain)).to.deep.equal({
+    expect(BroadcasterFeeCache.feesForChain(chain)).to.deep.equal({
       forToken: {
         [tokenAddress]: {
-          forRelayer: {
+          forBroadcaster: {
             [railgunAddress]: {
               forIdentifier: { [identifier]: cachedTokenFee },
             },

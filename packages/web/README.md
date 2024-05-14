@@ -8,17 +8,17 @@ This package is meant specifically for browsers.
 
 ```js
 // Initialize the Broadcaster Client
-await WakuRelayerClient.start(...)
+await WakuBroadcasterClient.start(...)
 
-// Wait for Relayers to connect (5-10 sec) and client to collect fees.
-// Relayers broadcast fees through the privacy-safe Waku network.
+// Wait for Broadcasters to connect (5-10 sec) and client to collect fees.
+// Broadcasters broadcast fees through the privacy-safe Waku network.
 
 // Get broadcaster with lowest fee for a given ERC20 token.
-const selectedRelayer = await WakuRelayerClient.findBestRelayer(...)
+const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(...)
 
 // Create Relayed transaction and send through selected Broadcaster.
-const relayerTransaction = await RelayerTransaction.create(...)
-await RelayerTransaction.send(...)
+const relayerTransaction = await BroadcasterTransaction.create(...)
+await BroadcasterTransaction.send(...)
 ```
 
 ## Webpack configuration
@@ -35,12 +35,12 @@ module.exports = {
       // Waku uses these Node.js-specific sub-dependencies, which we ignore:
       'default-gateway': false,
       '@achingbrain/nat-port-mapper': false,
-    }
+    },
   },
 };
 ```
 
-If you are using *Next.js*:
+If you are using _Next.js_:
 
 ```js
 /** @type {import('next').NextConfig} */

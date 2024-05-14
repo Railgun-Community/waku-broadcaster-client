@@ -8,9 +8,9 @@ import {
   RelayNode,
   Unsubscribe,
 } from '@waku/interfaces';
-import { handleRelayerFeesMessage } from '../fees/handle-fees-message.js';
-import { RelayerTransactResponse } from '../transact/broadcaster-transact-response.js';
-import { RelayerDebug } from '../utils/broadcaster-debug.js';
+import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
+import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 
@@ -37,11 +37,13 @@ export class WakuObservers {
     ) {
       return;
     }
-    RelayerDebug.log(`Add Waku observers for chain: ${chain.type}:${chain.id}`);
+    BroadcasterDebug.log(
+      `Add Waku observers for chain: ${chain.type}:${chain.id}`,
+    );
     WakuObservers.currentChain = chain;
     WakuObservers.removeAllObservers();
     await WakuObservers.addChainObservers(waku, chain);
-    RelayerDebug.log(
+    BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
     );
   };
@@ -70,9 +72,9 @@ export class WakuObservers {
       WAKU_RAILGUN_PUB_SUB_TOPIC,
     );
     const feesCallback = (message: IMessage) =>
-      handleRelayerFeesMessage(chain, message, contentTopicFees);
+      handleBroadcasterFeesMessage(chain, message, contentTopicFees);
     const transactResponseCallback =
-      RelayerTransactResponse.handleRelayerTransactionResponseMessage;
+      BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage;
 
     const feesSubscriptionParams = {
       topic: contentTopicFees,
@@ -95,14 +97,14 @@ export class WakuObservers {
     }
 
     await WakuObservers.addSubscriptions(chain, waku).catch(err => {
-      RelayerDebug.log(`Error adding Observers. ${err.message}`);
+      BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
     });
 
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
-    RelayerDebug.log('Waku content topics:');
+    BroadcasterDebug.log('Waku content topics:');
     for (const observer of currentContentTopics) {
-      RelayerDebug.log(observer);
+      BroadcasterDebug.log(observer);
     }
   };
 
@@ -112,7 +114,7 @@ export class WakuObservers {
     callback: (message: any) => void,
   ): Promise<void> {
     if (!isDefined(waku)) {
-      RelayerDebug.log(
+      BroadcasterDebug.log(
         'No waku instance found, Transport Subscription not added.',
       );
       return;
@@ -129,7 +131,7 @@ export class WakuObservers {
     waku: Optional<RelayNode>,
   ) {
     if (!isDefined(chain) || !isDefined(waku)) {
-      RelayerDebug.log('AddSubscription: No Waku or Chain defined.');
+      BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
 

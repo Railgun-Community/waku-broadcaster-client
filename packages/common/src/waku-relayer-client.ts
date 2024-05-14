@@ -3,27 +3,27 @@ import {
   delay,
   isDefined,
   POI_REQUIRED_LISTS,
-  RelayerConnectionStatus,
-  SelectedRelayer,
+  BroadcasterConnectionStatus,
+  SelectedBroadcaster,
 } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from './fees/broadcaster-fee-cache.js';
+import { BroadcasterFeeCache } from './fees/broadcaster-fee-cache.js';
 import { AddressFilter } from './filters/address-filter.js';
 import {
-  RelayerConnectionStatusCallback,
-  RelayerDebugger,
-  RelayerOptions,
+  BroadcasterConnectionStatusCallback,
+  BroadcasterDebugger,
+  BroadcasterOptions,
 } from './models/export-models.js';
-import { RelayerSearch } from './search/best-broadcaster.js';
-import { RelayerStatus } from './status/broadcaster-connection-status.js';
-import { RelayerDebug } from './utils/broadcaster-debug.js';
+import { BroadcasterSearch } from './search/best-broadcaster.js';
+import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
+import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
-import { WakuRelayerWakuCore } from './waku/waku-broadcaster-waku-core.js';
+import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
 import { RelayNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 
-export class WakuRelayerClient {
+export class WakuBroadcasterClient {
   private static chain: Chain;
-  private static statusCallback: RelayerConnectionStatusCallback;
+  private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
   private static isRestarting = false;
 
@@ -31,27 +31,27 @@ export class WakuRelayerClient {
 
   static async start(
     chain: Chain,
-    relayerOptions: RelayerOptions,
-    statusCallback: RelayerConnectionStatusCallback,
-    relayerDebugger?: RelayerDebugger,
+    relayerOptions: BroadcasterOptions,
+    statusCallback: BroadcasterConnectionStatusCallback,
+    relayerDebugger?: BroadcasterDebugger,
   ) {
     this.chain = chain;
     this.statusCallback = statusCallback;
 
-    WakuRelayerWakuCore.setRelayerOptions(relayerOptions);
+    WakuBroadcasterWakuCore.setBroadcasterOptions(relayerOptions);
 
     if (relayerDebugger) {
-      RelayerDebug.setDebugger(relayerDebugger);
+      BroadcasterDebug.setDebugger(relayerDebugger);
     }
 
-    RelayerFeeCache.init(
+    BroadcasterFeeCache.init(
       relayerOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
     );
 
     try {
       this.started = false;
-      await WakuRelayerWakuCore.initWaku(chain);
+      await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -65,7 +65,7 @@ export class WakuRelayerClient {
   }
 
   static async stop() {
-    await WakuRelayerWakuCore.disconnect(true);
+    await WakuBroadcasterWakuCore.disconnect(true);
     this.started = false;
     this.updateStatus();
   }
@@ -75,13 +75,16 @@ export class WakuRelayerClient {
   }
 
   static async setChain(chain: Chain): Promise<void> {
-    if (!WakuRelayerClient.started) {
+    if (!WakuBroadcasterClient.started) {
       return;
     }
 
-    WakuRelayerClient.chain = chain;
-    await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
-    WakuRelayerClient.updateStatus();
+    WakuBroadcasterClient.chain = chain;
+    await WakuObservers.setObserversForChain(
+      WakuBroadcasterWakuCore.waku,
+      chain,
+    );
+    WakuBroadcasterClient.updateStatus();
   }
 
   static getContentTopics(): string[] {
@@ -89,61 +92,65 @@ export class WakuRelayerClient {
   }
 
   static getMeshPeerCount(): number {
-    return WakuRelayerWakuCore.getMeshPeerCount();
+    return WakuBroadcasterWakuCore.getMeshPeerCount();
   }
 
   static getPubSubPeerCount(): number {
-    return WakuRelayerWakuCore.getPubSubPeerCount();
+    return WakuBroadcasterWakuCore.getPubSubPeerCount();
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    return await WakuRelayerWakuCore.getLightPushPeerCount();
+    return await WakuBroadcasterWakuCore.getLightPushPeerCount();
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    return await WakuRelayerWakuCore.getFilterPeerCount();
+    return await WakuBroadcasterWakuCore.getFilterPeerCount();
   }
   /**
-   * The function `findBestRelayer` finds the broadcaster with the lowest fees for a given chain and token.
+   * The function `findBestBroadcaster` finds the broadcaster with the lowest fees for a given chain and token.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
    * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
-   * @returns an Optional<SelectedRelayer> object.
+   * @returns an Optional<SelectedBroadcaster> object.
    */
-  static findBestRelayer(
+  static findBestBroadcaster(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer> {
-    if (!WakuRelayerClient.started) {
+  ): Optional<SelectedBroadcaster> {
+    if (!WakuBroadcasterClient.started) {
       return;
     }
 
-    return RelayerSearch.findBestRelayer(chain, tokenAddress, useRelayAdapt);
+    return BroadcasterSearch.findBestBroadcaster(
+      chain,
+      tokenAddress,
+      useRelayAdapt,
+    );
   }
 
   /**
-   * The function `findAllRelayersForChain` returns an array of all available relayers fee-tokens for a given chain.
+   * The function `findAllBroadcastersForChain` returns an array of all available relayers fee-tokens for a given chain.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find all relayers for.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
-   * @returns an Optional<SelectedRelayer[]> object.
+   * @returns an Optional<SelectedBroadcaster[]> object.
    */
-  static findAllRelayersForChain(
+  static findAllBroadcastersForChain(
     chain: Chain,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer[]> {
-    if (!WakuRelayerClient.started) {
+  ): Optional<SelectedBroadcaster[]> {
+    if (!WakuBroadcasterClient.started) {
       return [];
     }
 
-    return RelayerSearch.findAllRelayersForChain(chain, useRelayAdapt);
+    return BroadcasterSearch.findAllBroadcastersForChain(chain, useRelayAdapt);
   }
 
   /**
-   * The function `findRandomRelayerForToken` selects a random broadcaster from a list of relayers that is based on
+   * The function `findRandomBroadcasterForToken` selects a random broadcaster from a list of relayers that is based on
    * their fees for a specific token, and how much higher their fees are compared to the broadcaster with
    * the lowest fees.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
@@ -156,19 +163,19 @@ export class WakuRelayerClient {
    * with the lowest fees. For example, if the `percentageThreshold` is set to 5, it means that a
    * broadcaster can have a maximum of 5% higher fees than the broadcaster with the lowest fees and still be selected.
    * Defaults to 5.
-   * @returns an Optional<SelectedRelayer> object.
+   * @returns an Optional<SelectedBroadcaster> object.
    */
-  static findRandomRelayerForToken(
+  static findRandomBroadcasterForToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
     percentageThreshold: number = 5,
-  ): Optional<SelectedRelayer> {
-    if (!WakuRelayerClient.started) {
+  ): Optional<SelectedBroadcaster> {
+    if (!WakuBroadcasterClient.started) {
       return;
     }
 
-    return RelayerSearch.findRandomRelayerForToken(
+    return BroadcasterSearch.findRandomBroadcasterForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
@@ -177,25 +184,25 @@ export class WakuRelayerClient {
   }
 
   /**
-   * The function `findRelayersForToken` takes in a chain, token address, and a boolean flag, and
+   * The function `findBroadcastersForToken` takes in a chain, token address, and a boolean flag, and
    * returns an array of selected relayers based on the provided parameters.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
    * address of an ERC20 Token on the network; a broadcaster broadcasting fees for this token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select relayers that
    * support RelayAdapt transactions.
-   * @returns an Optional<SelectedRelayer[]> object.
+   * @returns an Optional<SelectedBroadcaster[]> object.
    */
-  static findRelayersForToken(
+  static findBroadcastersForToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer[]> {
-    if (!WakuRelayerClient.started) {
+  ): Optional<SelectedBroadcaster[]> {
+    if (!WakuBroadcasterClient.started) {
       return;
     }
 
-    return RelayerSearch.findRelayersForToken(
+    return BroadcasterSearch.findBroadcastersForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
@@ -212,10 +219,10 @@ export class WakuRelayerClient {
 
   static async tryReconnect(): Promise<void> {
     // Reset fees, which will reset status to "Searching".
-    RelayerFeeCache.resetCache(WakuRelayerClient.chain);
-    WakuRelayerClient.updateStatus();
+    BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
+    WakuBroadcasterClient.updateStatus();
 
-    await WakuRelayerClient.restart();
+    await WakuBroadcasterClient.restart();
   }
 
   static supportsToken(
@@ -223,7 +230,11 @@ export class WakuRelayerClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ) {
-    return RelayerFeeCache.supportsToken(chain, tokenAddress, useRelayAdapt);
+    return BroadcasterFeeCache.supportsToken(
+      chain,
+      tokenAddress,
+      useRelayAdapt,
+    );
   }
 
   private static async restart(): Promise<void> {
@@ -232,15 +243,15 @@ export class WakuRelayerClient {
     }
     this.isRestarting = true;
     try {
-      RelayerDebug.log('Restarting Waku...');
-      await WakuRelayerWakuCore.reinitWaku(this.chain);
+      BroadcasterDebug.log('Restarting Waku...');
+      await WakuBroadcasterWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
     } catch (cause) {
       this.isRestarting = false;
       if (!(cause instanceof Error)) {
         return;
       }
-      RelayerDebug.error(
+      BroadcasterDebug.error(
         new Error('Error reinitializing Waku Broadcaster Client', { cause }),
       );
     }
@@ -252,20 +263,20 @@ export class WakuRelayerClient {
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
 
-    await delay(WakuRelayerClient.pollDelay);
+    await delay(WakuBroadcasterClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();
   }
 
   private static updateStatus() {
-    const status = RelayerStatus.getRelayerConnectionStatus(this.chain);
+    const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
 
     if (
-      status === RelayerConnectionStatus.Disconnected ||
-      status === RelayerConnectionStatus.Error
+      status === BroadcasterConnectionStatus.Disconnected ||
+      status === BroadcasterConnectionStatus.Error
     ) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.restart();
@@ -278,7 +289,7 @@ export class WakuRelayerClient {
     callback: (message: any) => void,
   ): Promise<void> {
     await WakuObservers.addTransportSubscription(
-      WakuRelayerWakuCore.waku,
+      WakuBroadcasterWakuCore.waku,
       topic,
       callback,
     );
@@ -286,10 +297,10 @@ export class WakuRelayerClient {
 
   static sendTransport(data: object, topic: string): void {
     const customTopic = contentTopics.encrypted(topic);
-    WakuRelayerWakuCore.relayMessage(data, customTopic);
+    WakuBroadcasterWakuCore.relayMessage(data, customTopic);
   }
 
   static getWakuCore(): Optional<RelayNode> {
-    return WakuRelayerWakuCore.waku;
+    return WakuBroadcasterWakuCore.waku;
   }
 }

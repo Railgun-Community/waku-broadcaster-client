@@ -1,9 +1,9 @@
-import { RelayerDebugger } from '../models/export-models.js';
+import { BroadcasterDebugger } from '../models/export-models.js';
 
-export class RelayerDebug {
-  private static debug: Optional<RelayerDebugger>;
+export class BroadcasterDebug {
+  private static debug: Optional<BroadcasterDebugger>;
 
-  static setDebugger(debug: RelayerDebugger) {
+  static setDebugger(debug: BroadcasterDebugger) {
     this.debug = debug;
   }
 

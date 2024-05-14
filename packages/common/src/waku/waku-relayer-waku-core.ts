@@ -1,5 +1,5 @@
-export class WakuRelayerWakuCore {
+export class WakuBroadcasterWakuCore {
   static {
-    new Error('WakuRelayerWakuCore not implemented');
+    new Error('WakuBroadcasterWakuCore not implemented');
   }
 }

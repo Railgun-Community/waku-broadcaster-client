@@ -2,15 +2,15 @@
 import {
   Chain,
   poll,
-  RelayerConnectionStatus,
-  SelectedRelayer,
+  BroadcasterConnectionStatus,
+  SelectedBroadcaster,
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { WakuRelayerClient } from '../waku-broadcaster-client.js';
+import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
-import { WakuRelayerWakuCore } from '../waku/waku-broadcaster-waku-core.js';
-import { RelayerOptions } from '../models/index.js';
+import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
+import { BroadcasterOptions } from '../models/index.js';
 import { RelayNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
 
@@ -19,106 +19,106 @@ const { expect } = chai;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
-const relayerOptions: RelayerOptions = {};
+const relayerOptions: BroadcasterOptions = {};
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const WETH_ADDRESS_GOERLI = '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6';
 const CURRENT_TEST_TOKEN = WETH_ADDRESS;
 
 let currentChain: Chain;
-let currentStatus: RelayerConnectionStatus;
-const statusCallback = (chain: Chain, status: RelayerConnectionStatus) => {
+let currentStatus: BroadcasterConnectionStatus;
+const statusCallback = (chain: Chain, status: BroadcasterConnectionStatus) => {
   currentChain = chain;
   currentStatus = status;
 };
 
 describe('waku-broadcaster-client', () => {
   after(async () => {
-    await WakuRelayerClient.stop();
+    await WakuBroadcasterClient.stop();
   });
 
   it('Should start up the client, pull live fees and find best Broadcaster, then error and reconnect', async () => {
-    WakuRelayerClient.pollDelay = 500;
+    WakuBroadcasterClient.pollDelay = 500;
 
-    await WakuRelayerClient.start(chain, relayerOptions, statusCallback);
+    await WakuBroadcasterClient.start(chain, relayerOptions, statusCallback);
 
     expect(currentChain).to.deep.equal(chain);
-    expect(currentStatus).to.equal(RelayerConnectionStatus.Searching);
+    expect(currentStatus).to.equal(BroadcasterConnectionStatus.Searching);
 
     // Poll until currentStatus is Connected.
     const statusInitialConnection = await poll(
       async () => currentStatus,
-      status => status === RelayerConnectionStatus.Connected,
+      status => status === BroadcasterConnectionStatus.Connected,
       20, // delayInMS
       60000 / 20, // number of attempts corresponding to 60 sec.
     );
-    if (statusInitialConnection !== RelayerConnectionStatus.Connected) {
+    if (statusInitialConnection !== BroadcasterConnectionStatus.Connected) {
       throw new Error('Could not establish initial connection with fees.');
     }
 
     const useRelayAdapt = true;
-    const selectedRelayer: Optional<SelectedRelayer> =
-      WakuRelayerClient.findBestRelayer(
+    const selectedBroadcaster: Optional<SelectedBroadcaster> =
+      WakuBroadcasterClient.findBestBroadcaster(
         chain,
         CURRENT_TEST_TOKEN,
         useRelayAdapt,
       );
 
-    expect(selectedRelayer).to.be.an('object');
-    expect(selectedRelayer?.railgunAddress).to.be.a('string');
-    expect(selectedRelayer?.tokenAddress).to.equal(CURRENT_TEST_TOKEN);
-    expect(selectedRelayer?.tokenFee.availableWallets).to.be.greaterThanOrEqual(
-      1,
-    );
-    expect(selectedRelayer?.tokenFee.expiration).to.be.a('number');
-    expect(selectedRelayer?.tokenFee.feePerUnitGas).to.be.a('string');
-    expect(selectedRelayer?.tokenFee.feesID).to.be.a('string');
-    expect(selectedRelayer?.tokenFee.relayAdapt).to.be.a('string');
+    expect(selectedBroadcaster).to.be.an('object');
+    expect(selectedBroadcaster?.railgunAddress).to.be.a('string');
+    expect(selectedBroadcaster?.tokenAddress).to.equal(CURRENT_TEST_TOKEN);
+    expect(
+      selectedBroadcaster?.tokenFee.availableWallets,
+    ).to.be.greaterThanOrEqual(1);
+    expect(selectedBroadcaster?.tokenFee.expiration).to.be.a('number');
+    expect(selectedBroadcaster?.tokenFee.feePerUnitGas).to.be.a('string');
+    expect(selectedBroadcaster?.tokenFee.feesID).to.be.a('string');
+    expect(selectedBroadcaster?.tokenFee.relayAdapt).to.be.a('string');
 
     // Set error state in order to test status and reconnect.
-    WakuRelayerWakuCore.hasError = true;
+    WakuBroadcasterWakuCore.hasError = true;
 
     // Poll until currentStatus is Error.
     const statusError = await poll(
       async () => currentStatus,
-      status => status === RelayerConnectionStatus.Error,
+      status => status === BroadcasterConnectionStatus.Error,
       20,
       1000 / 20, // 1 sec.
     );
-    if (statusError !== RelayerConnectionStatus.Error) {
+    if (statusError !== BroadcasterConnectionStatus.Error) {
       throw new Error(`Should be error, got ${currentStatus}`);
     }
 
     // Poll until currentStatus is Disconnected.
     const statusDisconnected = await poll(
       async () => currentStatus,
-      status => status === RelayerConnectionStatus.Disconnected,
+      status => status === BroadcasterConnectionStatus.Disconnected,
       20,
       2000 / 20, // 2 sec.
     );
-    if (statusDisconnected !== RelayerConnectionStatus.Disconnected) {
+    if (statusDisconnected !== BroadcasterConnectionStatus.Disconnected) {
       throw new Error(`Should be disconnected, got ${currentStatus}`);
     }
 
     // Poll until currentStatus is Connected.
     const statusConnected = await poll(
       async () => currentStatus,
-      status => status === RelayerConnectionStatus.Connected,
+      status => status === BroadcasterConnectionStatus.Connected,
       20,
       20000 / 20, // 20 sec.
     );
-    if (statusConnected !== RelayerConnectionStatus.Connected) {
+    if (statusConnected !== BroadcasterConnectionStatus.Connected) {
       throw new Error(
         `Should be re-connected after disconnection, got ${currentStatus}`,
       );
     }
 
     // expect(
-    //   WakuRelayerClient.getMeshPeerCount(),
+    //   WakuBroadcasterClient.getMeshPeerCount(),
     // ).to.be.greaterThanOrEqual(1);
 
-    await WakuRelayerClient.setChain(MOCK_CHAIN_GOERLI);
-    expect(WakuRelayerClient.getContentTopics()).to.deep.equal([
+    await WakuBroadcasterClient.setChain(MOCK_CHAIN_GOERLI);
+    expect(WakuBroadcasterClient.getContentTopics()).to.deep.equal([
       '/railgun/v2/0/5/fees/json',
       '/railgun/v2/0/5/transact-response/json',
     ]);
@@ -135,9 +135,15 @@ describe('waku-broadcaster-client', () => {
       const formattedTopic = contentTopics.encrypted(topic);
       // input waku is a placeholder, not used in the function here, it is used in waku-transport.
       // need to keep same function abi as waku-transport
-      await WakuRelayerClient.addTransportSubscription(waku, topic, callback);
+      await WakuBroadcasterClient.addTransportSubscription(
+        waku,
+        topic,
+        callback,
+      );
 
-      expect(WakuRelayerClient.getContentTopics()).to.include(formattedTopic);
+      expect(WakuBroadcasterClient.getContentTopics()).to.include(
+        formattedTopic,
+      );
     });
   });
 
@@ -146,9 +152,9 @@ describe('waku-broadcaster-client', () => {
   //     const data = { message: 'Hello, world!' };
   //     const topic = '/test-topic';
 
-  //     WakuRelayerClient.sendTransport(data, topic);
+  //     WakuBroadcasterClient.sendTransport(data, topic);
 
-  //     // check if the WakuRelayerWakuCore.waku.relay.send method was called
+  //     // check if the WakuBroadcasterWakuCore.waku.relay.send method was called
 
   //   });
   // });

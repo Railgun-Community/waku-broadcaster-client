@@ -1,16 +1,16 @@
-import { Chain, SelectedRelayer } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from '../fees/broadcaster-fee-cache.js';
+import { Chain, SelectedBroadcaster } from '@railgun-community/shared-models';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { AddressFilter } from '../filters/address-filter.js';
-import { RelayerDebug } from '../utils/broadcaster-debug.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import {
   cachedFeeUnavailableOrExpired,
   shortenAddress,
 } from '../utils/broadcaster-util.js';
 import { isDefined } from '../utils/is-defined.js';
 
-const SelectedRelayerAscendingFee = (
-  a: SelectedRelayer,
-  b: SelectedRelayer,
+const SelectedBroadcasterAscendingFee = (
+  a: SelectedBroadcaster,
+  b: SelectedBroadcaster,
 ) => {
   const feeAmount =
     BigInt(a.tokenFee.feePerUnitGas) - BigInt(b.tokenFee.feePerUnitGas);
@@ -19,16 +19,16 @@ const SelectedRelayerAscendingFee = (
   }
   return feeAmount > BigInt(0) ? 1 : -1;
 };
-export class RelayerSearch {
-  static findRelayersForToken(
+export class BroadcasterSearch {
+  static findBroadcastersForToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer[]> {
+  ): Optional<SelectedBroadcaster[]> {
     const tokenAddressLowercase = tokenAddress.toLowerCase();
     const relayerTokenFees =
-      RelayerFeeCache.feesForChain(chain)?.forToken[tokenAddressLowercase]
-        ?.forRelayer;
+      BroadcasterFeeCache.feesForChain(chain)?.forToken[tokenAddressLowercase]
+        ?.forBroadcaster;
     if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
@@ -39,7 +39,7 @@ export class RelayerSearch {
       const removedAddresses = unfilteredAddresses.filter(
         address => !relayerAddresses.includes(address),
       );
-      RelayerDebug.log(
+      BroadcasterDebug.log(
         `Filtered RAILGUN broadcaster addresses ${
           removedAddresses.length
         }: ${removedAddresses
@@ -48,7 +48,7 @@ export class RelayerSearch {
       );
     }
 
-    const selectedRelayers: SelectedRelayer[] = [];
+    const selectedBroadcasters: SelectedBroadcaster[] = [];
 
     relayerAddresses.forEach((relayerAddress: string) => {
       const identifiers: string[] = Object.keys(
@@ -62,30 +62,30 @@ export class RelayerSearch {
         ) {
           return;
         }
-        const selectedRelayer: SelectedRelayer = {
+        const selectedBroadcaster: SelectedBroadcaster = {
           railgunAddress: relayerAddress,
           tokenFee: nextCachedFee,
           tokenAddress,
         };
-        selectedRelayers.push(selectedRelayer);
+        selectedBroadcasters.push(selectedBroadcaster);
       });
     });
 
-    return selectedRelayers;
+    return selectedBroadcasters;
   }
 
-  static findAllRelayersForChain(
+  static findAllBroadcastersForChain(
     chain: Chain,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer[]> {
-    const relayerTokenFees = RelayerFeeCache.feesForChain(chain)?.forToken;
+  ): Optional<SelectedBroadcaster[]> {
+    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
     if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
     const allTokens = Object.keys(relayerTokenFees);
-    const selectedRelayers: SelectedRelayer[] = [];
+    const selectedBroadcasters: SelectedBroadcaster[] = [];
     allTokens.forEach((tokenAddress: string) => {
-      const relayersForToken = this.findRelayersForToken(
+      const relayersForToken = this.findBroadcastersForToken(
         chain,
         tokenAddress,
         useRelayAdapt,
@@ -93,23 +93,23 @@ export class RelayerSearch {
       if (!relayersForToken) {
         return;
       }
-      selectedRelayers.push(...relayersForToken);
+      selectedBroadcasters.push(...relayersForToken);
     });
-    return selectedRelayers;
+    return selectedBroadcasters;
   }
 
-  static findRandomRelayerForToken(
+  static findRandomBroadcasterForToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
     percentageThreshold: number,
-  ): Optional<SelectedRelayer> {
-    const relayerTokenFees = RelayerFeeCache.feesForChain(chain)?.forToken;
+  ): Optional<SelectedBroadcaster> {
+    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
     if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
 
-    const relayersForToken = this.findRelayersForToken(
+    const relayersForToken = this.findBroadcastersForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
@@ -121,29 +121,31 @@ export class RelayerSearch {
       return undefined;
     }
 
-    const sortedRelayers = relayersForToken.sort(SelectedRelayerAscendingFee);
+    const sortedBroadcasters = relayersForToken.sort(
+      SelectedBroadcasterAscendingFee,
+    );
 
-    const minFee = BigInt(sortedRelayers[0].tokenFee.feePerUnitGas);
+    const minFee = BigInt(sortedBroadcasters[0].tokenFee.feePerUnitGas);
     const feeThreshold = (minFee * (100n + BigInt(percentageThreshold))) / 100n;
-    const eligibleRelayers = sortedRelayers.filter(
+    const eligibleBroadcasters = sortedBroadcasters.filter(
       broadcaster => BigInt(broadcaster.tokenFee.feePerUnitGas) <= feeThreshold,
     );
-    const randomIndex = Math.floor(Math.random() * eligibleRelayers.length);
+    const randomIndex = Math.floor(Math.random() * eligibleBroadcasters.length);
 
-    return eligibleRelayers[randomIndex];
+    return eligibleBroadcasters[randomIndex];
   }
 
-  static findBestRelayer(
+  static findBestBroadcaster(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ): Optional<SelectedRelayer> {
-    const relayerTokenFees = RelayerFeeCache.feesForChain(chain)?.forToken;
+  ): Optional<SelectedBroadcaster> {
+    const relayerTokenFees = BroadcasterFeeCache.feesForChain(chain)?.forToken;
     if (!isDefined(relayerTokenFees)) {
       return undefined;
     }
 
-    const relayersForToken = this.findRelayersForToken(
+    const relayersForToken = this.findBroadcastersForToken(
       chain,
       tokenAddress,
       useRelayAdapt,
@@ -152,8 +154,10 @@ export class RelayerSearch {
       return undefined;
     }
 
-    const sortedRelayers = relayersForToken.sort(SelectedRelayerAscendingFee);
+    const sortedBroadcasters = relayersForToken.sort(
+      SelectedBroadcasterAscendingFee,
+    );
 
-    return sortedRelayers[0];
+    return sortedBroadcasters[0];
   }
 }

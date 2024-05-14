@@ -1,86 +1,91 @@
 import {
   CachedTokenFee,
   Chain,
-  RelayerConnectionStatus,
+  BroadcasterConnectionStatus,
 } from '@railgun-community/shared-models';
-import { RelayerFeeCache } from '../fees/broadcaster-fee-cache.js';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { AddressFilter } from '../filters/address-filter.js';
 import { cachedFeeExpired } from '../utils/broadcaster-util.js';
-import { WakuRelayerWakuCore } from '../waku/waku-broadcaster-waku-core.js';
+import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { isDefined } from '../utils/is-defined.js';
 
-export class RelayerStatus {
-  static getRelayerConnectionStatus(chain: Chain): RelayerConnectionStatus {
-    if (WakuRelayerWakuCore.hasError) {
-      return RelayerConnectionStatus.Error;
+export class BroadcasterStatus {
+  static getBroadcasterConnectionStatus(
+    chain: Chain,
+  ): BroadcasterConnectionStatus {
+    if (WakuBroadcasterWakuCore.hasError) {
+      return BroadcasterConnectionStatus.Error;
     }
-    if (!WakuRelayerWakuCore.waku) {
-      return RelayerConnectionStatus.Disconnected;
+    if (!WakuBroadcasterWakuCore.waku) {
+      return BroadcasterConnectionStatus.Disconnected;
     }
-    if (!this.hasRelayerFeesForNetwork(chain)) {
-      return RelayerConnectionStatus.Searching;
-    }
-
-    const { allRelayerFeesExpired, anyRelayersAvailable } =
-      this.getAggregatedInfoForRelayers(chain);
-    if (allRelayerFeesExpired) {
-      return RelayerConnectionStatus.Disconnected;
-    }
-    if (!anyRelayersAvailable) {
-      return RelayerConnectionStatus.AllUnavailable;
+    if (!this.hasBroadcasterFeesForNetwork(chain)) {
+      return BroadcasterConnectionStatus.Searching;
     }
 
-    return RelayerConnectionStatus.Connected;
+    const { allBroadcasterFeesExpired, anyBroadcastersAvailable } =
+      this.getAggregatedInfoForBroadcasters(chain);
+    if (allBroadcasterFeesExpired) {
+      return BroadcasterConnectionStatus.Disconnected;
+    }
+    if (!anyBroadcastersAvailable) {
+      return BroadcasterConnectionStatus.AllUnavailable;
+    }
+
+    return BroadcasterConnectionStatus.Connected;
   }
 
-  private static hasRelayerFeesForNetwork(chain: Chain) {
-    const relayerFees = RelayerFeeCache.feesForChain(chain);
+  private static hasBroadcasterFeesForNetwork(chain: Chain) {
+    const relayerFees = BroadcasterFeeCache.feesForChain(chain);
     if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
       return false;
     }
 
-    const cachedTokenRelayers = Object.values(relayerFees.forToken);
+    const cachedTokenBroadcasters = Object.values(relayerFees.forToken);
 
     return (
-      cachedTokenRelayers.find(tokenRelayerMap => {
-        const unfilteredRelayerAddresses = Object.keys(
-          tokenRelayerMap.forRelayer,
+      cachedTokenBroadcasters.find(tokenBroadcasterMap => {
+        const unfilteredBroadcasterAddresses = Object.keys(
+          tokenBroadcasterMap.forBroadcaster,
         );
-        const filteredRelayerAddresses = AddressFilter.filter(
-          unfilteredRelayerAddresses,
+        const filteredBroadcasterAddresses = AddressFilter.filter(
+          unfilteredBroadcasterAddresses,
         );
-        return filteredRelayerAddresses.length > 0;
+        return filteredBroadcasterAddresses.length > 0;
       }) != null
     );
   }
 
-  private static getAggregatedInfoForRelayers(chain: Chain) {
-    const relayerFees = RelayerFeeCache.feesForChain(chain);
+  private static getAggregatedInfoForBroadcasters(chain: Chain) {
+    const relayerFees = BroadcasterFeeCache.feesForChain(chain);
     if (!isDefined(relayerFees) || !isDefined(relayerFees.forToken)) {
-      return { allRelayerFeesExpired: false, anyRelayersAvailable: false };
+      return {
+        allBroadcasterFeesExpired: false,
+        anyBroadcastersAvailable: false,
+      };
     }
 
-    const cachedTokenRelayers = Object.values(relayerFees.forToken);
+    const cachedTokenBroadcasters = Object.values(relayerFees.forToken);
 
-    let allRelayerFeesExpired = true;
-    let anyRelayersAvailable = false;
+    let allBroadcasterFeesExpired = true;
+    let anyBroadcastersAvailable = false;
 
-    cachedTokenRelayers.forEach(tokenRelayerMap => {
+    cachedTokenBroadcasters.forEach(tokenBroadcasterMap => {
       const unfilteredRailgunAddresses = Object.keys(
-        tokenRelayerMap.forRelayer,
+        tokenBroadcasterMap.forBroadcaster,
       );
       const filteredRailgunAddresses = AddressFilter.filter(
         unfilteredRailgunAddresses,
       );
       filteredRailgunAddresses.forEach(railgunAddress => {
         const identifiers: string[] = Object.keys(
-          tokenRelayerMap.forRelayer[railgunAddress].forIdentifier,
+          tokenBroadcasterMap.forBroadcaster[railgunAddress].forIdentifier,
         );
 
         // Loops until we hit `return false`.
         identifiers.every(identifier => {
           const tokenFee: CachedTokenFee =
-            tokenRelayerMap.forRelayer[railgunAddress].forIdentifier[
+            tokenBroadcasterMap.forBroadcaster[railgunAddress].forIdentifier[
               identifier
             ];
           if (cachedFeeExpired(tokenFee.expiration)) {
@@ -88,10 +93,10 @@ export class RelayerStatus {
           }
 
           // Any unexpired means we didn't time out.
-          allRelayerFeesExpired = false;
+          allBroadcasterFeesExpired = false;
 
           if (tokenFee.availableWallets > 0) {
-            anyRelayersAvailable = true;
+            anyBroadcastersAvailable = true;
             return false; // break
           }
           return true; //continue
@@ -99,6 +104,6 @@ export class RelayerStatus {
       });
     });
 
-    return { allRelayerFeesExpired, anyRelayersAvailable };
+    return { allBroadcasterFeesExpired, anyBroadcastersAvailable };
   }
 }
