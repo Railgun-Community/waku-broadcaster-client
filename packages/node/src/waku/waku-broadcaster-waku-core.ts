@@ -1,0 +1,204 @@
+import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
+import { waitForRemotePeer, createEncoder } from '@waku/core';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
+import { WakuObservers } from './waku-observers.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
+import { utf8ToBytes } from '../utils/conversion.js';
+import { isDefined } from '../utils/is-defined.js';
+import { bootstrap } from '@libp2p/bootstrap';
+import { tcp } from '@libp2p/tcp';
+import { createRelayNode } from '@waku/sdk/relay';
+import { BroadcasterOptions } from '../models/index.js';
+import {
+  WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
+  WAKU_RAILGUN_PUB_SUB_TOPIC,
+} from '../models/constants.js';
+
+export class WakuRelayerWakuCore {
+  static hasError = false;
+
+  static waku: Optional<RelayNode>;
+  private static MAX_RELAY_RETRIES = 3;
+  private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
+  private static additionalDirectPeers: string[] = [];
+  private static peerDiscoveryTimeout = 60000;
+
+  static initWaku = async (chain: Chain): Promise<void> => {
+    try {
+      await WakuRelayerWakuCore.connect();
+      if (!WakuRelayerWakuCore.waku) {
+        BroadcasterDebug.log('No waku instance found');
+        return;
+      }
+      WakuObservers.resetCurrentChain();
+      await WakuObservers.setObserversForChain(WakuRelayerWakuCore.waku, chain);
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      BroadcasterDebug.error(err);
+      throw err;
+    }
+  };
+
+  static reinitWaku = async (chain: Chain) => {
+    if (
+      isDefined(WakuRelayerWakuCore.waku) &&
+      WakuRelayerWakuCore.waku.isStarted()
+    ) {
+      await WakuRelayerWakuCore.disconnect();
+    }
+
+    // Resets connection status to "Connecting" for this network.
+    BroadcasterFeeCache.resetCache(chain);
+
+    await WakuRelayerWakuCore.initWaku(chain);
+  };
+
+  static setBroadcasterOptions(BroadcasterOptions: BroadcasterOptions) {
+    if (isDefined(BroadcasterOptions.pubSubTopic)) {
+      WakuRelayerWakuCore.pubSubTopic = BroadcasterOptions.pubSubTopic;
+    }
+    if (BroadcasterOptions.additionalDirectPeers) {
+      WakuRelayerWakuCore.additionalDirectPeers =
+        BroadcasterOptions.additionalDirectPeers;
+    }
+    if (isDefined(BroadcasterOptions.peerDiscoveryTimeout)) {
+      WakuRelayerWakuCore.peerDiscoveryTimeout =
+        BroadcasterOptions.peerDiscoveryTimeout;
+    }
+  }
+
+  static disconnect = async (removeObservers: boolean = false) => {
+    if (removeObservers) {
+      BroadcasterDebug.log('Disconnecting... Removing Observers.');
+      WakuObservers.removeAllObservers();
+    }
+    await WakuRelayerWakuCore.waku?.stop();
+    WakuRelayerWakuCore.waku = undefined;
+  };
+
+  private static connect = async (): Promise<void> => {
+    try {
+      WakuRelayerWakuCore.hasError = false;
+
+      BroadcasterDebug.log(`Creating waku relay client`);
+
+      const peers: string[] = [
+        ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+        ...this.additionalDirectPeers,
+      ];
+      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
+      const waku: RelayNode = await createRelayNode({
+        pubsubTopics: [WakuRelayerWakuCore.pubSubTopic],
+        pingKeepAlive: 60,
+        relayKeepAlive: 60,
+        libp2p: {
+          transports: [tcp()],
+          peerDiscovery: [
+            bootstrap({
+              list: peers,
+              timeout: waitTimeoutBeforeBootstrap,
+            }),
+          ],
+        },
+      });
+
+      BroadcasterDebug.log('Start Waku.');
+      await waku.start();
+
+      BroadcasterDebug.log('Waiting for remote peer.');
+      await this.waitForRemotePeer(waku);
+
+      if (!isDefined(waku.relay)) {
+        throw new Error('No Waku Relay instantiated.');
+      }
+
+      BroadcasterDebug.log('Waku peers:');
+      for (const peer of waku.libp2p.getPeers()) {
+        BroadcasterDebug.log(JSON.stringify(peer));
+      }
+
+      BroadcasterDebug.log('Connected to Waku');
+      WakuRelayerWakuCore.waku = waku;
+      WakuRelayerWakuCore.hasError = false;
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      WakuRelayerWakuCore.hasError = true;
+      throw err;
+    }
+  };
+
+  static getMeshPeerCount(): number {
+    return (
+      this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    );
+  }
+
+  static getPubSubPeerCount(): number {
+    const peers = this.waku?.libp2p.getPeers() ?? [];
+    return peers.length;
+  }
+
+  static async getLightPushPeerCount(): Promise<number> {
+    return 0;
+  }
+
+  static async getFilterPeerCount(): Promise<number> {
+    return 0;
+  }
+
+  private static async waitForRemotePeer(waku: RelayNode) {
+    try {
+      const protocols = [Protocols.Relay];
+      await promiseTimeout(
+        waitForRemotePeer(waku, protocols),
+        WakuRelayerWakuCore.peerDiscoveryTimeout,
+      );
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      BroadcasterDebug.error(err);
+      throw new Error(err.message);
+    }
+  }
+
+  static async relayMessage(
+    data: object,
+    contentTopic: string,
+    retry: number = 0,
+  ): Promise<void> {
+    if (!WakuRelayerWakuCore.waku?.relay) {
+      throw new Error('Relayer did not receive message. Please try again.');
+    }
+
+    const dataString = JSON.stringify(data);
+    const payload = utf8ToBytes(dataString);
+    const message: IMessage = { payload };
+
+    try {
+      await WakuRelayerWakuCore.waku.relay.send(
+        createEncoder({
+          contentTopic,
+          pubsubTopic: WakuRelayerWakuCore.pubSubTopic,
+        }),
+        message,
+      );
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      if (retry < WakuRelayerWakuCore.MAX_RELAY_RETRIES) {
+        await delay(1000);
+        return WakuRelayerWakuCore.relayMessage(data, contentTopic, retry + 1);
+      } else {
+        BroadcasterDebug.error(err);
+      }
+    }
+  }
+}

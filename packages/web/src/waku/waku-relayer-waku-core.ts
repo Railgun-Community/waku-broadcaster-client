@@ -1,1 +1,0 @@
-/Users/zy0n/github/waku-relayer-client/packages/common/.prettierrc.cjs
