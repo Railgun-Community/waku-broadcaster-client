@@ -6,14 +6,14 @@ import {
   MOCK_RAILGUN_WALLET_ADDRESS,
 } from '../../tests/mocks.test.js';
 import sinon, { SinonStub } from 'sinon';
-import { WakuRelayerWakuCore } from '../../waku/waku-relayer-waku-core.js';
-import { RelayerTransaction } from '../relayer-transaction.js';
+import { WakuBroadcasterWakuCore } from '../../waku/waku-broadcaster-waku-core.js';
+import { BroadcasterTransaction } from '../broadcaster-transaction.js';
 import {
   TXIDVersion,
   delay,
   networkForChain,
 } from '@railgun-community/shared-models';
-import { RelayerTransactResponse } from '../relayer-transact-response.js';
+import { BroadcasterTransactResponse } from '../broadcaster-transact-response.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { encryptJSONDataWithSharedKey } from '@railgun-community/engine';
 import { initTestEngine } from '../../tests/setup.test.js';
@@ -26,7 +26,7 @@ import {
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-let wakuRelayerRelayMessageStub: SinonStub;
+let wakuBroadcasterRelayMessageStub: SinonStub;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
@@ -39,7 +39,7 @@ const encryptResponseData = (
   return encryptJSONDataWithSharedKey(data, sharedKey);
 };
 
-describe('relayer-transaction', () => {
+describe('broadcaster-transaction', () => {
   before(async function run() {
     this.timeout(60000);
 
@@ -51,34 +51,34 @@ describe('relayer-transaction', () => {
     }
     await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
 
-    wakuRelayerRelayMessageStub = sinon
-      .stub(WakuRelayerWakuCore, 'relayMessage')
+    wakuBroadcasterRelayMessageStub = sinon
+      .stub(WakuBroadcasterWakuCore, 'relayMessage')
       .resolves();
   });
 
   afterEach(() => {
-    wakuRelayerRelayMessageStub.resetHistory();
+    wakuBroadcasterRelayMessageStub.resetHistory();
   });
 
   after(async () => {
-    wakuRelayerRelayMessageStub.restore();
+    wakuBroadcasterRelayMessageStub.restore();
     await unloadProvider(networkForChain(chain)!.name);
     stopRailgunEngine();
   });
 
-  it('Should generate and relay a Relayer transaction', async () => {
-    const relayerRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
-    const relayerFeesID = 'abc';
+  it('Should generate and relay a Broadcaster transaction', async () => {
+    const broadcasterRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
+    const broadcasterFeesID = 'abc';
     const nullifiers = ['0x012345'];
     const overallBatchMinGasPrice = BigInt('0x0100');
     const useRelayAdapt = true;
 
-    const relayerTransaction = await RelayerTransaction.create(
+    const broadcasterTransaction = await BroadcasterTransaction.create(
       TXIDVersion.V2_PoseidonMerkle,
       '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
       '0x1234abcdef', // data
-      relayerRailgunAddress,
-      relayerFeesID,
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
       chain,
       nullifiers,
       overallBatchMinGasPrice,
@@ -88,7 +88,7 @@ describe('relayer-transaction', () => {
 
     const mockDelayedResponse = async () => {
       await delay(2000);
-      const { sharedKey } = RelayerTransactResponse;
+      const { sharedKey } = BroadcasterTransactResponse;
       if (!sharedKey) {
         throw new Error('No shared key');
       }
@@ -97,13 +97,15 @@ describe('relayer-transaction', () => {
       const payload = utf8ToBytes(
         JSON.stringify({ result: encryptedResponse }),
       );
-      await RelayerTransactResponse.handleRelayerTransactionResponseMessage({
-        payload,
-      });
+      await BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage(
+        {
+          payload,
+        },
+      );
     };
 
     const [response] = await Promise.all([
-      relayerTransaction.send(),
+      broadcasterTransaction.send(),
       mockDelayedResponse(),
     ]);
 

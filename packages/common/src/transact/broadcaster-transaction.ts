@@ -8,20 +8,20 @@ import {
   EncryptDataWithSharedKeyResponse,
   poll,
   PreTransactionPOIsPerTxidLeafPerList,
-  RelayerEncryptedMethodParams,
-  RelayerRawParamsTransact,
+  BroadcasterEncryptedMethodParams,
+  BroadcasterRawParamsTransact,
   TXIDVersion,
 } from '@railgun-community/shared-models';
-import { RelayerConfig } from '../models/relayer-config.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import { WakuRelayerWakuCore } from '../waku/waku-relayer-waku-core.js';
+import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { contentTopics } from '../waku/waku-topics.js';
 import {
   WakuTransactResponse,
-  RelayerTransactResponse,
-} from './relayer-transact-response.js';
+  BroadcasterTransactResponse,
+} from './broadcaster-transact-response.js';
 import { getAddress, isHexString } from 'ethers';
 
 //
@@ -29,13 +29,13 @@ import { getAddress, isHexString } from 'ethers';
 //
 // Client:
 // 1. Generates random 16 bytes: `responseKey` and adds to transact data
-// 2. Generates a `sharedKey` from a random `privkey` and the Relayer's `pubkey`
+// 2. Generates a `sharedKey` from a random `privkey` and the Broadcaster's `pubkey`
 // 3. Encrypts the transact data asymmetrically, using `sharedKey` (`encryptedData = encrypt(transactData, sharedKey)`)
 // 4. Includes `publicKey` and `encryptedData` in transact message
 // 5. Sends the message
 //
-// Relayer:
-// 1. Decrypts the `encryptedData` using Relayer privkey and `sharedKey` (if error, it's not addressed to us)
+// Broadcaster:
+// 1. Decrypts the `encryptedData` using Broadcaster privkey and `sharedKey` (if error, it's not addressed to us)
 // 2. Processes transaction
 // 3. Encrypts response (`txHash` or `error`) using `responseKey` (symmetric: AES-GCM-256)
 // 4. Sends back encrypted response on transact-response: {encryptedData}
@@ -54,16 +54,16 @@ enum RelayRetryState {
 
 type RelayMessageData = {
   method: string;
-  params: RelayerEncryptedMethodParams;
+  params: BroadcasterEncryptedMethodParams;
 };
 
-// NOTE: Relayer default transaction-send timeout is 45 seconds.
+// NOTE: Broadcaster default transaction-send timeout is 45 seconds.
 const SECONDS_PER_RETRY = 12;
 const POLL_DELAY_SECONDS = 0.2;
 const RETRY_TRANSACTION_SECONDS = 45;
 const POST_ALERT_TOTAL_WAITING_SECONDS = 220;
 
-export class RelayerTransaction {
+export class BroadcasterTransaction {
   private messageData: RelayMessageData;
   private contentTopic: string;
   private txidVersionForInputs: TXIDVersion;
@@ -87,33 +87,33 @@ export class RelayerTransaction {
     this.txidVersionForInputs = txidVersionForInputs;
     this.chain = chain;
     this.nullifiers = nullifiers;
-    RelayerTransactResponse.setSharedKey(encryptedDataResponse.sharedKey);
+    BroadcasterTransactResponse.setSharedKey(encryptedDataResponse.sharedKey);
   }
 
   static async create(
     txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
-    relayerRailgunAddress: string,
-    relayerFeesID: string,
+    broadcasterRailgunAddress: string,
+    broadcasterFeesID: string,
     chain: Chain,
     nullifiers: string[],
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
-  ): Promise<RelayerTransaction> {
+  ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
       to,
       data,
-      relayerRailgunAddress,
-      relayerFeesID,
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
       chain,
       overallBatchMinGasPrice,
       useRelayAdapt,
       preTransactionPOIsPerTxidLeafPerList,
     );
-    return new RelayerTransaction(
+    return new BroadcasterTransaction(
       encryptedDataResponse,
       txidVersionForInputs,
       chain,
@@ -125,8 +125,8 @@ export class RelayerTransaction {
     txidVersionForInputs: TXIDVersion,
     to: string,
     data: string,
-    relayerRailgunAddress: string,
-    relayerFeesID: string,
+    broadcasterRailgunAddress: string,
+    broadcasterFeesID: string,
     chain: Chain,
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
@@ -136,29 +136,28 @@ export class RelayerTransaction {
       throw new Error('Data field must be a hex string.');
     }
 
-    const { viewingPublicKey: relayerViewingKey } = getRailgunWalletAddressData(
-      relayerRailgunAddress,
-    );
+    const { viewingPublicKey: broadcasterViewingKey } =
+      getRailgunWalletAddressData(broadcasterRailgunAddress);
 
-    const transactData: RelayerRawParamsTransact = {
+    const transactData: BroadcasterRawParamsTransact = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
-      relayerViewingKey: bytesToHex(relayerViewingKey),
+      broadcasterViewingKey: bytesToHex(broadcasterViewingKey),
       chainID: chain.id,
       chainType: chain.type,
       minGasPrice: overallBatchMinGasPrice.toString(),
-      feesID: relayerFeesID,
+      feesID: broadcasterFeesID,
       useRelayAdapt,
-      devLog: RelayerConfig.IS_DEV,
-      minVersion: RelayerConfig.MINIMUM_RELAYER_VERSION,
-      maxVersion: RelayerConfig.MAXIMUM_RELAYER_VERSION,
+      devLog: BroadcasterConfig.IS_DEV,
+      minVersion: BroadcasterConfig.MINIMUM_RELAYER_VERSION,
+      maxVersion: BroadcasterConfig.MAXIMUM_RELAYER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
     };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
       transactData,
-      relayerViewingKey,
+      broadcasterViewingKey,
     );
 
     return encryptedDataResponse;
@@ -176,7 +175,7 @@ export class RelayerTransaction {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
-      RelayerDebug.error(
+      BroadcasterDebug.error(
         new Error('Failed to find matching nullifier txid', { cause }),
       );
       return undefined;
@@ -186,8 +185,8 @@ export class RelayerTransaction {
   private async getTransactionResponse(): Promise<
     Optional<WakuTransactResponse>
   > {
-    if (RelayerTransactResponse.storedTransactionResponse) {
-      return RelayerTransactResponse.storedTransactionResponse;
+    if (BroadcasterTransactResponse.storedTransactionResponse) {
+      return BroadcasterTransactResponse.storedTransactionResponse;
     }
 
     const nullifiersTxid = await this.findMatchingNullifierTxid();
@@ -221,10 +220,10 @@ export class RelayerTransaction {
     switch (relayRetryState) {
       case RelayRetryState.RetryTransact:
         // 0-20 seconds.
-        RelayerDebug.log(
+        BroadcasterDebug.log(
           `Relay Waku message: ${this.messageData.method} via ${this.contentTopic}`,
         );
-        await WakuRelayerWakuCore.relayMessage(
+        await WakuBroadcasterWakuCore.relayMessage(
           this.messageData,
           this.contentTopic,
         );
@@ -249,11 +248,11 @@ export class RelayerTransaction {
     );
     if (isDefined(response)) {
       if (isDefined(response.txHash)) {
-        RelayerTransactResponse.clearSharedKey();
+        BroadcasterTransactResponse.clearSharedKey();
         return response.txHash;
       }
       if (isDefined(response.error)) {
-        RelayerTransactResponse.clearSharedKey();
+        BroadcasterTransactResponse.clearSharedKey();
         throw new Error('Failed to relay transaction on Waku', {
           cause: new Error(response.error),
         });

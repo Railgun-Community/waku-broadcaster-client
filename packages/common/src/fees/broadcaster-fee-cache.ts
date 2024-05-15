@@ -4,32 +4,32 @@ import {
   networkForChain,
 } from '@railgun-community/shared-models';
 import { AddressFilter } from '../filters/address-filter.js';
-import { RelayerConfig } from '../models/relayer-config.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import {
-  nameForRelayer,
+  nameForBroadcaster,
   cachedFeeExpired,
   DEFAULT_RELAYER_IDENTIFIER,
-  invalidRelayerVersion,
+  invalidBroadcasterVersion,
   cachedFeeUnavailableOrExpired,
-} from '../utils/relayer-util.js';
+} from '../utils/broadcaster-util.js';
 
-// {forNetwork: {forToken: {forRelayer: (fee, updatedAt)}}}
-type RelayerFeeNetworkTokenRelayerCacheMap = {
+// {forNetwork: {forToken: {forBroadcaster: (fee, updatedAt)}}}
+type BroadcasterFeeNetworkTokenBroadcasterCacheMap = {
   forIdentifier: MapType<CachedTokenFee>;
 };
-type RelayerFeeNetworkTokenCacheMap = {
-  forRelayer: MapType<RelayerFeeNetworkTokenRelayerCacheMap>;
+type BroadcasterFeeNetworkTokenCacheMap = {
+  forBroadcaster: MapType<BroadcasterFeeNetworkTokenBroadcasterCacheMap>;
 };
-type RelayerFeeNetworkCacheMap = {
-  forToken: MapType<RelayerFeeNetworkTokenCacheMap>;
+type BroadcasterFeeNetworkCacheMap = {
+  forToken: MapType<BroadcasterFeeNetworkTokenCacheMap>;
 };
-export type RelayerFeeCacheState = {
-  forNetwork: MapType<RelayerFeeNetworkCacheMap>;
+export type BroadcasterFeeCacheState = {
+  forNetwork: MapType<BroadcasterFeeNetworkCacheMap>;
 };
 
-export class RelayerFeeCache {
-  private static cache: RelayerFeeCacheState = { forNetwork: {} };
+export class BroadcasterFeeCache {
+  private static cache: BroadcasterFeeCacheState = { forNetwork: {} };
 
   private static poiActiveListKeys: Optional<string[]>;
 
@@ -58,33 +58,33 @@ export class RelayerFeeCache {
     }
     for (const listKey of requiredPOIListKeys) {
       if (!this.poiActiveListKeys.includes(listKey)) {
-        RelayerDebug.log(
-          `[Fees] Relayer ${railgunAddress} requires POI list key ${listKey}, which is not active.`,
+        BroadcasterDebug.log(
+          `[Fees] Broadcaster ${railgunAddress} requires POI list key ${listKey}, which is not active.`,
         );
         return;
       }
     }
 
-    const relayerName = nameForRelayer(railgunAddress, identifier);
+    const broadcasterName = nameForBroadcaster(railgunAddress, identifier);
     const networkName = network.name;
 
-    if (invalidRelayerVersion(version)) {
-      RelayerDebug.log(
-        `[Fees] Relayer version ${version} invalid (req ${RelayerConfig.MINIMUM_RELAYER_VERSION}-${RelayerConfig.MAXIMUM_RELAYER_VERSION}): ${relayerName}`,
+    if (invalidBroadcasterVersion(version)) {
+      BroadcasterDebug.log(
+        `[Fees] Broadcaster version ${version} invalid (req ${BroadcasterConfig.MINIMUM_RELAYER_VERSION}-${BroadcasterConfig.MAXIMUM_RELAYER_VERSION}): ${broadcasterName}`,
       );
       return;
     }
 
     if (cachedFeeExpired(feeExpiration)) {
-      RelayerDebug.log(
-        `[Fees] Fees expired for ${networkName} (${relayerName})`,
+      BroadcasterDebug.log(
+        `[Fees] Fees expired for ${networkName} (${broadcasterName})`,
       );
       return;
     }
 
     const tokenAddresses = Object.keys(tokenFeeMap);
-    RelayerDebug.log(
-      `[Fees] Updating fees for ${networkName} (${relayerName}): ${tokenAddresses.length} tokens`,
+    BroadcasterDebug.log(
+      `[Fees] Updating fees for ${networkName} (${broadcasterName}): ${tokenAddresses.length} tokens`,
     );
 
     this.cache.forNetwork[networkName] ??= { forToken: {} };
@@ -94,13 +94,13 @@ export class RelayerFeeCache {
     );
     tokenAddressesLowercase.forEach(tokenAddress => {
       this.cache.forNetwork[networkName].forToken[tokenAddress] ??= {
-        forRelayer: {},
+        forBroadcaster: {},
       };
-      this.cache.forNetwork[networkName].forToken[tokenAddress].forRelayer[
+      this.cache.forNetwork[networkName].forToken[tokenAddress].forBroadcaster[
         railgunAddress
       ] ??= { forIdentifier: {} };
 
-      this.cache.forNetwork[networkName].forToken[tokenAddress].forRelayer[
+      this.cache.forNetwork[networkName].forToken[tokenAddress].forBroadcaster[
         railgunAddress
       ].forIdentifier[identifier ?? DEFAULT_RELAYER_IDENTIFIER] =
         tokenFeeMap[tokenAddress];
@@ -116,7 +116,7 @@ export class RelayerFeeCache {
     delete this.cache.forNetwork[network.name];
   }
 
-  static feesForChain(chain: Chain): Optional<RelayerFeeNetworkCacheMap> {
+  static feesForChain(chain: Chain): Optional<BroadcasterFeeNetworkCacheMap> {
     const network = networkForChain(chain);
     if (!network) {
       throw new Error('Chain not found.');
@@ -127,7 +127,7 @@ export class RelayerFeeCache {
   static feesForToken(
     chain: Chain,
     tokenAddress: string,
-  ): Optional<RelayerFeeNetworkTokenCacheMap> {
+  ): Optional<BroadcasterFeeNetworkTokenCacheMap> {
     return this.feesForChain(chain)?.forToken[tokenAddress.toLowerCase()];
   }
 
@@ -141,12 +141,14 @@ export class RelayerFeeCache {
       return false;
     }
 
-    const railgunAddresses = Object.keys(feesForToken.forRelayer);
+    const railgunAddresses = Object.keys(feesForToken.forBroadcaster);
     const filteredRailgunAddresses = AddressFilter.filter(railgunAddresses);
 
     const cachedFees: CachedTokenFee[] = filteredRailgunAddresses
       .map(railgunAddress =>
-        Object.values(feesForToken.forRelayer[railgunAddress].forIdentifier),
+        Object.values(
+          feesForToken.forBroadcaster[railgunAddress].forIdentifier,
+        ),
       )
       .flat();
 

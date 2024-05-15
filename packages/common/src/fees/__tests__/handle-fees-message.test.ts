@@ -3,7 +3,7 @@ import {
   createRailgunWallet,
   fullWalletForID,
 } from '@railgun-community/wallet';
-import { RelayerFeeMessageData } from '@railgun-community/shared-models';
+import { BroadcasterFeeMessageData } from '@railgun-community/shared-models';
 import { IMessage } from '@waku/interfaces';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -17,8 +17,8 @@ import {
 import { initTestEngine } from '../../tests/setup.test.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
 import { contentTopics } from '../../waku/waku-topics.js';
-import { handleRelayerFeesMessage } from '../handle-fees-message.js';
-import { RelayerFeeCache } from '../relayer-fee-cache.js';
+import { handleBroadcasterFeesMessage } from '../handle-fees-message.js';
+import { BroadcasterFeeCache } from '../broadcaster-fee-cache.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -38,12 +38,12 @@ const relayAdapt = '0xabcd';
 
 let walletA: RailgunWallet;
 let walletB: RailgunWallet;
-let validFeeMessageData: RelayerFeeMessageData;
+let validFeeMessageData: BroadcasterFeeMessageData;
 
-let relayerFeeCacheStub: SinonStub;
+let broadcasterFeeCacheStub: SinonStub;
 
 const createPayload = async (
-  feeMessageData: RelayerFeeMessageData,
+  feeMessageData: BroadcasterFeeMessageData,
   signingWallet: RailgunWallet,
 ): Promise<Uint8Array> => {
   const utf8String = JSON.stringify(feeMessageData);
@@ -62,7 +62,9 @@ describe('handle-fees-message', () => {
   before(async () => {
     await initTestEngine();
 
-    relayerFeeCacheStub = sinon.stub(RelayerFeeCache, 'addTokenFees').returns();
+    broadcasterFeeCacheStub = sinon
+      .stub(BroadcasterFeeCache, 'addTokenFees')
+      .returns();
 
     const railgunWalletInfoA = await createRailgunWallet(
       MOCK_DB_ENCRYPTION_KEY,
@@ -92,11 +94,11 @@ describe('handle-fees-message', () => {
   });
 
   afterEach(() => {
-    relayerFeeCacheStub.resetHistory();
+    broadcasterFeeCacheStub.resetHistory();
   });
 
   after(() => {
-    relayerFeeCacheStub.restore();
+    broadcasterFeeCacheStub.restore();
   });
 
   it('Should not cache fees with invalid signature', async () => {
@@ -105,8 +107,8 @@ describe('handle-fees-message', () => {
       timestamp: validTimestamp,
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid payloads', async () => {
@@ -115,9 +117,9 @@ describe('handle-fees-message', () => {
       timestamp: validTimestamp,
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
 
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid contentTopic', async () => {
@@ -126,12 +128,12 @@ describe('handle-fees-message', () => {
       timestamp: validTimestamp,
     };
 
-    await handleRelayerFeesMessage(
+    await handleBroadcasterFeesMessage(
       chain,
       message,
       contentTopics.transact(chain),
     );
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid timestamp', async () => {
@@ -140,8 +142,8 @@ describe('handle-fees-message', () => {
       timestamp: invalidTimestamp,
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should not cache fees with invalid version', async () => {
@@ -156,8 +158,8 @@ describe('handle-fees-message', () => {
       timestamp: validTimestamp,
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.notCalled).to.be.true;
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
   it('Should cache fees with valid fields and signature', async () => {
@@ -166,8 +168,8 @@ describe('handle-fees-message', () => {
       timestamp: validTimestamp,
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.calledOnce).to.be.true;
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 
   it('Should cache fees with valid fields, no timestamp', async () => {
@@ -175,7 +177,7 @@ describe('handle-fees-message', () => {
       payload: await createPayload(validFeeMessageData, walletA),
     };
 
-    await handleRelayerFeesMessage(chain, message, contentTopic);
-    expect(relayerFeeCacheStub.calledOnce).to.be.true;
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 });

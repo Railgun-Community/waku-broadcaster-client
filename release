@@ -35,4 +35,4 @@ git checkout main;
 git rebase origin/release;
 git push --tags --no-verify;
 git push --no-verify;
-echo "The release will be made from https://github.com/Railgun-Community/waku-relayer-client/actions";
+echo "The release will be made from https://github.com/Railgun-Community/waku-broadcaster-client/actions";

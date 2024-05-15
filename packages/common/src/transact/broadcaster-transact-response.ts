@@ -1,7 +1,7 @@
 import { decryptAESGCM256 } from '@railgun-community/wallet';
 import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '../utils/conversion.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 
 export type WakuTransactResponse = {
@@ -10,23 +10,23 @@ export type WakuTransactResponse = {
   error?: string;
 };
 
-export class RelayerTransactResponse {
+export class BroadcasterTransactResponse {
   static storedTransactionResponse: Optional<WakuTransactResponse>;
   static sharedKey: Optional<Uint8Array>;
 
   static setSharedKey = (key: Uint8Array) => {
-    RelayerTransactResponse.sharedKey = key;
-    RelayerTransactResponse.storedTransactionResponse = undefined;
+    BroadcasterTransactResponse.sharedKey = key;
+    BroadcasterTransactResponse.storedTransactionResponse = undefined;
   };
 
   static clearSharedKey = () => {
-    RelayerTransactResponse.sharedKey = undefined;
-    RelayerTransactResponse.storedTransactionResponse = undefined;
+    BroadcasterTransactResponse.sharedKey = undefined;
+    BroadcasterTransactResponse.storedTransactionResponse = undefined;
   };
 
-  static async handleRelayerTransactionResponseMessage(message: IMessage) {
-    RelayerDebug.log("Transact Response received.")
-    if (!RelayerTransactResponse.sharedKey) {
+  static async handleBroadcasterTransactionResponseMessage(message: IMessage) {
+    BroadcasterDebug.log('Transact Response received.');
+    if (!BroadcasterTransactResponse.sharedKey) {
       return;
     }
     if (!isDefined(message.payload)) {
@@ -41,23 +41,25 @@ export class RelayerTransactResponse {
 
       const decrypted = decryptAESGCM256(
         encryptedData,
-        RelayerTransactResponse.sharedKey,
+        BroadcasterTransactResponse.sharedKey,
       );
       if (decrypted == null) {
         return;
       }
 
-      RelayerDebug.log('Handle Relayer transact-response message:');
-      RelayerDebug.log(JSON.stringify(decrypted));
+      BroadcasterDebug.log('Handle Broadcaster transact-response message:');
+      BroadcasterDebug.log(JSON.stringify(decrypted));
 
-      RelayerTransactResponse.storedTransactionResponse =
+      BroadcasterTransactResponse.storedTransactionResponse =
         decrypted as WakuTransactResponse;
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
-      RelayerDebug.error(
-        new Error('Could not handle Relayer tx response message', { cause }),
+      BroadcasterDebug.error(
+        new Error('Could not handle Broadcaster tx response message', {
+          cause,
+        }),
       );
     }
   }

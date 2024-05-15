@@ -1,24 +1,24 @@
-# RAILGUN Relayer Client with Waku networking layer
+# RAILGUN Broadcaster Client with Waku networking layer
 
 This package is meant specifically for browsers.
 
-`yarn add @railgun-community/waku-relayer-client-web`
+`yarn add @railgun-community/waku-broadcaster-client-web`
 
 ## The Basics
 
 ```js
-// Initialize the Relayer Client
-await WakuRelayerClient.start(...)
+// Initialize the Broadcaster Client
+await WakuBroadcasterClient.start(...)
 
-// Wait for Relayers to connect (5-10 sec) and client to collect fees.
-// Relayers broadcast fees through the privacy-safe Waku network.
+// Wait for Broadcasters to connect (5-10 sec) and client to collect fees.
+// Broadcasters broadcast fees through the privacy-safe Waku network.
 
-// Get relayer with lowest fee for a given ERC20 token.
-const selectedRelayer = await WakuRelayerClient.findBestRelayer(...)
+// Get broadcaster with lowest fee for a given ERC20 token.
+const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(...)
 
-// Create Relayed transaction and send through selected Relayer.
-const relayerTransaction = await RelayerTransaction.create(...)
-await RelayerTransaction.send(...)
+// Create Relayed transaction and send through selected Broadcaster.
+const broadcasterTransaction = await BroadcasterTransaction.create(...)
+await BroadcasterTransaction.send(...)
 ```
 
 ## Webpack configuration
@@ -35,12 +35,12 @@ module.exports = {
       // Waku uses these Node.js-specific sub-dependencies, which we ignore:
       'default-gateway': false,
       '@achingbrain/nat-port-mapper': false,
-    }
+    },
   },
 };
 ```
 
-If you are using *Next.js*:
+If you are using _Next.js_:
 
 ```js
 /** @type {import('next').NextConfig} */

@@ -5,19 +5,22 @@ import {
 import {
   CachedTokenFee,
   Chain,
-  RelayerFeeMessageData,
+  BroadcasterFeeMessageData,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
 import { IMessage } from '@waku/interfaces';
 import { contentTopics } from '../waku/waku-topics.js';
-import { RelayerDebug } from '../utils/relayer-debug.js';
-import { RelayerConfig } from '../models/relayer-config.js';
-import { RelayerFeeCache } from './relayer-fee-cache.js';
-import { invalidRelayerVersion } from '../utils/relayer-util.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
+import { BroadcasterFeeCache } from './broadcaster-fee-cache.js';
+import { invalidBroadcasterVersion } from '../utils/broadcaster-util.js';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 
-const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: Optional<Date>) => {
+const isExpiredTimestamp = (
+  timestamp: Optional<Date>,
+  expirationFeeTimestamp: Optional<Date>,
+) => {
   if (!timestamp || !expirationFeeTimestamp) {
     return false;
   }
@@ -31,29 +34,36 @@ const isExpiredTimestamp = (timestamp: Optional<Date>, expirationFeeTimestamp: O
   const nowTime = Date.now();
   const expirationMsec = nowTime - 45 * 1000;
   // const expirationFeeMsec = nowTime + 45 * 1000;
-  const timestampExpired = messageTimestamp.getTime() < expirationMsec
+  const timestampExpired = messageTimestamp.getTime() < expirationMsec;
   if (timestampExpired) {
-    RelayerDebug.log(`Relayer Fee STALE: Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
+    BroadcasterDebug.log(
+      `Broadcaster Fee STALE: Difference was ${
+        (Date.now() - messageTimestamp.getTime()) / 1000
+      }s`,
+    );
   } else {
-    RelayerDebug.log(`Relayer Fee receipt SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000}s`)
-
+    BroadcasterDebug.log(
+      `Broadcaster Fee receipt SUCCESS in ${
+        (Date.now() - messageTimestamp.getTime()) / 1000
+      }s`,
+    );
   }
   // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
-  return timestampExpired;//  || feeExpired;
+  return timestampExpired; //  || feeExpired;
 };
 
-export const handleRelayerFeesMessage = async (
+export const handleBroadcasterFeesMessage = async (
   chain: Chain,
   message: IMessage,
   contentTopic: string,
 ) => {
   try {
     if (!isDefined(message.payload)) {
-      RelayerDebug.log('Skipping Relayer fees message: NO PAYLOAD');
+      BroadcasterDebug.log('Skipping Broadcaster fees message: NO PAYLOAD');
       return;
     }
     if (contentTopic !== contentTopics.fees(chain)) {
-      RelayerDebug.log('Skipping Relayer fees message: WRONG TOPIC');
+      BroadcasterDebug.log('Skipping Broadcaster fees message: WRONG TOPIC');
       return;
     }
     const payload = bytesToUtf8(message.payload);
@@ -62,30 +72,31 @@ export const handleRelayerFeesMessage = async (
       signature: string;
     };
     const utf8String = hexToUTF8String(data);
-    const feeMessageData = JSON.parse(utf8String) as RelayerFeeMessageData;
+    const feeMessageData = JSON.parse(utf8String) as BroadcasterFeeMessageData;
     const feeExpirationTime = new Date(feeMessageData.feeExpiration);
     if (isExpiredTimestamp(message.timestamp, feeExpirationTime)) {
-      RelayerDebug.log('Skipping fee message. Timestamp Expired.')
+      BroadcasterDebug.log('Skipping fee message. Timestamp Expired.');
       return;
     }
 
-    if (!isDefined(crypto.subtle) && RelayerConfig.IS_DEV) {
-      RelayerDebug.log(
-        'Skipping Relayer fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
+    if (!isDefined(crypto.subtle) && BroadcasterConfig.IS_DEV) {
+      BroadcasterDebug.log(
+        'Skipping Broadcaster fee validation in DEV. `crypto.subtle` does not exist (not secure: use https or localhost). ',
       );
-      updateFeesForRelayer(chain, feeMessageData);
+      updateFeesForBroadcaster(chain, feeMessageData);
       return;
     }
 
-    if (invalidRelayerVersion(feeMessageData.version)) {
-      RelayerDebug.log(
-        `Skipping Relayer outside version range: ${feeMessageData.version}, ${feeMessageData.railgunAddress}`,
+    if (invalidBroadcasterVersion(feeMessageData.version)) {
+      BroadcasterDebug.log(
+        `Skipping Broadcaster outside version range: ${feeMessageData.version}, ${feeMessageData.railgunAddress}`,
       );
       return;
     }
 
     const { railgunAddress } = feeMessageData;
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
+    //TODO: rename this to verifyBroadcasterSignature
     const verified = await verifyRelayerSignature(
       signature,
       data,
@@ -95,19 +106,21 @@ export const handleRelayerFeesMessage = async (
       return;
     }
 
-    updateFeesForRelayer(chain, feeMessageData);
+    updateFeesForBroadcaster(chain, feeMessageData);
   } catch (cause) {
     if (!(cause instanceof Error)) {
       throw new Error('Unexpected non-error thrown', { cause });
     }
 
-    RelayerDebug.error(new Error('Error handling Relayer fees', { cause }));
+    BroadcasterDebug.error(
+      new Error('Error handling Broadcaster fees', { cause }),
+    );
   }
 };
 
-const updateFeesForRelayer = (
+const updateFeesForBroadcaster = (
   chain: Chain,
-  feeMessageData: RelayerFeeMessageData,
+  feeMessageData: BroadcasterFeeMessageData,
 ) => {
   const tokenFeeMap: MapType<CachedTokenFee> = {};
   const tokenAddresses = Object.keys(feeMessageData.fees);
@@ -125,7 +138,7 @@ const updateFeesForRelayer = (
     }
   });
 
-  RelayerFeeCache.addTokenFees(
+  BroadcasterFeeCache.addTokenFees(
     chain,
     feeMessageData.railgunAddress,
     feeMessageData.feeExpiration,

@@ -1,5 +1,5 @@
 {
-  "name": "waku-relayer-client",
+  "name": "waku-broadcaster-client",
   "version": "6.2.13",
   "license": "MIT",
   "scripts": {

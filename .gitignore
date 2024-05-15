@@ -4,7 +4,7 @@
 # Duplicates
 packages/node/src/**/*
 packages/web/src/**/*
-!waku-relayer-waku-core.ts
+!waku-broadcaster-waku-core.ts
 !*/
 
 # Node.js
