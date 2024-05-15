@@ -1,22 +1,22 @@
-# RAILGUN Relayer Client with Waku networking layer
+# RAILGUN Broadcaster Client with Waku networking layer
 
 This package is meant specifically for Node.js.
 
-`yarn add @railgun-community/waku-relayer-client-node`
+`yarn add @railgun-community/waku-broadcaster-client-node`
 
 ## The Basics
 
 ```js
-// Initialize the Relayer Client
-await WakuRelayerClient.start(...)
+// Initialize the Broadcasting Client
+await WakuBroadcastClient.start(...)
 
-// Wait for Relayers to connect (5-10 sec) and client to collect fees.
-// Relayers broadcast fees through the privacy-safe Waku network.
+// Wait for connection (5-10 sec) and client to collect accepted gas ratios.
+// Broadcasts fees through the privacy-safe Waku network.
 
-// Get relayer with lowest fee for a given ERC20 token.
-const selectedRelayer = await WakuRelayerClient.findBestRelayer(...)
+// Get broadcast with lowest fee for a given ERC20 token.
+const selectedBroadcast = await WakuBroadcastClient.findBestBroadcast(...)
 
-// Create Relayed transaction and send through selected Relayer.
-const relayerTransaction = await RelayerTransaction.create(...)
-await RelayerTransaction.send(...)
+// Create transaction and send through selected Broadcaster.
+const broadcastTransaction = await BroadcastTransaction.create(...)
+await BroadcastTransaction.send(...)
 ```
