@@ -1,5 +1,5 @@
 import {
-  verifyRelayerSignature,
+  verifyBroadcasterSignature,
   getRailgunWalletAddressData,
 } from '@railgun-community/wallet';
 import {
@@ -97,7 +97,7 @@ export const handleBroadcasterFeesMessage = async (
     const { railgunAddress } = feeMessageData;
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
     //TODO: rename this to verifyBroadcasterSignature
-    const verified = await verifyRelayerSignature(
+    const verified = await verifyBroadcasterSignature(
       signature,
       data,
       viewingPublicKey,
