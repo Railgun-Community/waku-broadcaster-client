@@ -150,8 +150,8 @@ export class BroadcasterTransaction {
       feesID: broadcasterFeesID,
       useRelayAdapt,
       devLog: BroadcasterConfig.IS_DEV,
-      minVersion: BroadcasterConfig.MINIMUM_RELAYER_VERSION,
-      maxVersion: BroadcasterConfig.MAXIMUM_RELAYER_VERSION,
+      minVersion: BroadcasterConfig.MINIMUM_BROADCASTER_VERSION,
+      maxVersion: BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
     };
 

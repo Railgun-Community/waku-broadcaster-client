@@ -40,11 +40,11 @@ export const invalidBroadcasterVersion = (version: Optional<string>) => {
   return (
     versionCompare(
       version ?? '0.0.0',
-      BroadcasterConfig.MINIMUM_RELAYER_VERSION,
+      BroadcasterConfig.MINIMUM_BROADCASTER_VERSION,
     ) < 0 ||
     versionCompare(
       version ?? '0.0.0',
-      BroadcasterConfig.MAXIMUM_RELAYER_VERSION,
+      BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
     ) > 0
   );
 };
