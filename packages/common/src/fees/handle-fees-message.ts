@@ -6,6 +6,7 @@ import {
   CachedTokenFee,
   Chain,
   BroadcasterFeeMessageData,
+  MIN_BROADCASTER_RELIABILITY_SCORE,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
 import { IMessage } from '@waku/interfaces';
@@ -17,6 +18,13 @@ import { invalidBroadcasterVersion } from '../utils/broadcaster-util.js';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 
+const checkReliability = (reliability: number) => {
+  if (!isDefined(reliability)) {
+    return false;
+  }
+  return reliability > MIN_BROADCASTER_RELIABILITY_SCORE;
+};
+
 const isExpiredTimestamp = (
   timestamp: Optional<Date>,
   expirationFeeTimestamp: Optional<Date>,
@@ -26,14 +34,13 @@ const isExpiredTimestamp = (
   }
   let messageTimestamp = timestamp;
   if (messageTimestamp.getFullYear() === 1970) {
-    // Waku timestamp bug.
+    // Encountered Waku timestamp bug.
     messageTimestamp = new Date(messageTimestamp.getTime() * 1000);
   }
   // Expired if message originated > 45 seconds ago.
   // check if fee expires within 45 seconds; if it doesn't ignore it.
   const nowTime = Date.now();
   const expirationMsec = nowTime - 45 * 1000;
-  // const expirationFeeMsec = nowTime + 45 * 1000;
   const timestampExpired = messageTimestamp.getTime() < expirationMsec;
   if (timestampExpired) {
     BroadcasterDebug.log(
@@ -48,8 +55,7 @@ const isExpiredTimestamp = (
       }s`,
     );
   }
-  // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
-  return timestampExpired; //  || feeExpired;
+  return timestampExpired;
 };
 
 export const handleBroadcasterFeesMessage = async (
@@ -94,9 +100,16 @@ export const handleBroadcasterFeesMessage = async (
       return;
     }
 
-    const { railgunAddress } = feeMessageData;
+    const { railgunAddress, reliability } = feeMessageData;
+
+    if (!checkReliability(reliability)) {
+      BroadcasterDebug.log(
+        `Skipping Broadcaster with low reliability: ${reliability}, ${feeMessageData.railgunAddress}`,
+      );
+      return;
+    }
+
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
-    //TODO: rename this to verifyBroadcasterSignature
     const verified = await verifyBroadcasterSignature(
       signature,
       data,
@@ -133,6 +146,7 @@ const updateFeesForBroadcaster = (
         feesID: feeMessageData.feesID,
         availableWallets: feeMessageData.availableWallets,
         relayAdapt: feeMessageData.relayAdapt,
+        reliability: feeMessageData.reliability,
       };
       tokenFeeMap[tokenAddress] = cachedFee;
     }

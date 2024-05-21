@@ -24,6 +24,7 @@ const cachedTokenFee: CachedTokenFee = {
   feesID: 'ID',
   availableWallets: 2,
   relayAdapt: '0x4567',
+  reliability: 0.75,
 };
 const tokenFeeMap: MapType<CachedTokenFee> = {
   [tokenAddress]: cachedTokenFee,
