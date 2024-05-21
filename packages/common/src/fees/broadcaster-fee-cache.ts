@@ -70,7 +70,7 @@ export class BroadcasterFeeCache {
 
     if (invalidBroadcasterVersion(version)) {
       BroadcasterDebug.log(
-        `[Fees] Broadcaster version ${version} invalid (req ${BroadcasterConfig.MINIMUM_RELAYER_VERSION}-${BroadcasterConfig.MAXIMUM_RELAYER_VERSION}): ${broadcasterName}`,
+        `[Fees] Broadcaster version ${version} invalid (req ${BroadcasterConfig.MINIMUM_BROADCASTER_VERSION}-${BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION}): ${broadcasterName}`,
       );
       return;
     }
