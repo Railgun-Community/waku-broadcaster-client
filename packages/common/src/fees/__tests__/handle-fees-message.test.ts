@@ -33,7 +33,7 @@ const validExpiration = Date.now() + 1000000;
 const feesID = 'abc';
 const identifier = 'ID1';
 const availableWallets = 2;
-const version = '4.1.0';
+const version = '5.1.0';
 const relayAdapt = '0xabcd';
 
 let walletA: RailgunWallet;
