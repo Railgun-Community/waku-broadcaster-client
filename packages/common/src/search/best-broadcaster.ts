@@ -71,6 +71,9 @@ export class BroadcasterSearch {
       });
     });
 
+    selectedBroadcasters.sort(
+      (a, b) => b.tokenFee.reliability - a.tokenFee.reliability,
+    );
     return selectedBroadcasters;
   }
 
