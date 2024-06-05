@@ -1,5 +1,5 @@
 {
-  "name": "@railgun-community/waku-broadcaster-client-node",
+  "name": "@railgun-community/waku-broadcaster-client-web",
   "version": "7.0.4",
   "license": "MIT",
   "main": "dist/index.js",
@@ -13,7 +13,6 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
-    "prepare": "npm run build",
     "check-circular-deps": "madge --circular .",
     "eslint": "eslint src --ext .ts,.tsx --fix",
     "lint": "npm run check-circular-deps && npm run eslint && tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
