@@ -90,6 +90,7 @@ describe('handle-fees-message', () => {
       version,
       relayAdapt,
       requiredPOIListKeys: ['test_list'],
+      reliability: 0.99,
     };
   });
 

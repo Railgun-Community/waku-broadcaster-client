@@ -133,6 +133,7 @@ const updateFeesForBroadcaster = (
         feesID: feeMessageData.feesID,
         availableWallets: feeMessageData.availableWallets,
         relayAdapt: feeMessageData.relayAdapt,
+        reliability: feeMessageData.reliability,
       };
       tokenFeeMap[tokenAddress] = cachedFee;
     }
