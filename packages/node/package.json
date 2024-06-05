@@ -32,12 +32,12 @@
     "libp2p": "^1.1.2"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "7.0.7",
+    "@railgun-community/shared-models": "7.1.0",
     "@railgun-community/wallet": "10.0.1",
     "ethers": "github:Railgun-Community/ethers.js#v6.7.10"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "7.0.7",
+    "@railgun-community/shared-models": "7.1.0",
     "@railgun-community/wallet": "10.0.1",
     "ethers": "github:Railgun-Community/ethers.js#v6.7.10",
     "@types/chai": "^4.3.5",

@@ -1,5 +1,5 @@
 {
-  "name": "@railgun-community/waku-broadcaster-client-web",
+  "name": "@railgun-community/waku-broadcaster-client-node",
   "version": "7.0.4",
   "license": "MIT",
   "main": "dist/index.js",
@@ -13,6 +13,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
+    "prepare": "npm run build",
     "check-circular-deps": "madge --circular .",
     "eslint": "eslint src --ext .ts,.tsx --fix",
     "lint": "npm run check-circular-deps && npm run eslint && tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@libp2p/bootstrap": "^10.0.11",
+    "@libp2p/tcp": "9.0.17",
     "@waku/core": "0.0.27",
     "@waku/relay": "0.0.10",
     "@waku/sdk": "0.0.23",
@@ -30,12 +32,12 @@
     "libp2p": "^1.1.2"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "7.0.7",
+    "@railgun-community/shared-models": "7.1.0",
     "@railgun-community/wallet": "10.0.1",
     "ethers": "github:Railgun-Community/ethers.js#v6.7.10"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "7.0.7",
+    "@railgun-community/shared-models": "7.1.0",
     "@railgun-community/wallet": "10.0.1",
     "ethers": "github:Railgun-Community/ethers.js#v6.7.10",
     "@types/chai": "^4.3.5",
