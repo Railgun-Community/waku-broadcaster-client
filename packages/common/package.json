@@ -24,7 +24,7 @@
   "peerDependencies": {
     "@railgun-community/shared-models": "7.3.1",
     "@railgun-community/wallet": "10.1.0",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.10"
+    "ethers": "6.13.1"
   },
   "devDependencies": {
     "@railgun-community/shared-models": "7.3.1",
@@ -44,7 +44,7 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.27.5",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.10",
+    "ethers": "6.13.1",
     "leveldown": "^6.1.1",
     "madge": "^6.1.0",
     "mocha": "^10.2.0",
