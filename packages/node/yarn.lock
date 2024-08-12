@@ -1189,18 +1189,6 @@
     uint8arraylist "^2.4.8"
     uint8arrays "^5.0.2"
 
-"@libp2p/tcp@9.0.17":
-  version "9.0.17"
-  resolved "https://registry.yarnpkg.com/@libp2p/tcp/-/tcp-9.0.17.tgz#f0f44d189b098f49e07f8426abda86ad50d753ac"
-  integrity sha512-joGy4Zs/2jQ1pe8fD7yr9lLqJ2ZXxZN6dZhhzknf3Opq1YRQ3yyz2eu5G1LNdN0jqyO259UO+TnLtEkruel/QQ==
-  dependencies:
-    "@libp2p/interface" "^1.1.5"
-    "@libp2p/utils" "^5.2.7"
-    "@multiformats/mafmt" "^12.1.6"
-    "@multiformats/multiaddr" "^12.1.14"
-    "@types/sinon" "^17.0.3"
-    stream-to-it "^0.2.4"
-
 "@libp2p/utils@^5.2.7":
   version "5.2.7"
   resolved "https://registry.yarnpkg.com/@libp2p/utils/-/utils-5.2.7.tgz#14157f59f74c5ddb507027941259ead43d6e32d5"
@@ -1510,10 +1498,10 @@
   resolved "https://registry.yarnpkg.com/@railgun-community/curve25519-scalarmult-wasm/-/curve25519-scalarmult-wasm-0.1.5.tgz#edb5e40a8f1fdb7f7e0de1d04e8badabe41cb2a8"
   integrity sha512-Cur8uM/IdNW3WzUwdPloDG1CF0rpSBDWq2yGXJMZ7IMeBGdc4Jj0h9tnNMFRZ35ZuCVVbZ3yClmqSa4PsbpdGQ==
 
-"@railgun-community/engine@9.1.0":
-  version "9.1.0"
-  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-9.1.0.tgz#a3e88a236eb4113b69583a0fb0f52e78206c1f88"
-  integrity sha512-LqA25kL6vKIlEWsUAXyQ2VfKFJh5NHAnQoYVdkF06hXt/gGBXaH/TUlXCVyJIUW1+pThkjD+rqNvccL3Aj3ZsQ==
+"@railgun-community/engine@9.1.1":
+  version "9.1.1"
+  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-9.1.1.tgz#6f097dd0260d02e908b062d46a0584b58e70f4a7"
+  integrity sha512-pmgEV5QwQXcrdoHrPCeMMLpV9cUg+EWSL6r02qwzyacrtIHls4rPgExkuCTOy/RtKdySZYJtblw8FqrGsM0dcw==
   dependencies:
     "@noble/ciphers" "^0.4.0"
     "@noble/ed25519" "^1.7.1"
@@ -1545,15 +1533,15 @@
   resolved "https://registry.yarnpkg.com/@railgun-community/poseidon-hash-wasm/-/poseidon-hash-wasm-1.0.1.tgz#bfd3b3f915391a59486d8c9d632069f029e152d6"
   integrity sha512-zDAbMu095ZjMqsKIoyOnuKR4Zofnqqx4eTCtnA6qYglnexX5cadxItvJa3ozhDDTmFkDGAidDssQ7Pzl3wwLDA==
 
-"@railgun-community/shared-models@7.4.1":
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-7.4.1.tgz#4a39d535b6d7a73f70872c7e38ad58aa2ca636a6"
-  integrity sha512-invbFR2KGg/auvbDcJNHBeuAsahIIpr94Chmy56VOyeurYfQi+FLpnpsFw7xgvm6TrRMmWMpy5dn3BBcbX8SbQ==
+"@railgun-community/shared-models@7.4.3":
+  version "7.4.3"
+  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-7.4.3.tgz#f052b3c1f26ffc206d66fa010d452b07c86c137f"
+  integrity sha512-63YDTWvvXvZG7U7R4j1ZG0lvnCl95Kn9LPvJRd+56oachKs1Z6Z3TeXCBQXN2dK+viqXgHH4Aa6+Ij4goTeG3Q==
 
-"@railgun-community/wallet@10.2.1":
-  version "10.2.1"
-  resolved "https://registry.yarnpkg.com/@railgun-community/wallet/-/wallet-10.2.1.tgz#b50aa4a2f28df78f2ceb25771c8c5aeb115c1f2a"
-  integrity sha512-VfJeWsGtD7VwuLW4W4P7R1crCT6aA5MSnYVhzva38WUOnliiQBc9/BdMF458Iqf2ppS6Qj+vjJ85SomBrVWrtw==
+"@railgun-community/wallet@10.2.3":
+  version "10.2.3"
+  resolved "https://registry.yarnpkg.com/@railgun-community/wallet/-/wallet-10.2.3.tgz#d09a541a32fa5e85774cc7d9e71b33ecf8bbda5c"
+  integrity sha512-Npe8bFiBg3wKxjKDUnXlavFuf8NwsG3wiaxkhQRvz52O313WHeWVX/YKCL7RIfUaiTXSto936UDbNcbPKIgDQg==
   dependencies:
     "@graphql-mesh/cache-localforage" "^0.7.20"
     "@graphql-mesh/cross-helpers" "^0.3.4"
@@ -1566,8 +1554,8 @@
     "@graphql-mesh/types" "^0.91.14"
     "@graphql-mesh/utils" "^0.43.22"
     "@noble/ed25519" "^1.7.1"
-    "@railgun-community/engine" "9.1.0"
-    "@railgun-community/shared-models" "7.4.1"
+    "@railgun-community/engine" "9.1.1"
+    "@railgun-community/shared-models" "7.4.3"
     "@whatwg-node/fetch" "^0.8.4"
     assert "2.0.0"
     axios "1.7.2"
@@ -1824,13 +1812,6 @@
   version "10.0.15"
   resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-10.0.15.tgz#513fded9c3cf85e589bbfefbf02b2a0541186b48"
   integrity sha512-3lrFNQG0Kr2LDzvjyjB6AMJk4ge+8iYhQfdnSwIwlG88FUOV43kPcQqDZkDa/h3WSZy6i8Fr0BSjfQtB1B3xuQ==
-  dependencies:
-    "@types/sinonjs__fake-timers" "*"
-
-"@types/sinon@^17.0.3":
-  version "17.0.3"
-  resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-17.0.3.tgz#9aa7e62f0a323b9ead177ed23a36ea757141a5fa"
-  integrity sha512-j3uovdn8ewky9kRBG19bOwaZbexJu/XjtkHyjvUgt4xfPFz18dcORIMqnYh66Fx3Powhcr85NT5+er3+oViapw==
   dependencies:
     "@types/sinonjs__fake-timers" "*"
 
@@ -4341,11 +4322,6 @@ get-intrinsic@^1.0.2, get-intrinsic@^1.1.1, get-intrinsic@^1.1.3:
     function-bind "^1.1.1"
     has "^1.0.3"
     has-symbols "^1.0.3"
-
-get-iterator@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/get-iterator/-/get-iterator-1.0.2.tgz#cd747c02b4c084461fac14f48f6b45a80ed25c82"
-  integrity sha512-v+dm9bNVfOYsY1OrhaCrmyOcYoSeVvbt+hHZ0Au+T+p1y+0Uyj9aMaGIeUTT6xdpRbWzDeYKvfOslPhggQMcsg==
 
 get-iterator@^2.0.1:
   version "2.0.1"
@@ -7044,13 +7020,6 @@ stream-to-array@^2.3.0:
   integrity sha512-UsZtOYEn4tWU2RGLOXr/o/xjRBftZRlG3dEWoaHr8j4GuypJ3isitGbVyjQKAuMu+xbiop8q224TjiZWc4XTZA==
   dependencies:
     any-promise "^1.1.0"
-
-stream-to-it@^0.2.4:
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/stream-to-it/-/stream-to-it-0.2.4.tgz#d2fd7bfbd4a899b4c0d6a7e6a533723af5749bd0"
-  integrity sha512-4vEbkSs83OahpmBybNJXlJd7d6/RxzkkSdT3I0mnGt79Xd2Kk+e1JqbvAvsQfCeKj3aKb0QIWkyK3/n0j506vQ==
-  dependencies:
-    get-iterator "^1.0.2"
 
 streamsearch@^1.1.0:
   version "1.1.0"
