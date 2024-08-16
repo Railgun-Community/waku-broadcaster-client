@@ -27,7 +27,7 @@ export class WakuBroadcasterClient {
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 10000;
+  static pollDelay = 1000;
 
   static async start(
     chain: Chain,
