@@ -9,7 +9,7 @@ import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import {
   nameForBroadcaster,
   cachedFeeExpired,
-  DEFAULT_RELAYER_IDENTIFIER,
+  DEFAULT_BROADCASTER_IDENTIFIER,
   invalidBroadcasterVersion,
   cachedFeeUnavailableOrExpired,
 } from '../utils/broadcaster-util.js';
@@ -102,7 +102,7 @@ export class BroadcasterFeeCache {
 
       this.cache.forNetwork[networkName].forToken[tokenAddress].forBroadcaster[
         railgunAddress
-      ].forIdentifier[identifier ?? DEFAULT_RELAYER_IDENTIFIER] =
+      ].forIdentifier[identifier ?? DEFAULT_BROADCASTER_IDENTIFIER] =
         tokenFeeMap[tokenAddress];
     });
   }
