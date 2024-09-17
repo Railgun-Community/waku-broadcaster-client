@@ -41,7 +41,7 @@ export class WakuObservers {
       `Add Waku observers for chain: ${chain.type}:${chain.id}`,
     );
     WakuObservers.currentChain = chain;
-    WakuObservers.removeAllObservers();
+    await WakuObservers.removeAllObservers();
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
@@ -52,9 +52,9 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
-  static removeAllObservers = () => {
+  static removeAllObservers = async () => {
     for (const unsubscribe of this.currentSubscriptions ?? []) {
-      unsubscribe();
+      await unsubscribe();
     }
     this.currentContentTopics = [];
     this.currentSubscriptions = [];
@@ -142,7 +142,6 @@ export class WakuObservers {
     );
     this.currentContentTopics.push(...newTopics);
 
-    this.currentSubscriptions ??= [];
     for (const subParam of subscriptionParams) {
       const { decoder, callback } = subParam;
       const unsubscribe = await waku.relay.subscribe(decoder, callback);

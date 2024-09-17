@@ -58,9 +58,9 @@ type RelayMessageData = {
 };
 
 // NOTE: Broadcaster default transaction-send timeout is 45 seconds.
-const SECONDS_PER_RETRY = 1.5;
+const SECONDS_PER_RETRY = 2;
 const POLL_DELAY_SECONDS = 0.1;
-const RETRY_TRANSACTION_SECONDS = 15;
+const RETRY_TRANSACTION_SECONDS = 20;
 const POST_ALERT_TOTAL_WAITING_SECONDS = 60;
 
 export class BroadcasterTransaction {

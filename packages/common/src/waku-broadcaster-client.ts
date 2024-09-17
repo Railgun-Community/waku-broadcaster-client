@@ -27,7 +27,8 @@ export class WakuBroadcasterClient {
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 1000;
+  static pollDelay = 3000;
+  static failureCount = 0;
 
   static async start(
     chain: Chain,
@@ -217,12 +218,14 @@ export class WakuBroadcasterClient {
     AddressFilter.setBlocklist(blocklist);
   }
 
-  static async tryReconnect(): Promise<void> {
+  static async tryReconnect(resetCache = true): Promise<void> {
     // Reset fees, which will reset status to "Searching".
-    BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
+    if (resetCache) {
+      BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
+    }
     WakuBroadcasterClient.updateStatus();
 
-    await WakuBroadcasterClient.restart();
+    await WakuBroadcasterClient.restart(resetCache);
   }
 
   static supportsToken(
@@ -237,14 +240,14 @@ export class WakuBroadcasterClient {
     );
   }
 
-  private static async restart(): Promise<void> {
+  private static async restart(resetCache = true): Promise<void> {
     if (this.isRestarting || !this.started) {
       return;
     }
     this.isRestarting = true;
     try {
       BroadcasterDebug.log('Restarting Waku...');
-      await WakuBroadcasterWakuCore.reinitWaku(this.chain);
+      await WakuBroadcasterWakuCore.reinitWaku(this.chain, resetCache);
       this.isRestarting = false;
     } catch (cause) {
       this.isRestarting = false;
@@ -261,7 +264,18 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
-    this.updateStatus();
+    const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
+
+    if (pubsubPeers === 0) {
+      if (WakuBroadcasterClient.failureCount > 0) {
+        await this.tryReconnect(false);
+        WakuBroadcasterClient.failureCount = 0;
+      }
+      WakuBroadcasterClient.failureCount += 1;
+    } else {
+      this.updateStatus();
+      WakuBroadcasterClient.failureCount = 0;
+    }
 
     await delay(WakuBroadcasterClient.pollDelay);
 
