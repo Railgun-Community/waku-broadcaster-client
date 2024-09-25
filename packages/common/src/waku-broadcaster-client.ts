@@ -18,7 +18,7 @@ import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import { RelayNode } from '@waku/sdk';
+import { LightNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 export class WakuBroadcasterClient {
   private static chain: Chain;
@@ -26,7 +26,6 @@ export class WakuBroadcasterClient {
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 3000;
   static failureCount = 0;
 
   static async start(
@@ -35,19 +34,21 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
-    if (!WakuBroadcasterClient.started) {
-      return;
-    }
-
-    this.chain = chain;
-    this.statusCallback = statusCallback;
-
-    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
-
     if (broadcasterDebugger) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
+    BroadcasterDebug.log('Starting Waku Broadcaster Client...');
+
+    this.chain = chain;
+    this.statusCallback = statusCallback;
+
+    BroadcasterDebug.log(
+      `Passing in broadcaster options: ${broadcasterOptions}`,
+    );
+    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
+
+    BroadcasterDebug.log('Initializing Broadcaster Fee Cache...');
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
@@ -55,11 +56,14 @@ export class WakuBroadcasterClient {
 
     try {
       this.started = false;
+
+      BroadcasterDebug.log('Initializing Waku client...');
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.pollStatus();
+      // Start running the poller for keeping waku subscriptions alive
+      BroadcasterDebug.log('Starting Waku observers...');
+      WakuObservers.poller(statusCallback);
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -224,7 +228,7 @@ export class WakuBroadcasterClient {
   static async tryReconnect(resetCache = true): Promise<void> {
     console.log('Trying to reconnect with resetCache:', resetCache);
 
-    // Reset fees, which will reset status to "Searching".
+    // Reset cached broadcaster fees, which will reset status to "Searching".
     if (resetCache) {
       BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
     }
@@ -265,33 +269,6 @@ export class WakuBroadcasterClient {
     }
   }
 
-  /**
-   * Start keep-alive poller which checks Broadcaster status every few seconds.
-   */
-  private static async pollStatus(): Promise<void> {
-    console.log('Polling broadcaster status');
-
-    const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
-
-    if (pubsubPeers === 0) {
-      BroadcasterDebug.log('pubSubPeers is 0');
-      // if (WakuBroadcasterClient.failureCount > 0) {
-      // BroadcasterDebug.log('failureCount > 0, try reconnect');
-      await this.tryReconnect(false);
-      // WakuBroadcasterClient.failureCount = 0;
-      // }
-      // WakuBroadcasterClient.failureCount += 1;
-    } else {
-      this.updateStatus();
-      // WakuBroadcasterClient.failureCount = 0;
-    }
-
-    await delay(WakuBroadcasterClient.pollDelay);
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
-  }
-
   private static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
     console.log('Broadcaster status in updateStatus:', status);
@@ -303,7 +280,7 @@ export class WakuBroadcasterClient {
 
   // Waku Transport functions
   static async addTransportSubscription(
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -319,7 +296,7 @@ export class WakuBroadcasterClient {
     WakuBroadcasterWakuCore.relayMessage(data, customTopic);
   }
 
-  static getWakuCore(): Optional<RelayNode> {
+  static getWakuCore(): Optional<LightNode> {
     return WakuBroadcasterWakuCore.waku;
   }
 }

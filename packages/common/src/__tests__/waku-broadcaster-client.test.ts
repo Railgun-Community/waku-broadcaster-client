@@ -11,7 +11,7 @@ import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { BroadcasterOptions } from '../models/index.js';
-import { RelayNode } from '@waku/sdk';
+import { LightNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
 
 chai.use(chaiAsPromised);
@@ -130,7 +130,7 @@ describe('waku-broadcaster-client', () => {
 
   describe('addTransportSubscription', () => {
     it('should add a transport subscription', async () => {
-      const waku: RelayNode = {} as RelayNode; // Mock RelayNode object
+      const waku: LightNode = {} as LightNode; // Mock LightNode object
       const topic = '/test-topic';
       const callback = (message: any) => {
         // Mock callback function

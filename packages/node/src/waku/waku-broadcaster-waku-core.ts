@@ -1,6 +1,6 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
+import { Protocols, IMessage, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
@@ -18,7 +18,7 @@ import {
 export class WakuBroadcasterWakuCore {
   static hasError = false;
 
-  static waku: Optional<RelayNode>;
+  static waku: Optional<LightNode>;
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
@@ -94,7 +94,7 @@ export class WakuBroadcasterWakuCore {
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
-      const waku: RelayNode = await createRelayNode({
+      const waku: LightNode = await createRelayNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
         libp2p: {
           transports: [tcp()],
@@ -153,7 +153,7 @@ export class WakuBroadcasterWakuCore {
     return 0;
   }
 
-  private static async waitForRemotePeer(waku: RelayNode) {
+  private static async waitForRemotePeer(waku: LightNode) {
     try {
       const protocols = [Protocols.Relay];
       await promiseTimeout(

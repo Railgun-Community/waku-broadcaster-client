@@ -3,16 +3,18 @@ import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
 import {
   IMessage,
-  IFilterSubscription,
   IDecoder,
-  RelayNode,
   Unsubscribe,
+  LightNode,
+  ISubscriptionSDK,
 } from '@waku/interfaces';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
+import { BroadcasterConnectionStatusCallback } from 'models/export-models.js';
+import { BroadcasterStatus } from '../status/broadcaster-connection-status.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -20,28 +22,47 @@ type SubscriptionParams = {
   callback: (message: any) => void;
 };
 
+interface ISubscriptionSDKExtended extends ISubscriptionSDK {
+  decoder: IDecoder<any>;
+  callback: (message: any) => void;
+}
+
 export class WakuObservers {
+  static pollDelay = 3000;
+
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
-  private static currentSubscriptions: Unsubscribe[] = [];
+  private static currentSubscriptions: ISubscriptionSDKExtended[] = [];
+  static subscribedPeers: string[] = [];
+
   static setObserversForChain = async (
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     chain: Chain,
   ) => {
     if (!waku) {
+      BroadcasterDebug.log('No waku instance found in setObserversForChain()');
       return;
     }
     if (
       WakuObservers.currentChain &&
       compareChains(WakuObservers.currentChain, chain)
     ) {
+      BroadcasterDebug.log(
+        `Chain already set for Waku observers: ${chain.type}:${chain.id}`,
+      );
       return;
     }
+
     BroadcasterDebug.log(
       `Add Waku observers for chain: ${chain.type}:${chain.id}`,
     );
+    // Set the current chain
     WakuObservers.currentChain = chain;
+
+    // Remove all existing observers
     await WakuObservers.removeAllObservers();
+
+    // Add observers for the new chain
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
@@ -53,8 +74,8 @@ export class WakuObservers {
   };
 
   static removeAllObservers = async () => {
-    for (const unsubscribe of this.currentSubscriptions ?? []) {
-      await unsubscribe();
+    for (const subscription of this.currentSubscriptions ?? []) {
+      await subscription.unsubscribeAll();
     }
     this.currentContentTopics = [];
     this.currentSubscriptions = [];
@@ -89,10 +110,11 @@ export class WakuObservers {
     return [feesSubscriptionParams, transactResponseSubscriptionParams];
   };
 
-  static subscribedPeers: string[] = [];
-
-  private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
-    if (!isDefined(waku.relay)) {
+  private static addChainObservers = async (waku: LightNode, chain: Chain) => {
+    if (!isDefined(waku.lightPush)) {
+      BroadcasterDebug.log(
+        'No lightPush instance found in addChainObservers()',
+      );
       return;
     }
 
@@ -109,7 +131,7 @@ export class WakuObservers {
   };
 
   static async addTransportSubscription(
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -121,35 +143,119 @@ export class WakuObservers {
     }
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
-    const unsubscribe = await waku.relay.subscribe(decoder, callback);
-    this.currentSubscriptions.push(unsubscribe);
+    const { subscription, error } = await waku.filter.subscribe(
+      decoder,
+      callback,
+    );
+
+    if (subscription) {
+      this.currentSubscriptions.push({
+        ...subscription,
+        decoder,
+        callback,
+      });
+    } else {
+      BroadcasterDebug.log(
+        `Error subscribing to topic ${transportTopic}: ${error}`,
+      );
+      return;
+    }
     this.currentContentTopics.push(transportTopic);
   }
 
   private static async addSubscriptions(
     chain: Optional<Chain>,
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
   ) {
     if (!isDefined(chain) || !isDefined(waku)) {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
 
+    // Get the decoders and callbacks for the chain
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
+
+    // Get the topics for the chain
     const topics = subscriptionParams.map(subParam => subParam.topic);
     const newTopics = topics.filter(
       topic => !this.currentContentTopics.includes(topic),
     );
     this.currentContentTopics.push(...newTopics);
 
+    // Subscribe to the topics
     for (const subParam of subscriptionParams) {
       const { decoder, callback } = subParam;
-      const unsubscribe = await waku.relay.subscribe(decoder, callback);
-      this.currentSubscriptions.push(unsubscribe);
+      const { error, subscription } = await waku.filter.subscribe(
+        decoder,
+        callback,
+      );
+
+      if (subscription) {
+        // Add subscription to array with decoder and callback that was used
+        this.currentSubscriptions.push({
+          ...subscription,
+          decoder,
+          callback,
+        });
+      } else {
+        BroadcasterDebug.log(
+          `Error subscribing to topic ${subParam.topic}: ${error}`,
+        );
+      }
     }
   }
 
-  static getCurrentContentTopics(waku?: RelayNode): string[] {
+  /**
+   * Start keep-alive poller which checks Broadcaster status every few seconds.
+   */
+  static async poller(
+    statusCallback: BroadcasterConnectionStatusCallback,
+  ): Promise<void> {
+    console.log('Polling broadcaster status');
+
+    if (!this.currentChain) {
+      BroadcasterDebug.log('No current chain found in poller');
+      return;
+    }
+
+    // Ping subscriptions to keep them alive
+    for (const subscription of this.currentSubscriptions) {
+      try {
+        // Ping the subscription
+        await subscription.ping();
+      } catch (error) {
+        if (
+          // Check if the error message includes "peer has no subscriptions"
+          error instanceof Error &&
+          error.message.includes('peer has no subscriptions')
+        ) {
+          const extendedSubscription = subscription as ISubscriptionSDKExtended;
+          // Reinitiate the subscription if the ping fails
+          await extendedSubscription.subscribe(
+            extendedSubscription.decoder,
+            extendedSubscription.callback,
+          );
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Update the status in the UI
+    const status = BroadcasterStatus.getBroadcasterConnectionStatus(
+      this.currentChain,
+    );
+    BroadcasterDebug.log(`Broadcaster status in poller(): ${status}`);
+
+    statusCallback(this.currentChain, status);
+
+    await delay(this.pollDelay);
+
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    this.poller(statusCallback);
+  }
+
+  static getCurrentContentTopics(): string[] {
     return this.currentContentTopics;
   }
 }
