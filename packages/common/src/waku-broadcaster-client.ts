@@ -222,18 +222,13 @@ export class WakuBroadcasterClient {
   }
 
   static async tryReconnect(resetCache = true): Promise<void> {
+    +console.log('Trying to reconnect with resetCache:', resetCache);
+
     // Reset fees, which will reset status to "Searching".
     if (resetCache) {
       BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
     }
     const status = WakuBroadcasterClient.updateStatus();
-
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      return;
-    }
 
     await WakuBroadcasterClient.restart(resetCache);
   }
@@ -299,14 +294,6 @@ export class WakuBroadcasterClient {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
-
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.restart();
-    }
 
     return status;
   }
