@@ -222,7 +222,7 @@ export class WakuBroadcasterClient {
   }
 
   static async tryReconnect(resetCache = true): Promise<void> {
-    +console.log('Trying to reconnect with resetCache:', resetCache);
+    console.log('Trying to reconnect with resetCache:', resetCache);
 
     // Reset fees, which will reset status to "Searching".
     if (resetCache) {
@@ -269,6 +269,8 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
+    console.log('Polling broadcaster status');
+
     const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
 
     if (pubsubPeers === 0) {
@@ -292,6 +294,7 @@ export class WakuBroadcasterClient {
 
   private static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
+    console.log('Broadcaster status in updateStatus:', status);
 
     this.statusCallback(this.chain, status);
 
