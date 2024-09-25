@@ -35,6 +35,10 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
+    if (!WakuBroadcasterClient.started) {
+      return;
+    }
+
     this.chain = chain;
     this.statusCallback = statusCallback;
 
@@ -55,7 +59,7 @@ export class WakuBroadcasterClient {
       this.started = true;
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      await this.pollStatus();
+      this.pollStatus();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
