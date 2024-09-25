@@ -20,7 +20,6 @@ import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
 import { RelayNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
-
 export class WakuBroadcasterClient {
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
@@ -56,7 +55,7 @@ export class WakuBroadcasterClient {
       this.started = true;
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.pollStatus();
+      await this.pollStatus();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -223,7 +222,14 @@ export class WakuBroadcasterClient {
     if (resetCache) {
       BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
     }
-    WakuBroadcasterClient.updateStatus();
+    const status = WakuBroadcasterClient.updateStatus();
+
+    if (
+      status === BroadcasterConnectionStatus.Disconnected ||
+      status === BroadcasterConnectionStatus.Error
+    ) {
+      return;
+    }
 
     await WakuBroadcasterClient.restart(resetCache);
   }
@@ -267,14 +273,16 @@ export class WakuBroadcasterClient {
     const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
 
     if (pubsubPeers === 0) {
-      if (WakuBroadcasterClient.failureCount > 2) {
-        await this.tryReconnect(false);
-        WakuBroadcasterClient.failureCount = 0;
-      }
-      WakuBroadcasterClient.failureCount += 1;
+      BroadcasterDebug.log('pubSubPeers is 0');
+      // if (WakuBroadcasterClient.failureCount > 0) {
+      // BroadcasterDebug.log('failureCount > 0, try reconnect');
+      await this.tryReconnect(false);
+      // WakuBroadcasterClient.failureCount = 0;
+      // }
+      // WakuBroadcasterClient.failureCount += 1;
     } else {
       this.updateStatus();
-      WakuBroadcasterClient.failureCount = 0;
+      // WakuBroadcasterClient.failureCount = 0;
     }
 
     await delay(WakuBroadcasterClient.pollDelay);
@@ -283,7 +291,7 @@ export class WakuBroadcasterClient {
     this.pollStatus();
   }
 
-  private static updateStatus() {
+  private static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
@@ -295,7 +303,10 @@ export class WakuBroadcasterClient {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.restart();
     }
+
+    return status;
   }
+
   // Waku Transport functions
   static async addTransportSubscription(
     waku: Optional<RelayNode>,
