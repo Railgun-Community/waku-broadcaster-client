@@ -51,6 +51,8 @@ export class WakuBroadcasterClient {
 
     try {
       this.started = false;
+      BroadcasterDebug.log('Initializing Waku...');
+
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
 
@@ -270,20 +272,21 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
-    const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
+    // const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
 
-    if (pubsubPeers === 0) {
-      BroadcasterDebug.log('pubSubPeers is 0');
-      // if (WakuBroadcasterClient.failureCount > 0) {
-      // BroadcasterDebug.log('failureCount > 0, try reconnect');
-      await this.tryReconnect(false);
-      // WakuBroadcasterClient.failureCount = 0;
-      // }
-      // WakuBroadcasterClient.failureCount += 1;
-    } else {
-      this.updateStatus();
-      // WakuBroadcasterClient.failureCount = 0;
-    }
+    // if (pubsubPeers === 0) {
+    //   BroadcasterDebug.log('pubSubPeers is 0');
+    //   if (WakuBroadcasterClient.failureCount > 0) {
+    //   BroadcasterDebug.log('failureCount > 0, try reconnect');
+    //   await this.tryReconnect(false);
+    //   WakuBroadcasterClient.failureCount = 0;
+    //   // }
+    //   WakuBroadcasterClient.failureCount += 1;
+    // } else {
+    //   this.updateStatus();
+    //   WakuBroadcasterClient.failureCount = 0;
+    // }
+    this.updateStatus();
 
     await delay(WakuBroadcasterClient.pollDelay);
 
