@@ -9,6 +9,7 @@ export class BroadcasterDebug {
 
   static log(msg: string) {
     if (this.debug) {
+      console.log(msg); // temporary since startup isnt finishing
       this.debug.log(msg);
     }
   }

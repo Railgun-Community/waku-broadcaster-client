@@ -1,17 +1,17 @@
-import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
-import { createDecoder, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode, PubsubTopic } from '@waku/interfaces';
+import { Chain } from '@railgun-community/shared-models';
+import { Protocols, IMessage } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
-import { bootstrap } from '@libp2p/bootstrap';
-import { createLightNode, waitForRemotePeer } from '@waku/sdk';
 import {
-  BroadcasterConnectionStatusCallback,
-  BroadcasterOptions,
-} from '../models/index.js';
+  createLightNode,
+  waitForRemotePeer,
+  LightNode,
+  createEncoder,
+} from '@waku/sdk';
+import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
@@ -29,7 +29,7 @@ export class WakuBroadcasterWakuCore {
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
       // Try starting the Waku connection
-      await WakuBroadcasterWakuCore.connect();
+      await WakuBroadcasterWakuCore.connect(chain);
       if (!WakuBroadcasterWakuCore.waku) {
         BroadcasterDebug.log('No waku instance found');
         return;
@@ -90,7 +90,7 @@ export class WakuBroadcasterWakuCore {
     WakuBroadcasterWakuCore.waku = undefined;
   };
 
-  private static connect = async (): Promise<void> => {
+  private static connect = async (chain: Chain): Promise<void> => {
     try {
       WakuBroadcasterWakuCore.hasError = false;
 
@@ -102,18 +102,18 @@ export class WakuBroadcasterWakuCore {
       ];
       const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
 
+      console.log('creating light node');
       const waku: LightNode = await createLightNode({
         networkConfig: {
-          contentTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        },
-        libp2p: {
-          peerDiscovery: [
-            bootstrap({
-              list: peers,
-              timeout: waitTimeoutBeforeBootstrap,
-            }),
+          contentTopics: [
+            `/railgun/v2/${chain.type}/${chain.id}/fees/json`,
+            // `/railgun/v2/encrypted${topic}`,
+            `/railgun/v2/${chain.type}/${chain.id}/transact/json`,
+            `/railgun/v2/${chain.type}/${chain.id}/transact-response/json`,
           ],
         },
+        bootstrapPeers: peers,
+        pingKeepAlive: 3, // ping every 3 seconds
       });
 
       BroadcasterDebug.log('Start Waku Light Node.');
@@ -121,10 +121,6 @@ export class WakuBroadcasterWakuCore {
 
       BroadcasterDebug.log('Waiting for remote peer.');
       await waitForRemotePeer(waku, [Protocols.LightPush, Protocols.Filter]);
-
-      // if (!isDefined(waku.relay)) {
-      //   throw new Error('No Waku Relay instantiated.');
-      // }
 
       BroadcasterDebug.log('Waku peers:');
       for (const peer of waku.libp2p.getPeers()) {

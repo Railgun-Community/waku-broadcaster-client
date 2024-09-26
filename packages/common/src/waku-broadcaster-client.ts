@@ -6,6 +6,7 @@ import {
   BroadcasterConnectionStatus,
   SelectedBroadcaster,
 } from '@railgun-community/shared-models';
+import { LightNode } from '@waku/sdk';
 import { BroadcasterFeeCache } from './fees/broadcaster-fee-cache.js';
 import { AddressFilter } from './filters/address-filter.js';
 import {
@@ -18,8 +19,8 @@ import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import { LightNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
+
 export class WakuBroadcasterClient {
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
@@ -60,10 +61,6 @@ export class WakuBroadcasterClient {
       BroadcasterDebug.log('Initializing Waku client...');
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
-
-      // Start running the poller for keeping waku subscriptions alive
-      BroadcasterDebug.log('Starting Waku observers...');
-      WakuObservers.poller(statusCallback);
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -80,6 +77,13 @@ export class WakuBroadcasterClient {
 
   static isStarted() {
     return this.started;
+  }
+
+  /**
+   * Start keep-alive poller which checks Broadcaster status every few seconds.
+   */
+  static poller() {
+    WakuObservers.poller(WakuBroadcasterClient.statusCallback);
   }
 
   static async setChain(chain: Chain): Promise<void> {
@@ -269,7 +273,7 @@ export class WakuBroadcasterClient {
     }
   }
 
-  private static updateStatus(): BroadcasterConnectionStatus {
+  static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
     console.log('Broadcaster status in updateStatus:', status);
 

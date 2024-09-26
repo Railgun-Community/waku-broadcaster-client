@@ -1,20 +1,13 @@
 import { Chain, compareChains, delay } from '@railgun-community/shared-models';
-import { createDecoder } from '@waku/core';
 import { contentTopics } from './waku-topics.js';
-import {
-  IMessage,
-  IDecoder,
-  Unsubscribe,
-  LightNode,
-  ISubscriptionSDK,
-} from '@waku/interfaces';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 import { BroadcasterConnectionStatusCallback } from 'models/export-models.js';
-import { BroadcasterStatus } from '../status/broadcaster-connection-status.js';
+import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
+import { createDecoder, IDecoder, IMessage, ISubscriptionSDK, LightNode } from '@waku/sdk';
 
 type SubscriptionParams = {
   topic: string;
@@ -185,9 +178,12 @@ export class WakuObservers {
     // Subscribe to the topics
     for (const subParam of subscriptionParams) {
       const { decoder, callback } = subParam;
-      const { error, subscription } = await waku.filter.subscribe(
-        decoder,
-        callback,
+      BroadcasterDebug.log(`Subscribing to topic: ${subParam.topic}`);
+
+      // TODO: add custom pubsub topic to subscription
+      const { error, subscription } = await waku.filter.
+
+        `Error: ${error}, Subscription: ${subscription}`,
       );
 
       if (subscription) {
@@ -241,13 +237,8 @@ export class WakuObservers {
       }
     }
 
-    // Update the status in the UI
-    const status = BroadcasterStatus.getBroadcasterConnectionStatus(
-      this.currentChain,
-    );
-    BroadcasterDebug.log(`Broadcaster status in poller(): ${status}`);
-
-    statusCallback(this.currentChain, status);
+    // Update the status
+    WakuBroadcasterClient.updateStatus();
 
     await delay(this.pollDelay);
 
