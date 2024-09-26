@@ -16,7 +16,8 @@ import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
-
+import { getAllTopicsExceptEncrypted } from './waku-topics.js';
+// import { pubsubPeerDiscovery } from 'libp2p';
 export class WakuBroadcasterWakuCore {
   static hasError = false;
 
@@ -102,18 +103,22 @@ export class WakuBroadcasterWakuCore {
       ];
       const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
 
+      console.log('chain: ', chain);
+
       console.log('creating light node');
       const waku: LightNode = await createLightNode({
         networkConfig: {
-          contentTopics: [
-            `/railgun/v2/${chain.type}/${chain.id}/fees/json`,
-            // `/railgun/v2/encrypted${topic}`,
-            `/railgun/v2/${chain.type}/${chain.id}/transact/json`,
-            `/railgun/v2/${chain.type}/${chain.id}/transact-response/json`,
-          ],
+          contentTopics: getAllTopicsExceptEncrypted(chain),
         },
         bootstrapPeers: peers,
         pingKeepAlive: 3, // ping every 3 seconds
+        // libp2p: {
+        //   peerDiscovery: [
+        //     pubsubPeerDiscovery({
+        //       topics: [WAKU_RAILGUN_PUB_SUB_TOPIC],
+        //     }),
+        //   ],
+        // },
       });
 
       BroadcasterDebug.log('Start Waku Light Node.');
@@ -166,7 +171,7 @@ export class WakuBroadcasterWakuCore {
     return this.waku?.lightPush.connectedPeers.length;
   }
 
-  static async getFilterPeerCount(): Promise<number> {
+  static getFilterPeerCount(): number {
     return 0;
   }
 
