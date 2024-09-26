@@ -1,6 +1,6 @@
 import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
@@ -13,6 +13,7 @@ import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
+import { createLightNode } from '@waku/sdk';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -24,6 +25,7 @@ export class WakuBroadcasterWakuCore {
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
+      BroadcasterDebug.log('Connecting to Waku...');
       await WakuBroadcasterWakuCore.connect();
       if (!WakuBroadcasterWakuCore.waku) {
         BroadcasterDebug.log('No waku instance found');
@@ -93,16 +95,21 @@ export class WakuBroadcasterWakuCore {
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
-      const waku: RelayNode = await createRelayNode({
+      // const waku: RelayNode = await createRelayNode({
+      //   pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
+      //   libp2p: {
+      //     peerDiscovery: [
+      //       bootstrap({
+      //         list: peers,
+      //         timeout: waitTimeoutBeforeBootstrap,
+      //       }),
+      //     ],
+      //   },
+      // });
+      const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        libp2p: {
-          peerDiscovery: [
-            bootstrap({
-              list: peers,
-              timeout: waitTimeoutBeforeBootstrap,
-            }),
-          ],
-        },
+        bootstrapPeers: peers,
+        pingKeepAlive: 3, // ping every 3 seconds
       });
 
       BroadcasterDebug.log('Start Waku.');
