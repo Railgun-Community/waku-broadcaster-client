@@ -154,7 +154,7 @@ export class WakuBroadcasterWakuCore {
     return peers.length;
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
+  static getLightPushPeerCount(): number {
     const length = this.waku?.lightPush.connectedPeers.length;
 
     if (!isDefined(length)) {
@@ -191,6 +191,12 @@ export class WakuBroadcasterWakuCore {
   // }
 
   static async relayMessage(data: object, contentTopic: string): Promise<void> {
+    BroadcasterDebug.log(
+      `Broadcasting message to topic: ${contentTopic} with data: ${JSON.stringify(
+        data,
+      )}`,
+    );
+
     try {
       const dataString = JSON.stringify(data);
       const payload = utf8ToBytes(dataString);
