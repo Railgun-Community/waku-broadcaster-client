@@ -93,17 +93,14 @@ export class WakuBroadcasterWakuCore {
         ...this.additionalDirectPeers,
       ];
       const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
+      console.log('starting relay node');
       const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        libp2p: {
-          peerDiscovery: [
-            bootstrap({
-              list: peers,
-              timeout: waitTimeoutBeforeBootstrap,
-            }),
-          ],
-        },
+        bootstrapPeers: peers,
+        relayKeepAlive: 10, // 10 seconds, default is 5 minutes
+        // allowedTopics: get /railgun/ topics here maybe? prob diff thing
       });
+      console.log('relay node created');
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
