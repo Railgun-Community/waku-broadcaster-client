@@ -35,9 +35,10 @@ export class WakuObservers {
     }
 
     if (WakuObservers.currentChain !== chain) {
-      BroadcasterDebug.log('Resetting current chain');
+      BroadcasterDebug.log(
+        `Setting observers for new chain: ${chain.type}:${chain.id}, current chain: ${WakuObservers.currentChain?.type}:${WakuObservers.currentChain?.id}`,
+      );
       WakuObservers.currentChain = chain;
-      return;
     }
 
     // Remove existing connections and add new ones
@@ -112,11 +113,13 @@ export class WakuObservers {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
     });
 
-    // Log current list of observers
+    // Log current content topics
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
-    BroadcasterDebug.log('Waku content topics:');
+    BroadcasterDebug.log(`Current Content Topics: ${currentContentTopics}`);
+
+    // Log observers
     for (const observer of currentContentTopics) {
-      BroadcasterDebug.log(observer);
+      BroadcasterDebug.log(`Observer: ${observer}`);
     }
   };
 
@@ -142,8 +145,11 @@ export class WakuObservers {
     chain: Optional<Chain>,
     waku: Optional<RelayNode>,
   ) {
-    if (!isDefined(chain) || !isDefined(waku)) {
-      BroadcasterDebug.log('addSubscriptions(): No Waku or Chain defined.');
+    if (!isDefined(chain)) {
+      BroadcasterDebug.log('No chain found in addSubscriptions');
+      return;
+    } else if (!isDefined(waku)) {
+      BroadcasterDebug.log('No waku instance found in addSubscriptions');
       return;
     }
 

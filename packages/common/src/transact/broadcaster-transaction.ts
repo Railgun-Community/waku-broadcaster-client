@@ -90,6 +90,7 @@ export class BroadcasterTransaction {
     BroadcasterTransactResponse.setSharedKey(encryptedDataResponse.sharedKey);
   }
 
+  // Called by the wallet to create the transaction
   static async create(
     txidVersionForInputs: TXIDVersion,
     to: string,
@@ -211,15 +212,30 @@ export class BroadcasterTransaction {
     return RelayRetryState.Wait;
   }
 
+  // Called by the wallet to send a transaction
   async send(): Promise<string> {
     return this.relay();
   }
 
   private async relay(retryNumber = 0): Promise<string> {
+    const maxPeerCheckTime = 30000; // 30 seconds
+    const peerCheckInterval = 1000; // 1 second
+    let elapsedTime = 0;
+
+    // Check for peers before attempting to relay
+    while (WakuBroadcasterWakuCore.getPubSubPeerCount() === 0) {
+      if (elapsedTime >= maxPeerCheckTime) {
+        throw new Error('Request timed out due to no peers found.');
+      }
+      BroadcasterDebug.log('No peers found. Retrying in 1 second...');
+      await this.delay(peerCheckInterval); // Wait for 1 second before checking again
+      elapsedTime += peerCheckInterval;
+    }
+
     const relayRetryState = this.getRelayRetryState(retryNumber);
     switch (relayRetryState) {
+      // Relay the message
       case RelayRetryState.RetryTransact:
-        // 0-20 seconds.
         BroadcasterDebug.log(
           `Relay Waku message: ${this.messageData.method} via ${this.contentTopic}`,
         );
@@ -228,38 +244,43 @@ export class BroadcasterTransaction {
           this.contentTopic,
         );
         break;
+      // Wait for the response
       case RelayRetryState.Wait:
-        // 21-60 seconds.
-        // Do nothing.
         break;
+      // Timeout
       case RelayRetryState.Timeout:
-        // Exactly 60 seconds.
         throw new Error('Request timed out.');
     }
 
-    // 15 iterations (1.5 sec total, iterate every 100ms).
-    const pollIterations = SECONDS_PER_RETRY / POLL_DELAY_SECONDS;
-
-    const response: Optional<WakuTransactResponse> = await poll(
-      async () => this.getTransactionResponse(),
-      (result: Optional<WakuTransactResponse>) => result != null,
-      POLL_DELAY_SECONDS * 1000,
-      pollIterations,
-    );
+    const response = await this.pollForResponse();
     if (isDefined(response)) {
+      BroadcasterTransactResponse.clearSharedKey();
       if (isDefined(response.txHash)) {
-        BroadcasterTransactResponse.clearSharedKey();
         return response.txHash;
       }
       if (isDefined(response.error)) {
-        BroadcasterTransactResponse.clearSharedKey();
         throw new Error('Failed to relay transaction on Waku', {
           cause: new Error(response.error),
         });
       }
     }
 
-    // Retry.
+    // Retry immediately
+    BroadcasterDebug.log('Retrying relay immediately...');
     return this.relay(retryNumber + 1);
+  }
+
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async pollForResponse(): Promise<Optional<WakuTransactResponse>> {
+    const pollIterations = SECONDS_PER_RETRY / POLL_DELAY_SECONDS;
+    return poll(
+      async () => this.getTransactionResponse(),
+      (result: Optional<WakuTransactResponse>) => result != null,
+      POLL_DELAY_SECONDS * 1000,
+      pollIterations,
+    );
   }
 }

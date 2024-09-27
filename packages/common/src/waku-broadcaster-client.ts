@@ -18,7 +18,7 @@ import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import { RelayNode } from '@waku/sdk';
+import { RelayNode, waku } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 
 export class WakuBroadcasterClient {
@@ -92,16 +92,21 @@ export class WakuBroadcasterClient {
       return;
     }
 
-    // // If no peers after 5 pollings, try reconnect
-    // if (WakuBroadcasterClient.getMeshPeerCount() === 0) {
-    //   WakuBroadcasterClient.failureCount++;
-    //   if (WakuBroadcasterClient.failureCount > 5) {
-    //     await WakuBroadcasterClient.tryReconnect();
-    //     WakuBroadcasterClient.failureCount = 0;
-    //   }
-    // } else {
-    //   WakuBroadcasterClient.failureCount = 0;
-    // }
+    BroadcasterDebug.log('Polling Broadcaster status...');
+
+    // If no peers after 5 pollings, subscribe to the topics again
+    if (WakuBroadcasterClient.getPubSubPeerCount() === 0) {
+      WakuBroadcasterClient.failureCount++;
+      if (WakuBroadcasterClient.failureCount > 10) {
+        BroadcasterDebug.log('No peers found, attempting to reconnect...');
+        await WakuBroadcasterClient.tryResubscribe();
+
+        WakuBroadcasterClient.failureCount = 0;
+      }
+    } else {
+      // If a peer is ever detected, reset the counter
+      WakuBroadcasterClient.failureCount = 0;
+    }
 
     // Update status in front end
     WakuBroadcasterClient.updateStatus();
@@ -114,6 +119,31 @@ export class WakuBroadcasterClient {
     } else {
       BroadcasterDebug.log('Broadcaster Client stopped, stopping pollStatus');
     }
+  }
+
+  static async tryResubscribe(): Promise<void> {
+    WakuBroadcasterClient.checkIsStarted('tryReconnect()');
+
+    BroadcasterDebug.log('Attempting to resubscribe to topics...');
+
+    // Onl resubscribe if there are no peers
+    if (WakuBroadcasterClient.getPubSubPeerCount() > 0) {
+      BroadcasterDebug.log('Peers detected, not resubscribing');
+      return;
+    }
+
+    // NOTE: This does not turn the node off/on again, it simply waits for peers again and resubscribes to the topics
+
+    // Wait for a peer
+    await WakuBroadcasterWakuCore.waitForRemotePeer();
+
+    // Set observers again
+    await WakuObservers.setObserversForChain(
+      WakuBroadcasterWakuCore.waku,
+      WakuBroadcasterClient.chain,
+    );
+
+    WakuBroadcasterClient.updateStatus();
   }
 
   static isStarted() {
@@ -298,6 +328,7 @@ export class WakuBroadcasterClient {
 
     WakuBroadcasterClient.statusCallback(WakuBroadcasterClient.chain, status);
 
+    BroadcasterDebug.log(`Broadcaster status: ${status}`);
     return status;
   }
 

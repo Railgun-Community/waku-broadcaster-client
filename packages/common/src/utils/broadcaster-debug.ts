@@ -10,6 +10,7 @@ export class BroadcasterDebug {
   static log(msg: string) {
     if (this.debug) {
       this.debug.log(msg);
+      console.log('console.log: ', msg);
     }
   }
 

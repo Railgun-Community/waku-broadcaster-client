@@ -8,30 +8,47 @@ import { AddressFilter } from '../filters/address-filter.js';
 import { cachedFeeExpired } from '../utils/broadcaster-util.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { isDefined } from '../utils/is-defined.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 
 export class BroadcasterStatus {
   static getBroadcasterConnectionStatus(
     chain: Chain,
   ): BroadcasterConnectionStatus {
     if (WakuBroadcasterWakuCore.hasError) {
+      BroadcasterDebug.log(
+        'getBroadcasterConnectionStatus WakuBroadcasterWakuCore.hasError',
+      );
       return BroadcasterConnectionStatus.Error;
     }
     if (!WakuBroadcasterWakuCore.waku) {
+      BroadcasterDebug.log(
+        'getBroadcasterConnectionStatus !WakuBroadcasterWakuCore.waku',
+      );
       return BroadcasterConnectionStatus.Disconnected;
     }
     if (!this.hasBroadcasterFeesForNetwork(chain)) {
+      BroadcasterDebug.log(
+        'getBroadcasterConnectionStatus !this.hasBroadcasterFeesForNetwork(chain)',
+      );
       return BroadcasterConnectionStatus.Searching;
     }
 
     const { allBroadcasterFeesExpired, anyBroadcastersAvailable } =
       this.getAggregatedInfoForBroadcasters(chain);
     if (allBroadcasterFeesExpired) {
+      BroadcasterDebug.log(
+        'getBroadcasterConnectionStatus allBroadcasterFeesExpired',
+      );
       return BroadcasterConnectionStatus.Disconnected;
     }
     if (!anyBroadcastersAvailable) {
+      BroadcasterDebug.log(
+        'getBroadcasterConnectionStatus !anyBroadcastersAvailable',
+      );
       return BroadcasterConnectionStatus.AllUnavailable;
     }
 
+    BroadcasterDebug.log('getBroadcasterConnectionStatus Connected');
     return BroadcasterConnectionStatus.Connected;
   }
 

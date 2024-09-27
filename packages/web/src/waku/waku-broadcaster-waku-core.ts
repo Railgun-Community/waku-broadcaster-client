@@ -91,16 +91,21 @@ export class WakuBroadcasterWakuCore {
       const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
         bootstrapPeers: peers,
-        relayKeepAlive: 10, // 10 seconds, default is 5 minutes
+        relayKeepAlive: 3, // 10 seconds, default is 5 minutes
+        pingKeepAlive: 3, // 10 seconds, default is 5 minutes
+        numPeersToUse: 5, // default is 3
         // allowedTopics: get /railgun/ topics here maybe? prob diff thing
       });
       console.log('relay node created');
+
+      // Store the waku instance
+      WakuBroadcasterWakuCore.waku = waku;
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
 
       BroadcasterDebug.log('Waiting for remote peer.');
-      await this.waitForRemotePeer(waku);
+      await this.waitForRemotePeer();
 
       if (!isDefined(waku.relay)) {
         throw new Error('No Waku Relay instantiated.');
@@ -110,9 +115,6 @@ export class WakuBroadcasterWakuCore {
       for (const peer of waku.libp2p.getPeers()) {
         BroadcasterDebug.log(JSON.stringify(peer));
       }
-
-      BroadcasterDebug.log('Connected to Waku');
-      WakuBroadcasterWakuCore.waku = waku;
       WakuBroadcasterWakuCore.hasError = false;
     } catch (err) {
       if (!(err instanceof Error)) {
@@ -143,6 +145,8 @@ export class WakuBroadcasterWakuCore {
       return 0;
     }
 
+    BroadcasterDebug.log(`PubSub Peer Count: ${peers.length}`);
+
     return peers.length;
   }
 
@@ -156,11 +160,17 @@ export class WakuBroadcasterWakuCore {
     return 0;
   }
 
-  private static async waitForRemotePeer(waku: RelayNode) {
+  static async waitForRemotePeer() {
+    if (!WakuBroadcasterWakuCore.waku) {
+      throw new Error('No Waku instance found.');
+    }
+
+    BroadcasterDebug.log('Waiting for remote peer...');
+
     try {
       const protocols = [Protocols.Relay];
       await promiseTimeout(
-        waitForRemotePeer(waku, protocols),
+        waitForRemotePeer(WakuBroadcasterWakuCore.waku, protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
       );
     } catch (err) {

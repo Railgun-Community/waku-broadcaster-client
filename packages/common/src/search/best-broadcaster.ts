@@ -30,6 +30,9 @@ export class BroadcasterSearch {
       BroadcasterFeeCache.feesForChain(chain)?.forToken[tokenAddressLowercase]
         ?.forBroadcaster;
     if (!isDefined(broadcasterTokenFees)) {
+      BroadcasterDebug.log(
+        `No broadcaster fees found for token ${tokenAddressLowercase} in findBroadcastersForToken()`,
+      );
       return undefined;
     }
 
@@ -60,6 +63,9 @@ export class BroadcasterSearch {
         if (
           cachedFeeUnavailableOrExpired(nextCachedFee, chain, useRelayAdapt)
         ) {
+          BroadcasterDebug.log(
+            `Cached fee unavailable or expired for ${broadcasterAddress} on chain ${chain} for token ${tokenAddress}`,
+          );
           return;
         }
         const selectedBroadcaster: SelectedBroadcaster = {
@@ -83,7 +89,9 @@ export class BroadcasterSearch {
   ): Optional<SelectedBroadcaster[]> {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
+
     if (!isDefined(broadcasterTokenFees)) {
+      BroadcasterDebug.log(`No broadcaster fees found for chain ${chain}`);
       return undefined;
     }
     const allTokens = Object.keys(broadcasterTokenFees);
@@ -95,6 +103,7 @@ export class BroadcasterSearch {
         useRelayAdapt,
       );
       if (!broadcastersForToken) {
+        BroadcasterDebug.log(`No broadcasters found for token ${tokenAddress}`);
         return;
       }
       selectedBroadcasters.push(...broadcastersForToken);
