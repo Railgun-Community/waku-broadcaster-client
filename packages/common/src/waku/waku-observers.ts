@@ -4,10 +4,16 @@ import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 import { BroadcasterConnectionStatusCallback } from 'models/export-models.js';
 import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
-import { createDecoder, IDecoder, IMessage, ISubscriptionSDK, LightNode } from '@waku/sdk';
+import {
+  createDecoder,
+  IDecoder,
+  IMessage,
+  ISubscriptionSDK,
+  LightNode,
+} from '@waku/sdk';
+import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -135,23 +141,35 @@ export class WakuObservers {
       return;
     }
     const transportTopic = contentTopics.encrypted(topic);
-    const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
+    const decoder = createDecoder(transportTopic); // , WAKU_RAILGUN_PUB_SUB_TOPIC
+
+    // TODO where is it setting the default topic
     const { subscription, error } = await waku.filter.subscribe(
       decoder,
       callback,
     );
 
     if (subscription) {
-      this.currentSubscriptions.push({
+      // Ensure the subscription has a ping method
+      if (typeof subscription.ping !== 'function') {
+        throw new Error('Subscription does not have a ping method');
+      }
+
+      // Add subscription to array with decoder and callback that was used
+      const extendedSubscription: ISubscriptionSDKExtended = {
         ...subscription,
         decoder,
         callback,
-      });
-    } else {
+      };
+      this.currentSubscriptions.push(extendedSubscription);
+    } else if (error) {
       BroadcasterDebug.log(
         `Error subscribing to topic ${transportTopic}: ${error}`,
       );
-      return;
+    } else {
+      BroadcasterDebug.log(
+        `Error subscribing to topic ${transportTopic}: No error or subscription returned`,
+      );
     }
     this.currentContentTopics.push(transportTopic);
   }
@@ -180,11 +198,12 @@ export class WakuObservers {
       const { decoder, callback } = subParam;
       BroadcasterDebug.log(`Subscribing to topic: ${subParam.topic}`);
 
-      // TODO: add custom pubsub topic to subscription
-      const { error, subscription } = await waku.filter.
-
-        `Error: ${error}, Subscription: ${subscription}`,
+      const { error, subscription } = await waku.filter.subscribe(
+        decoder,
+        callback,
       );
+
+      BroadcasterDebug.log(`Subscription: ${subscription}`);
 
       if (subscription) {
         // Add subscription to array with decoder and callback that was used
@@ -193,9 +212,13 @@ export class WakuObservers {
           decoder,
           callback,
         });
-      } else {
+      } else if (error) {
         BroadcasterDebug.log(
           `Error subscribing to topic ${subParam.topic}: ${error}`,
+        );
+      } else {
+        BroadcasterDebug.log(
+          `Error subscribing to topic ${subParam.topic}: No error or subscription returned`,
         );
       }
     }
@@ -209,33 +232,39 @@ export class WakuObservers {
   ): Promise<void> {
     console.log('Polling broadcaster status');
 
-    if (!this.currentChain) {
-      BroadcasterDebug.log('No current chain found in poller');
-      return;
-    }
+    // if (!this.currentChain) {
+    //   BroadcasterDebug.log('No current chain found in poller');
+    //   return;
+    // }
 
-    // Ping subscriptions to keep them alive
-    for (const subscription of this.currentSubscriptions) {
-      try {
-        // Ping the subscription
-        await subscription.ping();
-      } catch (error) {
-        if (
-          // Check if the error message includes "peer has no subscriptions"
-          error instanceof Error &&
-          error.message.includes('peer has no subscriptions')
-        ) {
-          const extendedSubscription = subscription as ISubscriptionSDKExtended;
-          // Reinitiate the subscription if the ping fails
-          await extendedSubscription.subscribe(
-            extendedSubscription.decoder,
-            extendedSubscription.callback,
-          );
-        } else {
-          throw error;
-        }
-      }
-    }
+    // // Ping subscriptions to keep them alive
+    // for (const subscription of this.currentSubscriptions) {
+    //   try {
+    //     // Check if the subscription has a ping method
+    //     if (typeof subscription.ping === 'function') {
+    //       // Ping the subscription
+    //       await subscription.ping();
+    //     } else {
+    //       BroadcasterDebug.log('Subscription does not have a ping method');
+    //       return;
+    //     }
+    //   } catch (error) {
+    //     if (
+    //       // Check if the error message includes "peer has no subscriptions"
+    //       error instanceof Error &&
+    //       error.message.includes('peer has no subscriptions')
+    //     ) {
+    //       const extendedSubscription = subscription as ISubscriptionSDKExtended;
+    //       // Reinitiate the subscription if the ping fails
+    //       await extendedSubscription.subscribe(
+    //         extendedSubscription.decoder,
+    //         extendedSubscription.callback,
+    //       );
+    //     } else {
+    //       throw error;
+    //     }
+    //   }
+    // }
 
     // Update the status
     WakuBroadcasterClient.updateStatus();
