@@ -21,7 +21,7 @@ import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
 import { LightNode, Protocols, waitForRemotePeer, waku } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 export class WakuBroadcasterClient {
-  static pollDelay = 3000;
+  static pollDelay = 6000;
   static noPeersFoundCounter = 0;
 
   private static chain: Chain;
@@ -128,11 +128,11 @@ export class WakuBroadcasterClient {
     return WakuBroadcasterWakuCore.getPubSubPeerCount();
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
+  static getLightPushPeerCount(): number {
     return WakuBroadcasterWakuCore.getLightPushPeerCount();
   }
 
-  static async getFilterPeerCount(): Promise<number> {
+  static getFilterPeerCount(): number {
     return WakuBroadcasterWakuCore.getFilterPeerCount();
   }
   /**
@@ -284,21 +284,9 @@ export class WakuBroadcasterClient {
   static async pollStatus() {
     BroadcasterDebug.log('Polling broadcaster status...');
 
-    // Log the peers
-    const pubsubPeers = this.getPubSubPeerCount();
-    BroadcasterDebug.log(`Light push peers: ${this.getLightPushPeerCount}`);
-    BroadcasterDebug.log(`Pubsub peers: ${this.getPubSubPeerCount}`);
-
-    // If no pubsub peers found, increment the counter
-    if (pubsubPeers === 0) {
-      BroadcasterDebug.log(
-        `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
-      );
-      this.noPeersFoundCounter += 1;
-    } else {
-      // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
-      this.noPeersFoundCounter = 0;
-    }
+    // Log the peers (use the same connectedPeers value used by waitForRemotePeer())
+    const peers = WakuBroadcasterWakuCore.getFilterPeerCount();
+    BroadcasterDebug.log(`waku.filter connected peers: ${peers}`);
 
     // Check that the waku instance is initialized
     if (!WakuBroadcasterWakuCore.waku) {
@@ -309,6 +297,9 @@ export class WakuBroadcasterClient {
       this.pollStatus();
       return;
     }
+
+    // TODO; before a transaction, make sure connected peer, or ensure relayMessage sends once peer is found immediately
+    // TODO: which peers matter here? lightpush? libp2p.getPeers? filter.connectedPeers?
 
     // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
     if (this.noPeersFoundCounter > 9) {
@@ -339,6 +330,25 @@ export class WakuBroadcasterClient {
         this.pollStatus();
         return;
       }
+
+      // Reset the counter
+      this.noPeersFoundCounter = 0;
+    }
+
+    // If no connected peers found, increment the counter
+    if (peers === 0) {
+      BroadcasterDebug.log(
+        `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
+      );
+      this.noPeersFoundCounter += 1;
+
+      // Delay and try again
+      await delay(this.pollDelay);
+      this.pollStatus();
+      return;
+    } else {
+      // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
+      this.noPeersFoundCounter = 0;
     }
 
     // Check that a chain has been set

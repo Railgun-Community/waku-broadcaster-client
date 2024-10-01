@@ -145,6 +145,17 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
+  static getFilterPeerCount(): number {
+    const peers = this.waku?.filter.connectedPeers;
+
+    if (!isDefined(peers)) {
+      BroadcasterDebug.log('peers are undefined in getFilterPeerCount()');
+      return 0;
+    }
+
+    return peers.length;
+  }
+
   static getMeshPeerCount(): number {
     // return (
     //   this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
@@ -155,7 +166,12 @@ export class WakuBroadcasterWakuCore {
   }
 
   static getPubSubPeerCount(): number {
-    const peers = this.waku?.libp2p.getPeers() ?? [];
+    const peers = this.waku?.libp2p.getPeers();
+
+    if (!isDefined(peers)) {
+      BroadcasterDebug.log('peers are undefined in getPubSubPeerCount()');
+      return 0;
+    }
     return peers.length;
   }
 
@@ -180,23 +196,7 @@ export class WakuBroadcasterWakuCore {
     return 0;
   }
 
-  private static async waitForRemotePeer(waku: RelayNode) {
-    try {
-      const protocols = [Protocols.Relay];
-      await promiseTimeout(
-        waitForRemotePeer(waku, protocols),
-        WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      );
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
-      }
-      BroadcasterDebug.error(err);
-      throw new Error(err.message);
-    }
-  }
-
-  static async broadcastMessage(
+  static async relayMessage(
     data: object,
     contentTopic: string,
     retry: number = 0,
