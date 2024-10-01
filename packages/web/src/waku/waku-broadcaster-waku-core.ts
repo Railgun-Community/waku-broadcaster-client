@@ -159,7 +159,7 @@ export class WakuBroadcasterWakuCore {
     return peers.length;
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
+  static getLightPushPeerCount(): number {
     const length = this.waku?.lightPush.connectedPeers.length;
 
     if (!isDefined(length)) {
@@ -175,7 +175,7 @@ export class WakuBroadcasterWakuCore {
     return this.waku?.lightPush.connectedPeers.length;
   }
 
-  static async getFilterPeerCount(): Promise<number> {
+  static getFilterPeerCount(): number {
     BroadcasterDebug.log('getFilterPeerCount() is not implemented');
     return 0;
   }

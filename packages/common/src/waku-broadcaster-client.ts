@@ -129,11 +129,11 @@ export class WakuBroadcasterClient {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getLightPushPeerCount();
+    return WakuBroadcasterWakuCore.getLightPushPeerCount();
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getFilterPeerCount();
+    return WakuBroadcasterWakuCore.getFilterPeerCount();
   }
   /**
    * The function `findBestBroadcaster` finds the broadcaster with the lowest fees for a given chain and token.
@@ -291,7 +291,9 @@ export class WakuBroadcasterClient {
 
     // If no pubsub peers found, increment the counter
     if (pubsubPeers === 0) {
-      BroadcasterDebug.log('No pubsub peers found');
+      BroadcasterDebug.log(
+        `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
+      );
       this.noPeersFoundCounter += 1;
     } else {
       // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
@@ -310,7 +312,10 @@ export class WakuBroadcasterClient {
 
     // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
     if (this.noPeersFoundCounter > 9) {
-      BroadcasterDebug.log('Waiting for remote peer...');
+      BroadcasterDebug.log(
+        'No peers found after 10 loops, waiting for remote peer...',
+      );
+
       try {
         // If we get a peer, let the poller continue through the logic
         await waitForRemotePeer(

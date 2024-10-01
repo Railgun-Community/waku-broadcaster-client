@@ -205,12 +205,8 @@ export class WakuObservers {
         Object.getPrototypeOf(subscription),
       );
 
-      // Ensure the subscription object is created before subscribing
-      if (subscription === undefined || subscription === null) {
-        BroadcasterDebug.log('Failed to subscribe');
-        return;
-      } else {
-        // Subscribe
+      // Try subscribing to topic
+      try {
         subscription.subscribe(decoder, callback);
 
         const extendedSubscription: IFilterSubscriptionExtended = {
@@ -226,6 +222,8 @@ export class WakuObservers {
         BroadcasterDebug.log(
           `currentSubscriptions: ${WakuObservers.currentSubscriptions}`,
         );
+      } catch (err) {
+        BroadcasterDebug.log(`Error subscribing to ${subParam.topic}: ${err}`);
       }
     }
   }
