@@ -8,30 +8,39 @@ import { AddressFilter } from '../filters/address-filter.js';
 import { cachedFeeExpired } from '../utils/broadcaster-util.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { isDefined } from '../utils/is-defined.js';
+import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 
 export class BroadcasterStatus {
   static getBroadcasterConnectionStatus(
     chain: Chain,
   ): BroadcasterConnectionStatus {
+    BroadcasterDebug.log('Checking broadcaster connection status...');
+
     if (WakuBroadcasterWakuCore.hasError) {
+      BroadcasterDebug.log('Waku has error');
       return BroadcasterConnectionStatus.Error;
     }
     if (!WakuBroadcasterWakuCore.waku) {
+      BroadcasterDebug.log('Waku not initialized');
       return BroadcasterConnectionStatus.Disconnected;
     }
     if (!this.hasBroadcasterFeesForNetwork(chain)) {
+      BroadcasterDebug.log('No broadcaster fees for network');
       return BroadcasterConnectionStatus.Searching;
     }
 
     const { allBroadcasterFeesExpired, anyBroadcastersAvailable } =
       this.getAggregatedInfoForBroadcasters(chain);
     if (allBroadcasterFeesExpired) {
+      BroadcasterDebug.log('All broadcaster fees expired');
       return BroadcasterConnectionStatus.Disconnected;
     }
     if (!anyBroadcastersAvailable) {
+      BroadcasterDebug.log('No broadcasters available');
       return BroadcasterConnectionStatus.AllUnavailable;
     }
 
+    BroadcasterDebug.log('Connected to broadcasters');
     return BroadcasterConnectionStatus.Connected;
   }
 

@@ -8,6 +8,8 @@ export class BroadcasterDebug {
   }
 
   static log(msg: string) {
+    console.log('console.log: ', msg);
+
     if (this.debug) {
       this.debug.log(msg);
     }

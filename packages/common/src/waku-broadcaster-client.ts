@@ -18,16 +18,16 @@ import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import { RelayNode } from '@waku/sdk';
+import { LightNode, Protocols, waitForRemotePeer, waku } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 export class WakuBroadcasterClient {
+  static pollDelay = 3000;
+  static noPeersFoundCounter = 0;
+
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
   private static isRestarting = false;
-
-  static pollDelay = 3000;
-  static failureCount = 0;
 
   static async start(
     chain: Chain,
@@ -35,15 +35,21 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
-    this.chain = chain;
-    this.statusCallback = statusCallback;
-
-    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
-
     if (broadcasterDebugger) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
+    BroadcasterDebug.log('Starting Waku Broadcaster Client...');
+
+    this.chain = chain;
+    this.statusCallback = statusCallback;
+
+    console.log(
+      'Passing in broadcasterOptions to WakuBroadcasterWakuCore.setBroadcasterOptions',
+    );
+    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
+
+    BroadcasterDebug.log('Initializing Broadcaster Fee Cache...');
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
@@ -51,13 +57,13 @@ export class WakuBroadcasterClient {
 
     try {
       this.started = false;
-      BroadcasterDebug.log('Initializing Waku...');
+      BroadcasterDebug.log('Initializing Waku Client...');
 
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      await this.pollStatus();
+      // Update the status
+      this.updateStatus();
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -76,17 +82,38 @@ export class WakuBroadcasterClient {
     return this.started;
   }
 
-  static async setChain(chain: Chain): Promise<void> {
-    if (!WakuBroadcasterClient.started) {
+  static async updateChain(chain: Chain): Promise<void> {
+    this.chain = chain;
+
+    // Check that waku instance is initialized
+    if (!WakuBroadcasterWakuCore.waku) {
+      BroadcasterDebug.log('No waku instance found in updateChain');
       return;
     }
 
-    WakuBroadcasterClient.chain = chain;
+    // Clear current chain in WakuObservers
+    WakuObservers.resetCurrentChain();
+
+    // Since connecting to new chain, make sure we wait for a peer again so subscriptions can retrieve fees
+    BroadcasterDebug.log('Waiting for remote peer...');
+    try {
+      await waitForRemotePeer(
+        WakuBroadcasterWakuCore.waku,
+        [Protocols.Filter, Protocols.LightPush],
+        WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+      );
+    } catch (err) {
+      BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
+
+      // Poller should see the status is hasError and callback the errored status
+      WakuBroadcasterWakuCore.hasError = true;
+    }
+
     await WakuObservers.setObserversForChain(
       WakuBroadcasterWakuCore.waku,
       chain,
     );
-    WakuBroadcasterClient.updateStatus();
+    this.updateStatus();
   }
 
   static getContentTopics(): string[] {
@@ -112,7 +139,7 @@ export class WakuBroadcasterClient {
    * The function `findBestBroadcaster` finds the broadcaster with the lowest fees for a given chain and token.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for WakuBroadcasterClient token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedBroadcaster> object.
@@ -122,7 +149,7 @@ export class WakuBroadcasterClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster> {
-    if (!WakuBroadcasterClient.started) {
+    if (!this.started) {
       return;
     }
 
@@ -144,7 +171,7 @@ export class WakuBroadcasterClient {
     chain: Chain,
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster[]> {
-    if (!WakuBroadcasterClient.started) {
+    if (!this.started) {
       return [];
     }
 
@@ -157,7 +184,7 @@ export class WakuBroadcasterClient {
    * the lowest fees.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network, a broadcaster broadcasting fees for WakuBroadcasterClient token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @param {number} [percentageThreshold=5] - The `percentageThreshold` parameter is a number that
@@ -173,7 +200,7 @@ export class WakuBroadcasterClient {
     useRelayAdapt: boolean,
     percentageThreshold: number = 5,
   ): Optional<SelectedBroadcaster> {
-    if (!WakuBroadcasterClient.started) {
+    if (!this.started) {
       return;
     }
 
@@ -190,7 +217,7 @@ export class WakuBroadcasterClient {
    * returns an array of selected broadcasters based on the provided parameters.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
    * @param {string} tokenAddress - The `tokenAddress` parameter is a string that represents the
-   * address of an ERC20 Token on the network; a broadcaster broadcasting fees for this token will be selected.
+   * address of an ERC20 Token on the network; a broadcaster broadcasting fees for WakuBroadcasterClient token will be selected.
    * @param {boolean} useRelayAdapt - A boolean value indicating whether to select broadcasters that
    * support RelayAdapt transactions.
    * @returns an Optional<SelectedBroadcaster[]> object.
@@ -200,7 +227,7 @@ export class WakuBroadcasterClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
   ): Optional<SelectedBroadcaster[]> {
-    if (!WakuBroadcasterClient.started) {
+    if (!this.started) {
       return;
     }
 
@@ -217,23 +244,6 @@ export class WakuBroadcasterClient {
   ): void {
     AddressFilter.setAllowlist(allowlist);
     AddressFilter.setBlocklist(blocklist);
-  }
-
-  static async tryReconnect(resetCache = true): Promise<void> {
-    // Reset fees, which will reset status to "Searching".
-    if (resetCache) {
-      BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
-    }
-    const status = WakuBroadcasterClient.updateStatus();
-
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      return;
-    }
-
-    await WakuBroadcasterClient.restart(resetCache);
   }
 
   static supportsToken(
@@ -271,48 +281,139 @@ export class WakuBroadcasterClient {
   /**
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
-  private static async pollStatus(): Promise<void> {
-    // const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
+  static async pollStatus() {
+    BroadcasterDebug.log('Polling broadcaster status...');
 
-    // if (pubsubPeers === 0) {
-    //   BroadcasterDebug.log('pubSubPeers is 0');
-    //   if (WakuBroadcasterClient.failureCount > 0) {
-    //   BroadcasterDebug.log('failureCount > 0, try reconnect');
-    //   await this.tryReconnect(false);
-    //   WakuBroadcasterClient.failureCount = 0;
-    //   // }
-    //   WakuBroadcasterClient.failureCount += 1;
-    // } else {
-    //   this.updateStatus();
-    //   WakuBroadcasterClient.failureCount = 0;
-    // }
+    // Log the peers
+    const pubsubPeers = this.getPubSubPeerCount();
+    BroadcasterDebug.log(`Light push peers: ${this.getLightPushPeerCount}`);
+    BroadcasterDebug.log(`Pubsub peers: ${this.getPubSubPeerCount}`);
+
+    // If no pubsub peers found, increment the counter
+    if (pubsubPeers === 0) {
+      BroadcasterDebug.log('No pubsub peers found');
+      this.noPeersFoundCounter += 1;
+    } else {
+      // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
+      this.noPeersFoundCounter = 0;
+    }
+
+    // Check that the waku instance is initialized
+    if (!WakuBroadcasterWakuCore.waku) {
+      BroadcasterDebug.log('No waku instance found in poller');
+
+      // Delay and try again
+      await delay(this.pollDelay);
+      this.pollStatus();
+      return;
+    }
+
+    // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
+    if (this.noPeersFoundCounter > 9) {
+      BroadcasterDebug.log('Waiting for remote peer...');
+      try {
+        // If we get a peer, let the poller continue through the logic
+        await waitForRemotePeer(
+          WakuBroadcasterWakuCore.waku,
+          [Protocols.Filter, Protocols.LightPush],
+          WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+        );
+      } catch (err) {
+        // If no peer after waiting, update the status and continue polling again
+        BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
+
+        // Poller should see the status is hasError and callback the errored status
+        WakuBroadcasterWakuCore.hasError = true;
+
+        // Reset the counter
+        this.noPeersFoundCounter = 0;
+
+        // Delay and try again
+        this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
+        await delay(this.pollDelay);
+        this.pollStatus();
+        return;
+      }
+    }
+
+    // Check that a chain has been set
+    if (!WakuObservers.getCurrentChain()) {
+      BroadcasterDebug.log('No current chain found in poller');
+
+      // Delay and try again
+      await delay(this.pollDelay);
+      this.pollStatus();
+      return;
+    }
+
+    // Ping subscriptions to keep them alive
+    const currentSubscriptions = WakuObservers.getCurrentSubscriptions();
+
+    // Check for subscriptions
+    if (currentSubscriptions.length === 0) {
+      BroadcasterDebug.log('No subscriptions found in poller');
+
+      // Delay and try again
+      this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
+      await delay(this.pollDelay);
+      this.pollStatus();
+      return;
+    }
+
+    for (const subscription of currentSubscriptions) {
+      try {
+        // Ping the subscription if it has a .ping method
+        if (typeof subscription.ping === 'function') {
+          await subscription.ping();
+        } else {
+          // TODO: this always has no ping function
+          // Let the for loop continue through subscriptions
+          BroadcasterDebug.log('Subscription has no ping method');
+        }
+      } catch (error) {
+        BroadcasterDebug.log('Error pinging subscription:');
+
+        if (
+          // Check if the error message includes "peer has no subscriptions"
+          error instanceof Error &&
+          error.message.includes('peer has no subscriptions')
+        ) {
+          BroadcasterDebug.log('Attempting to resubscribe...');
+          // Reinitiate the subscription if the ping fails
+          await subscription.subscribe(
+            subscription.decoder,
+            subscription.callback,
+          );
+        } else {
+          // Continue through the for loop to the next subscription
+          BroadcasterDebug.log('Unexpected error when pinging subscription:');
+        }
+      }
+    }
+
+    // Update the status with the latest information from the subscriptions
     this.updateStatus();
 
-    await delay(WakuBroadcasterClient.pollDelay);
+    // Delay before recursive poller call
+    await delay(this.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();
   }
 
-  private static updateStatus(): BroadcasterConnectionStatus {
+  static updateStatus(): BroadcasterConnectionStatus {
+    BroadcasterDebug.log('Updating status...');
+
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
-
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.restart();
-    }
 
     return status;
   }
 
   // Waku Transport functions
   static async addTransportSubscription(
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -328,7 +429,7 @@ export class WakuBroadcasterClient {
     WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
   }
 
-  static getWakuCore(): Optional<RelayNode> {
+  static getWakuCore(): Optional<LightNode> {
     return WakuBroadcasterWakuCore.waku;
   }
 }

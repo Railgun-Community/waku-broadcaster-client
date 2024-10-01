@@ -15,11 +15,7 @@
     "test": "npm run compile-test && NODE_ENV=test mocha"
   },
   "dependencies": {
-    "@waku/core": "0.0.27",
-    "@waku/interfaces": "0.0.22",
-    "@waku/relay": "0.0.10",
-    "@waku/sdk": "0.0.23",
-    "libp2p": "^1.1.2"
+    "@waku/sdk": "0.0.23"
   },
   "peerDependencies": {
     "@railgun-community/shared-models": "7.4.4",
