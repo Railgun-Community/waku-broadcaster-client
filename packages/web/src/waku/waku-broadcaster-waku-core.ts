@@ -98,13 +98,12 @@ export class WakuBroadcasterWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
 
       // Create the light node
       const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
         bootstrapPeers: peers,
-        pingKeepAlive: 6, // ping every 6 seconds
+        // pingKeepAlive: 6, // ping every 6 seconds
       });
 
       BroadcasterDebug.log('Start Waku.');

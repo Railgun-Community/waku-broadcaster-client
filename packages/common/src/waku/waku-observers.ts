@@ -19,15 +19,13 @@ type SubscriptionParams = {
   callback: (message: any) => void;
 };
 
-interface IFilterSubscriptionExtended extends IFilterSubscription {
-  decoder: IDecoder<any>;
-  callback: (message: any) => void;
-}
-
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
-  private static currentSubscriptions: IFilterSubscriptionExtended[] = [];
+  private static currentSubscriptions: Map<
+    IFilterSubscription,
+    SubscriptionParams
+  > = new Map();
   static setObserversForChain = async (
     waku: Optional<LightNode>,
     chain: Chain,
@@ -60,11 +58,21 @@ export class WakuObservers {
   };
 
   static removeAllObservers = async () => {
-    for (const subscription of WakuObservers.currentSubscriptions ?? []) {
+    if (WakuObservers.currentSubscriptions.size === 0) {
+      BroadcasterDebug.log(
+        'No current subscriptions found in removeAllObservers()',
+      );
+      return;
+    }
+
+    for (const [subscription] of WakuObservers.currentSubscriptions.entries()) {
+      // Unsubscribe from all subscriptions and their topics
       await subscription.unsubscribe(WakuObservers.currentContentTopics);
     }
+
+    // Clear the current subscriptions
     WakuObservers.currentContentTopics = [];
-    WakuObservers.currentSubscriptions = [];
+    WakuObservers.currentSubscriptions = new Map();
   };
 
   private static getDecodersForChain = (chain: Chain) => {
@@ -135,31 +143,22 @@ export class WakuObservers {
       WAKU_RAILGUN_PUB_SUB_TOPIC,
     );
 
-    BroadcasterDebug.log(`Subscription: ${subscription}`);
-    BroadcasterDebug.log(
-      `Subscription subscribe method: ${subscription.subscribe}`,
-    );
+    try {
+      // Subscribe to the topic
+      subscription.subscribe(decoder, callback);
 
-    // Subscribe
-    subscription.subscribe(decoder, callback);
-
-    if (subscription === undefined || subscription === null) {
-      BroadcasterDebug.log(
-        'Failed to subscribe to waku filter in addTransportSubscription',
-      );
-      return;
-    } else {
-      WakuObservers.currentSubscriptions.push({
-        ...subscription,
+      // Store the subscription
+      WakuObservers.currentSubscriptions.set(subscription, {
+        topic: transportTopic,
         decoder,
         callback,
       });
 
-      BroadcasterDebug.log(
-        `currentSubscriptions: ${WakuObservers.currentSubscriptions}`,
-      );
+      BroadcasterDebug.log(`Subscribed to ${transportTopic}`);
+    } catch (err) {
+      // Let the poller retry subscribing
+      BroadcasterDebug.log(`Error subscribing to ${transportTopic}: ${err}`);
     }
-    WakuObservers.currentContentTopics.push(transportTopic);
   }
 
   private static async addSubscriptions(
@@ -187,52 +186,28 @@ export class WakuObservers {
         WAKU_RAILGUN_PUB_SUB_TOPIC,
       );
 
-      // TODO what is up with this subscription object not having subscribe method when stored in array
-
-      // Log the subscription object to verify its structure
-      console.log('subscription: ', subscription);
-      console.log('subscription.subscribe: ', subscription.subscribe);
-
-      // Check object's own properties
-      console.log(
-        'subscription own properties: ',
-        Object.getOwnPropertyNames(subscription),
-      );
-
-      // Check prototype chain
-      console.log(
-        'subscription prototype: ',
-        Object.getPrototypeOf(subscription),
-      );
-
-      // Try subscribing to topic
       try {
+        // Subscribe to the topic
         subscription.subscribe(decoder, callback);
 
-        const extendedSubscription: IFilterSubscriptionExtended = {
-          ...subscription,
-          decoder,
-          callback,
-        };
+        // Store the subscription
+        WakuObservers.currentSubscriptions.set(subscription, subParam);
 
-        console.log('extendedSubscription: ', extendedSubscription);
-
-        WakuObservers.currentSubscriptions.push(extendedSubscription);
-
-        BroadcasterDebug.log(
-          `currentSubscriptions: ${WakuObservers.currentSubscriptions}`,
-        );
+        BroadcasterDebug.log(`Subscribed to ${subParam.topic}`);
       } catch (err) {
         BroadcasterDebug.log(`Error subscribing to ${subParam.topic}: ${err}`);
       }
     }
   }
 
-  static getCurrentContentTopics(waku?: LightNode): string[] {
+  static getCurrentContentTopics(): string[] {
     return WakuObservers.currentContentTopics;
   }
 
-  static getCurrentSubscriptions(): IFilterSubscriptionExtended[] {
+  static getCurrentSubscriptions(): Map<
+    IFilterSubscription,
+    SubscriptionParams
+  > {
     console.log('current subscriptions: ', WakuObservers.currentSubscriptions);
     return WakuObservers.currentSubscriptions;
   }

@@ -27,7 +27,6 @@ export class WakuBroadcasterClient {
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
-  private static isRestarting = false;
 
   static async start(
     chain: Chain,
@@ -258,162 +257,131 @@ export class WakuBroadcasterClient {
     );
   }
 
-  private static async restart(resetCache = true): Promise<void> {
-    if (this.isRestarting || !this.started) {
-      return;
-    }
-    this.isRestarting = true;
-    try {
-      BroadcasterDebug.log('Restarting Waku...');
-      await WakuBroadcasterWakuCore.reinitWaku(this.chain, resetCache);
-      this.isRestarting = false;
-    } catch (cause) {
-      this.isRestarting = false;
-      if (!(cause instanceof Error)) {
-        return;
-      }
-      BroadcasterDebug.error(
-        new Error('Error reinitializing Waku Broadcaster Client', { cause }),
-      );
-    }
-  }
-
   /**
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   static async pollStatus() {
-    BroadcasterDebug.log('Polling broadcaster status...');
-
-    // Log the peers (use the same connectedPeers value used by waitForRemotePeer())
-    const peers = WakuBroadcasterWakuCore.getFilterPeerCount();
-    BroadcasterDebug.log(`waku.filter connected peers: ${peers}`);
-
-    // Check that the waku instance is initialized
-    if (!WakuBroadcasterWakuCore.waku) {
-      BroadcasterDebug.log('No waku instance found in poller');
-
-      // Delay and try again
-      await delay(this.pollDelay);
-      this.pollStatus();
-      return;
-    }
-
-    // TODO; before a transaction, make sure connected peer, or ensure relayMessage sends once peer is found immediately
-    // TODO: which peers matter here? lightpush? libp2p.getPeers? filter.connectedPeers?
-
-    // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
-    if (this.noPeersFoundCounter > 9) {
+    // Avoid stack overflow
+    while (true) {
       BroadcasterDebug.log(
-        'No peers found after 10 loops, waiting for remote peer...',
+        '********** Polling broadcaster status... **********',
       );
 
-      try {
-        // If we get a peer, let the poller continue through the logic
-        await waitForRemotePeer(
-          WakuBroadcasterWakuCore.waku,
-          [Protocols.Filter, Protocols.LightPush],
-          WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-        );
-      } catch (err) {
-        // If no peer after waiting, update the status and continue polling again
-        BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
+      // Log the peers (use the same connectedPeers value used by waitForRemotePeer())
+      const peers = WakuBroadcasterWakuCore.getFilterPeerCount();
+      BroadcasterDebug.log(`waku.filter connected peers: ${peers}`);
 
-        // Poller should see the status is hasError and callback the errored status
-        WakuBroadcasterWakuCore.hasError = true;
-
-        // Reset the counter
-        this.noPeersFoundCounter = 0;
+      // Check that the waku instance is initialized
+      if (!WakuBroadcasterWakuCore.waku) {
+        BroadcasterDebug.log('No waku instance found in poller');
 
         // Delay and try again
-        this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
         await delay(this.pollDelay);
-        this.pollStatus();
-        return;
+        continue; // Restart the loop
       }
 
-      // Reset the counter
-      this.noPeersFoundCounter = 0;
-    }
+      // // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
+      // if (this.noPeersFoundCounter > 9) {
+      //   BroadcasterDebug.log(
+      //     'No peers found after 10 loops, waiting for remote peer...',
+      //   );
 
-    // If no connected peers found, increment the counter
-    if (peers === 0) {
-      BroadcasterDebug.log(
-        `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
-      );
-      this.noPeersFoundCounter += 1;
+      //   try {
+      //     // If we get a peer, let the poller continue through the logic
+      //     await waitForRemotePeer(
+      //       WakuBroadcasterWakuCore.waku,
+      //       [Protocols.Filter, Protocols.LightPush],
+      //       WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+      //     );
+      //   } catch (err) {
+      //     // If no peer after waiting, update the status and continue polling again
+      //     BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
 
-      // Delay and try again
-      await delay(this.pollDelay);
-      this.pollStatus();
-      return;
-    } else {
-      // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
-      this.noPeersFoundCounter = 0;
-    }
+      //     // Poller should see the status is hasError and callback the errored status
+      //     WakuBroadcasterWakuCore.hasError = true;
 
-    // Check that a chain has been set
-    if (!WakuObservers.getCurrentChain()) {
-      BroadcasterDebug.log('No current chain found in poller');
+      //     // Reset the counter
+      //     this.noPeersFoundCounter = 0;
 
-      // Delay and try again
-      await delay(this.pollDelay);
-      this.pollStatus();
-      return;
-    }
+      //     // Delay and try again
+      //     this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
+      //     await delay(this.pollDelay);
+      //     continue; // Restart the loop
+      //   }
 
-    // Ping subscriptions to keep them alive
-    const currentSubscriptions = WakuObservers.getCurrentSubscriptions();
+      //   // Reset the counter
+      //   this.noPeersFoundCounter = 0;
+      // }
 
-    // Check for subscriptions
-    if (currentSubscriptions.length === 0) {
-      BroadcasterDebug.log('No subscriptions found in poller');
+      // // If no connected peers found, increment the counter
+      // if (peers === 0) {
+      //   BroadcasterDebug.log(
+      //     `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
+      //   );
+      //   this.noPeersFoundCounter += 1;
 
-      // Delay and try again
-      this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
-      await delay(this.pollDelay);
-      this.pollStatus();
-      return;
-    }
+      //   // Delay and try again
+      //   await delay(this.pollDelay);
+      //   continue; // Restart the loop
+      // } else {
+      //   // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
+      //   this.noPeersFoundCounter = 0;
+      // }
 
-    for (const subscription of currentSubscriptions) {
-      try {
-        // Ping the subscription if it has a .ping method
-        if (typeof subscription.ping === 'function') {
-          await subscription.ping();
-        } else {
-          // TODO: this always has no ping function
-          // Let the for loop continue through subscriptions
-          BroadcasterDebug.log('Subscription has no ping method');
-        }
-      } catch (error) {
-        BroadcasterDebug.log('Error pinging subscription:');
+      // Check that a chain has been set in WakuObservers
+      if (!WakuObservers.getCurrentChain()) {
+        BroadcasterDebug.log('No current chain set in WakuObservers yet');
 
-        if (
-          // Check if the error message includes "peer has no subscriptions"
-          error instanceof Error &&
-          error.message.includes('peer has no subscriptions')
-        ) {
-          BroadcasterDebug.log('Attempting to resubscribe...');
-          // Reinitiate the subscription if the ping fails
-          await subscription.subscribe(
-            subscription.decoder,
-            subscription.callback,
-          );
-        } else {
-          // Continue through the for loop to the next subscription
-          BroadcasterDebug.log('Unexpected error when pinging subscription:');
+        // Delay and try again
+        await delay(this.pollDelay);
+        continue; // Restart the loop
+      }
+
+      // Ping subscriptions to keep them alive
+      const currentSubscriptions = WakuObservers.getCurrentSubscriptions();
+
+      // Check for subscriptions in the map
+      if (currentSubscriptions.size === 0) {
+        BroadcasterDebug.log('No subscriptions found in poller');
+
+        // Delay and try again
+        this.updateStatus(); // if waitForRemotePeer() fails, this will push the .hasError status
+        await delay(this.pollDelay);
+        continue; // Restart the loop
+      } else {
+        for (const [subscription, params] of currentSubscriptions.entries()) {
+          try {
+            await subscription.ping();
+            BroadcasterDebug.log(
+              `Pinged subscription for topic: ${params.topic}`,
+            );
+          } catch (error) {
+            BroadcasterDebug.log('Error pinging subscription:');
+
+            if (
+              // Check if the error message includes "peer has no subscriptions"
+              error instanceof Error &&
+              error.message.includes('peer has no subscriptions')
+            ) {
+              BroadcasterDebug.log('Attempting to resubscribe...');
+              // Reinitiate the subscription if the ping fails
+              await subscription.subscribe(params.decoder, params.callback);
+            } else {
+              // Continue through the for loop to the next subscription
+              BroadcasterDebug.log(
+                'Unexpected error when pinging subscription:',
+              );
+            }
+          }
         }
       }
+
+      // Update the status with the latest information from the subscriptions
+      this.updateStatus();
+
+      // Delay before recursive poller call
+      await delay(this.pollDelay);
     }
-
-    // Update the status with the latest information from the subscriptions
-    this.updateStatus();
-
-    // Delay before recursive poller call
-    await delay(this.pollDelay);
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
   }
 
   static updateStatus(): BroadcasterConnectionStatus {
