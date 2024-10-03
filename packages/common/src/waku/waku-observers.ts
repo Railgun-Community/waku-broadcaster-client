@@ -20,6 +20,7 @@ type SubscriptionParams = {
 };
 
 export class WakuObservers {
+  private static pubsubSubscription: IFilterSubscription;
   private static currentChain: Optional<Chain>;
   private static currentSubscriptions: Map<
     string, // unique contentTopic as the key
@@ -49,6 +50,11 @@ export class WakuObservers {
     );
     WakuObservers.currentChain = chain;
 
+    // Create the pubsubSubscription used for each contentTopic subscription
+    WakuObservers.pubsubSubscription = await waku.filter.createSubscription(
+      WAKU_RAILGUN_PUB_SUB_TOPIC,
+    );
+
     await WakuObservers.removeAllObservers();
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
@@ -63,40 +69,23 @@ export class WakuObservers {
   };
 
   static removeAllObservers = async () => {
-    let unsubscribeFailures: string[] = [];
-    // Unsubscribe from all subscriptions and their topics
-    if (WakuObservers.currentSubscriptions.size !== 0) {
-      for (const [
-        topic,
-        params,
-      ] of WakuObservers.currentSubscriptions.entries()) {
-        try {
-          // Unsubscribe from the subscription
-          await params.pubsubSubscription.unsubscribeAll();
-        } catch (err) {
-          BroadcasterDebug.log(
-            `Error unsubscribing from topic ${topic}: ${err}`,
-          );
-
-          // Add topic to list of failures
-          unsubscribeFailures.push(topic);
-        }
-      }
+    if (!isDefined(WakuObservers.pubsubSubscription)) {
+      BroadcasterDebug.log(
+        'No waku instance found, Transport Subscription not added.',
+      );
+      return;
     }
 
-    // Clear successfully unsubscribed subscriptions
-    for (const subscription of unsubscribeFailures) {
-      // Clear subscription from currentSubscriptions
-      WakuObservers.currentSubscriptions.delete(subscription);
+    // Check if any subscriptions exist
+    if (WakuObservers.currentSubscriptions.size !== 0) {
+      // If they do, get the pubsubTopic and unsubscribe from all subscriptions
+      // TODO catch unsubscribe error? cuz if fails it might still remove from array even though not done yet
+      await this.pubsubSubscription.unsubscribeAll();
 
-      // ClGet topic from subscription
-      const topic = WakuObservers.currentSubscriptions.get(subscription)?.topic;
-
-      // Clear topic from currentContentTopics
-      if (topic) {
-        WakuObservers.currentContentTopics =
-          WakuObservers.currentContentTopics.filter(t => t !== topic);
-      }
+      // Clear the current subscriptions
+      WakuObservers.currentSubscriptions.clear();
+    } else {
+      BroadcasterDebug.log('No subscriptions to remove');
     }
   };
 
