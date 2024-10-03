@@ -26,7 +26,7 @@ import {
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-let wakuBroadcasterRelayMessageStub: SinonStub;
+let wakuBroadcastMessageStub: SinonStub;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
@@ -51,17 +51,17 @@ describe('broadcaster-transaction', () => {
     }
     await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
 
-    wakuBroadcasterRelayMessageStub = sinon
-      .stub(WakuBroadcasterWakuCore, 'relayMessage')
+    wakuBroadcastMessageStub = sinon
+      .stub(WakuBroadcasterWakuCore, 'broadcastMessage')
       .resolves();
   });
 
   afterEach(() => {
-    wakuBroadcasterRelayMessageStub.resetHistory();
+    wakuBroadcastMessageStub.resetHistory();
   });
 
   after(async () => {
-    wakuBroadcasterRelayMessageStub.restore();
+    wakuBroadcastMessageStub.restore();
     await unloadProvider(networkForChain(chain)!.name);
     stopRailgunEngine();
   });
