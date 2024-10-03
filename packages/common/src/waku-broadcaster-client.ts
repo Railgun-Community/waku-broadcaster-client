@@ -267,7 +267,7 @@ export class WakuBroadcasterClient {
     const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
 
     if (pubsubPeers === 0) {
-      if (WakuBroadcasterClient.failureCount > 4) {
+      if (WakuBroadcasterClient.failureCount > 2) {
         await this.tryReconnect(false);
         WakuBroadcasterClient.failureCount = 0;
       }
