@@ -14,23 +14,28 @@ import {
 } from '@waku/sdk';
 
 type SubscriptionParams = {
-  topic: string;
-  decoder: IDecoder<any> | IDecoder<any>[];
-  callback: (message: any) => void;
+  decoder: IDecoder<any> | IDecoder<any>[]; // unique to each contentTopic
+  callback: (message: any) => void; // unique to each contentTopic
+  pubsubSubscription: IFilterSubscription; // is the same for all topics when created using the same pubsub topic
 };
 
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
-  private static currentContentTopics: string[] = [];
   private static currentSubscriptions: Map<
-    IFilterSubscription,
-    SubscriptionParams
+    string, // unique contentTopic as the key
+    SubscriptionParams // contains decoder, callback, and created subscription
   > = new Map();
+
   static setObserversForChain = async (
     waku: Optional<LightNode>,
     chain: Chain,
   ) => {
     BroadcasterDebug.log('Setting observers for chain');
+    console.log(
+      `Existing state of WakuObservers: 
+      currentChain: ${WakuObservers.currentChain}, 
+      currentSubscriptions: ${WakuObservers.currentSubscriptions}`,
+    );
 
     if (!waku) {
       BroadcasterDebug.log(
@@ -58,44 +63,66 @@ export class WakuObservers {
   };
 
   static removeAllObservers = async () => {
-    if (WakuObservers.currentSubscriptions.size === 0) {
-      BroadcasterDebug.log(
-        'No current subscriptions found in removeAllObservers()',
-      );
-      return;
+    let unsubscribeFailures: string[] = [];
+    // Unsubscribe from all subscriptions and their topics
+    if (WakuObservers.currentSubscriptions.size !== 0) {
+      for (const [
+        topic,
+        params,
+      ] of WakuObservers.currentSubscriptions.entries()) {
+        try {
+          // Unsubscribe from the subscription
+          await params.pubsubSubscription.unsubscribeAll();
+        } catch (err) {
+          BroadcasterDebug.log(
+            `Error unsubscribing from topic ${topic}: ${err}`,
+          );
+
+          // Add topic to list of failures
+          unsubscribeFailures.push(topic);
+        }
+      }
     }
 
-    for (const [subscription] of WakuObservers.currentSubscriptions.entries()) {
-      // Unsubscribe from all subscriptions and their topics
-      await subscription.unsubscribe(WakuObservers.currentContentTopics);
-    }
+    // Clear successfully unsubscribed subscriptions
+    for (const subscription of unsubscribeFailures) {
+      // Clear subscription from currentSubscriptions
+      WakuObservers.currentSubscriptions.delete(subscription);
 
-    // Clear the current subscriptions
-    WakuObservers.currentContentTopics = [];
-    WakuObservers.currentSubscriptions = new Map();
+      // ClGet topic from subscription
+      const topic = WakuObservers.currentSubscriptions.get(subscription)?.topic;
+
+      // Clear topic from currentContentTopics
+      if (topic) {
+        WakuObservers.currentContentTopics =
+          WakuObservers.currentContentTopics.filter(t => t !== topic);
+      }
+    }
   };
 
   private static getDecodersForChain = (chain: Chain) => {
+    // Get the fees contentTopic and create its decoder/callback
     const contentTopicFees = contentTopics.fees(chain);
-    const contentTopicTransactResponse = contentTopics.transactResponse(chain);
     const feesDecoder = createDecoder(
       contentTopicFees,
       WAKU_RAILGUN_PUB_SUB_TOPIC,
     );
-    const transactResponseDecoder = createDecoder(
-      contentTopicTransactResponse,
-      WAKU_RAILGUN_PUB_SUB_TOPIC,
-    );
     const feesCallback = (message: IMessage) =>
       handleBroadcasterFeesMessage(chain, message, contentTopicFees);
-    const transactResponseCallback =
-      BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage;
-
     const feesSubscriptionParams = {
       topic: contentTopicFees,
       decoder: feesDecoder,
       callback: feesCallback,
     };
+
+    // Get the transact response contentTopic and create its decoder/callback
+    const contentTopicTransactResponse = contentTopics.transactResponse(chain);
+    const transactResponseDecoder = createDecoder(
+      contentTopicTransactResponse,
+      WAKU_RAILGUN_PUB_SUB_TOPIC,
+    );
+    const transactResponseCallback =
+      BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage;
     const transactResponseSubscriptionParams = {
       topic: contentTopicTransactResponse,
       decoder: transactResponseDecoder,
@@ -135,26 +162,31 @@ export class WakuObservers {
       );
       return;
     }
+
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_PUB_SUB_TOPIC);
 
-    // This never actually returns the expected type
-    const subscription = await waku.filter.createSubscription(
+    // Create a subscription based on the pubsub topic
+    const pubsubSubscription = await waku.filter.createSubscription(
       WAKU_RAILGUN_PUB_SUB_TOPIC,
     );
 
     try {
-      // Subscribe to the topic
-      subscription.subscribe(decoder, callback);
+      // Subscribe to the pubsub topic with the transportTopic's decoder and callback
+      pubsubSubscription.subscribe(decoder, callback);
 
       // Store the subscription
-      WakuObservers.currentSubscriptions.set(subscription, {
-        topic: transportTopic,
-        decoder,
-        callback,
+      WakuObservers.currentSubscriptions.set(transportTopic, {
+        decoder: decoder,
+        callback: callback,
+        pubsubSubscription: pubsubSubscription,
       });
 
       BroadcasterDebug.log(`Subscribed to ${transportTopic}`);
+      console.log(
+        'current subscriptions: ',
+        WakuObservers.currentSubscriptions,
+      );
     } catch (err) {
       // Let the poller retry subscribing
       BroadcasterDebug.log(`Error subscribing to ${transportTopic}: ${err}`);
@@ -170,45 +202,56 @@ export class WakuObservers {
       return;
     }
 
-    const subscriptionParams = WakuObservers.getDecodersForChain(chain);
-    const topics = subscriptionParams.map(subParam => subParam.topic);
-    const newTopics = topics.filter(
-      topic => !WakuObservers.currentContentTopics.includes(topic),
-    );
-    WakuObservers.currentContentTopics.push(...newTopics);
+    // Get all topics and their decoders/callbacks for the chain
+    const preparedTopics = WakuObservers.getDecodersForChain(chain);
 
-    for (const subParam of subscriptionParams) {
-      const { decoder, callback } = subParam;
+    // For every
+    for (const preparedTopic of preparedTopics) {
+      console.log('preparedTopic: ', preparedTopic);
 
-      BroadcasterDebug.log(`Subscribing to ${subParam.topic}`);
+      // Get the relating decoder and callback for the topic
+      const { decoder, callback } = preparedTopic;
+      BroadcasterDebug.log(`Subscribing to ${preparedTopic.topic}`);
 
-      const subscription = await waku.filter.createSubscription(
+      const pubsubSubscription = await waku.filter.createSubscription(
         WAKU_RAILGUN_PUB_SUB_TOPIC,
       );
 
       try {
         // Subscribe to the topic
-        subscription.subscribe(decoder, callback);
+        pubsubSubscription.subscribe(decoder, callback);
 
         // Store the subscription
-        WakuObservers.currentSubscriptions.set(subscription, subParam);
+        WakuObservers.currentSubscriptions.set(preparedTopic.topic, {
+          pubsubSubscription: pubsubSubscription,
+          decoder: decoder,
+          callback: callback,
+        });
 
-        BroadcasterDebug.log(`Subscribed to ${subParam.topic}`);
+        BroadcasterDebug.log(`Subscribed to ${preparedTopic.topic}`);
+        console.log(
+          'current subscriptions: ',
+          WakuObservers.currentSubscriptions,
+        );
       } catch (err) {
-        BroadcasterDebug.log(`Error subscribing to ${subParam.topic}: ${err}`);
+        BroadcasterDebug.log(
+          `Error subscribing to ${preparedTopic.topic}: ${err}`,
+        );
       }
     }
   }
 
   static getCurrentContentTopics(): string[] {
-    return WakuObservers.currentContentTopics;
+    // Get all content topics from the current subscriptions
+    const contentTopics = Array.from(WakuObservers.currentSubscriptions.keys());
+    return contentTopics;
   }
 
-  static getCurrentSubscriptions(): Map<
-    IFilterSubscription,
-    SubscriptionParams
-  > {
-    console.log('current subscriptions: ', WakuObservers.currentSubscriptions);
+  static getCurrentSubscriptions(): Map<string, SubscriptionParams> {
+    console.log(
+      'getCurrentSubscriptions(): ',
+      WakuObservers.currentSubscriptions,
+    );
     return WakuObservers.currentSubscriptions;
   }
 

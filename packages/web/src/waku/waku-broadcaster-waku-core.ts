@@ -103,7 +103,7 @@ export class WakuBroadcasterWakuCore {
       const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
         bootstrapPeers: peers,
-        // pingKeepAlive: 6, // ping every 6 seconds
+        pingKeepAlive: 6, // 6 seconds
       });
 
       BroadcasterDebug.log('Start Waku.');
@@ -146,6 +146,8 @@ export class WakuBroadcasterWakuCore {
 
   static getFilterPeerCount(): number {
     const peers = this.waku?.filter.connectedPeers;
+
+    console.log('getFilterPeerCount() peers: ', peers);
 
     if (!isDefined(peers)) {
       BroadcasterDebug.log('peers are undefined in getFilterPeerCount()');

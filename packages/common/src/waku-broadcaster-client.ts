@@ -82,6 +82,7 @@ export class WakuBroadcasterClient {
   }
 
   static async updateChain(chain: Chain): Promise<void> {
+    // Set chain in client
     this.chain = chain;
 
     // Check that waku instance is initialized
@@ -94,13 +95,16 @@ export class WakuBroadcasterClient {
     WakuObservers.resetCurrentChain();
 
     // Since connecting to new chain, make sure we wait for a peer again so subscriptions can retrieve fees
-    BroadcasterDebug.log('Waiting for remote peer...');
+    BroadcasterDebug.log(
+      `Cleared existing chain. Waiting for remote peer before creating subscriptions for ${chain}...`,
+    );
     try {
-      await waitForRemotePeer(
-        WakuBroadcasterWakuCore.waku,
-        [Protocols.Filter, Protocols.LightPush],
-        WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      );
+      // await waitForRemotePeer(
+      //   WakuBroadcasterWakuCore.waku,
+      //   [Protocols.Filter, Protocols.LightPush],
+      //   WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+      // );
+      WakuBroadcasterWakuCore.waku.dial;
     } catch (err) {
       BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
 
@@ -108,6 +112,7 @@ export class WakuBroadcasterClient {
       WakuBroadcasterWakuCore.hasError = true;
     }
 
+    // Set chain in WakuObservers and create new subscriptions for the chain
     await WakuObservers.setObserversForChain(
       WakuBroadcasterWakuCore.waku,
       chain,
@@ -269,7 +274,7 @@ export class WakuBroadcasterClient {
 
       // Log the peers (use the same connectedPeers value used by waitForRemotePeer())
       const peers = WakuBroadcasterWakuCore.getFilterPeerCount();
-      BroadcasterDebug.log(`waku.filter connected peers: ${peers}`);
+      console.log(`Connected peers: ${peers}`);
 
       // Check that the waku instance is initialized
       if (!WakuBroadcasterWakuCore.waku) {
@@ -280,54 +285,6 @@ export class WakuBroadcasterClient {
         continue; // Restart the loop
       }
 
-      // // If no peers after 10 loops, wait for a remote peer which hopefully signals the network that we need one
-      // if (this.noPeersFoundCounter > 9) {
-      //   BroadcasterDebug.log(
-      //     'No peers found after 10 loops, waiting for remote peer...',
-      //   );
-
-      //   try {
-      //     // If we get a peer, let the poller continue through the logic
-      //     await waitForRemotePeer(
-      //       WakuBroadcasterWakuCore.waku,
-      //       [Protocols.Filter, Protocols.LightPush],
-      //       WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      //     );
-      //   } catch (err) {
-      //     // If no peer after waiting, update the status and continue polling again
-      //     BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
-
-      //     // Poller should see the status is hasError and callback the errored status
-      //     WakuBroadcasterWakuCore.hasError = true;
-
-      //     // Reset the counter
-      //     this.noPeersFoundCounter = 0;
-
-      //     // Delay and try again
-      //     this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
-      //     await delay(this.pollDelay);
-      //     continue; // Restart the loop
-      //   }
-
-      //   // Reset the counter
-      //   this.noPeersFoundCounter = 0;
-      // }
-
-      // // If no connected peers found, increment the counter
-      // if (peers === 0) {
-      //   BroadcasterDebug.log(
-      //     `No pubsub peers found, noPeersFoundCounter: ${this.noPeersFoundCounter}`,
-      //   );
-      //   this.noPeersFoundCounter += 1;
-
-      //   // Delay and try again
-      //   await delay(this.pollDelay);
-      //   continue; // Restart the loop
-      // } else {
-      //   // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
-      //   this.noPeersFoundCounter = 0;
-      // }
-
       // Check that a chain has been set in WakuObservers
       if (!WakuObservers.getCurrentChain()) {
         BroadcasterDebug.log('No current chain set in WakuObservers yet');
@@ -335,6 +292,52 @@ export class WakuBroadcasterClient {
         // Delay and try again
         await delay(this.pollDelay);
         continue; // Restart the loop
+      }
+
+      // Check if loop has found no peers 10 times, if so wait for remote peer (hopefully sends some reconnect signal)
+      if (this.noPeersFoundCounter > 9) {
+        BroadcasterDebug.log(
+          'No peers found after 10 loops, waiting for remote peer...',
+        );
+
+        try {
+          // If we get a peer, let the poller continue through the logic
+          await waitForRemotePeer(
+            WakuBroadcasterWakuCore.waku,
+            [Protocols.Filter, Protocols.LightPush],
+            WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+          );
+        } catch (err) {
+          // If no peer after waiting, update the status and continue polling again
+          BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
+
+          // Poller should see the status is hasError and callback the errored status
+          WakuBroadcasterWakuCore.hasError = true;
+
+          // Reset the counter
+          this.noPeersFoundCounter = 0;
+
+          // Delay and try again
+          this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
+          await delay(this.pollDelay);
+          continue; // Restart the loop
+        }
+
+        // Reset the counter
+        this.noPeersFoundCounter = 0;
+      }
+
+      // If no connected peers found, increment the counter
+      if (peers === 0) {
+        BroadcasterDebug.log(
+          `No pubsub peers found. noPeersFoundCounter: ${this.noPeersFoundCounter}`,
+        );
+        this.noPeersFoundCounter += 1;
+
+        // Allow the loop to move on and ping subscriptions if they exist
+      } else {
+        // Reset the counter if peers ever exist, so the retry peer logic only kicks in after 10 consecutive failures
+        this.noPeersFoundCounter = 0;
       }
 
       // Ping subscriptions to keep them alive
