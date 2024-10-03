@@ -87,7 +87,7 @@ export class WakuBroadcasterWakuCore {
     try {
       WakuBroadcasterWakuCore.hasError = false;
 
-      BroadcasterDebug.log(`Creating waku relay client`);
+      BroadcasterDebug.log(`Creating waku client`);
 
       const peers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
@@ -114,7 +114,7 @@ export class WakuBroadcasterWakuCore {
       await this.waitForRemotePeer(waku);
 
       if (!isDefined(waku.relay)) {
-        throw new Error('No Waku Relay instantiated.');
+        throw new Error('No Waku instantiated.');
       }
 
       BroadcasterDebug.log('Waku peers:');
@@ -169,7 +169,7 @@ export class WakuBroadcasterWakuCore {
     }
   }
 
-  static async relayMessage(
+  static async broadcastMessage(
     data: object,
     contentTopic: string,
     retry: number = 0,
