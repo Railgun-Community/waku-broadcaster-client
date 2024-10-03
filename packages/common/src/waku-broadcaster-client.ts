@@ -267,7 +267,7 @@ export class WakuBroadcasterClient {
     const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
 
     if (pubsubPeers === 0) {
-      if (WakuBroadcasterClient.failureCount > 0) {
+      if (WakuBroadcasterClient.failureCount > 4) {
         await this.tryReconnect(false);
         WakuBroadcasterClient.failureCount = 0;
       }
@@ -311,7 +311,7 @@ export class WakuBroadcasterClient {
 
   static sendTransport(data: object, topic: string): void {
     const customTopic = contentTopics.encrypted(topic);
-    WakuBroadcasterWakuCore.relayMessage(data, customTopic);
+    WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
   }
 
   static getWakuCore(): Optional<RelayNode> {
