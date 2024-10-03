@@ -20,6 +20,7 @@ import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
 import { LightNode, Protocols, waitForRemotePeer, waku } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
+
 export class WakuBroadcasterClient {
   static pollDelay = 6000;
   static noPeersFoundCounter = 0;
@@ -340,11 +341,11 @@ export class WakuBroadcasterClient {
         this.noPeersFoundCounter = 0;
       }
 
-      // Ping subscriptions to keep them alive
-      const currentSubscriptions = WakuObservers.getCurrentSubscriptions();
+      // Ping pubsubSubscription to keep it alive
+      const pubsubSubscription = WakuObservers.getCurrentPubsubSubscription();
 
-      // Check for subscriptions in the map
-      if (currentSubscriptions.size === 0) {
+      // Ping the pubsubSubscription to keep it alive, and resubscribe contentTopics if needed
+      if (!pubsubSubscription) {
         BroadcasterDebug.log('No subscriptions found in poller');
 
         // Delay and try again
@@ -352,29 +353,26 @@ export class WakuBroadcasterClient {
         await delay(this.pollDelay);
         continue; // Restart the loop
       } else {
-        for (const [subscription, params] of currentSubscriptions.entries()) {
-          try {
-            await subscription.ping();
-            BroadcasterDebug.log(
-              `Pinged subscription for topic: ${params.topic}`,
-            );
-          } catch (error) {
-            BroadcasterDebug.log('Error pinging subscription:');
+        try {
+          await pubsubSubscription.ping();
+        } catch (error) {
+          BroadcasterDebug.log('Error pinging subscription:');
 
-            if (
-              // Check if the error message includes "peer has no subscriptions"
-              error instanceof Error &&
-              error.message.includes('peer has no subscriptions')
-            ) {
-              BroadcasterDebug.log('Attempting to resubscribe...');
-              // Reinitiate the subscription if the ping fails
-              await subscription.subscribe(params.decoder, params.callback);
-            } else {
-              // Continue through the for loop to the next subscription
-              BroadcasterDebug.log(
-                'Unexpected error when pinging subscription:',
-              );
-            }
+          if (
+            // Check if the error message includes "peer has no subscriptions"
+            error instanceof Error &&
+            error.message.includes('peer has no subscriptions')
+          ) {
+            BroadcasterDebug.log('Attempting to resubscribe...');
+
+            // Resubscribe all topics if the peer has no subscriptions
+            await WakuObservers.setObserversForChain(
+              WakuBroadcasterWakuCore.waku,
+              this.chain,
+            );
+          } else {
+            // Continue through the for loop to the next subscription
+            BroadcasterDebug.log('Unexpected error when pinging subscription:');
           }
         }
       }

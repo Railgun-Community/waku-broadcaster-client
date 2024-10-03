@@ -236,12 +236,16 @@ export class WakuObservers {
     return contentTopics;
   }
 
-  static getCurrentSubscriptions(): Map<string, SubscriptionParams> {
+  static getCurrentTopicSubscriptions(): Map<string, SubscriptionParams> {
     console.log(
       'getCurrentSubscriptions(): ',
       WakuObservers.currentSubscriptions,
     );
     return WakuObservers.currentSubscriptions;
+  }
+
+  static getCurrentPubsubSubscription(): Optional<IFilterSubscription> {
+    return WakuObservers.pubsubSubscription;
   }
 
   static async getCurrentChain(): Promise<Optional<Chain>> {
