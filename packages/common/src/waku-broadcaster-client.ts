@@ -25,6 +25,7 @@ export class WakuBroadcasterClient {
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
   private static isRestarting = false;
+  private static failureCount = 0;
 
   static pollDelay = 1000;
 
@@ -280,7 +281,18 @@ export class WakuBroadcasterClient {
    */
   private static async pollStatus(): Promise<void> {
     this.updateStatus();
-
+    const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
+    console.log(pubsubPeers);
+    if (pubsubPeers <= 1) {
+      if (WakuBroadcasterClient.failureCount > 2) {
+        await this.tryReconnect();
+        WakuBroadcasterClient.failureCount = 0;
+      }
+      WakuBroadcasterClient.failureCount += 1;
+    } else {
+      this.updateStatus();
+      WakuBroadcasterClient.failureCount = 0;
+    }
     await delay(WakuBroadcasterClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises

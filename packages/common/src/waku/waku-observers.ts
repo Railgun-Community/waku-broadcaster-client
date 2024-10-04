@@ -45,6 +45,7 @@ export class WakuObservers {
     );
     WakuObservers.currentChain = chain;
     await WakuObservers.removeAllObservers(waku);
+    BroadcasterDebug.log('Removed all observers');
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
@@ -82,7 +83,8 @@ export class WakuObservers {
   };
   private static isPinging = false;
   static pingAllSubscriptions = async (waku: Optional<LightNode>) => {
-    if (WakuObservers.isPinging) {
+    if (WakuObservers.isPinging === true) {
+      BroadcasterDebug.log('PingING-not-working');
       return;
     }
     BroadcasterDebug.log('PingING-working');
@@ -108,7 +110,7 @@ export class WakuObservers {
             BroadcasterDebug.log('Stop pinging');
             break;
           }
-          BroadcasterDebug.log(`Pinging ${JSON.stringify(subscription)}`);
+          // BroadcasterDebug.log(`Pinging ${JSON.stringify(subscription)}`);
           await subscription
             .ping()
             .then(() => {
@@ -120,32 +122,37 @@ export class WakuObservers {
               // the connection is being closed
               // peer has no subscriptions
               BroadcasterDebug.error(new Error(`Ping Error: ${err.message}`));
-              if (
-                (err instanceof Error &&
-                  err.message.includes('peer has no subscriptions')) ||
-                err.message.includes(
-                  'Failed to get a connection to the peer',
-                ) ||
-                err.message.includes('the connection is being closed') ||
-                err.message.includes('No response received for request')
-              ) {
-                throw err;
-
-                // for (const subParam of params) {
-                //   const { decoder, callback } = subParam;
-                //   BroadcasterDebug.log(`Resubscribing to ${subParam.topic}`);
-                //   await WakuObservers.resubScribeLoop(
-                //     subscription,
-                //     decoder,
-                //     callback,
-                //   );
-                // }
+              console.log('WE THROWING ERRR');
+              // if (
+              //   err instanceof Error &&
+              //   err.message.includes('peer has no subscriptions')
+              //  ||
+              // err.message.includes(
+              //   'Failed to get a connection to the peer',
+              // ) ||
+              // err.message.includes('the connection is being closed') ||
+              // err.message.includes('No response received for request')
+              // ) {
+              //   console.log('THROWINGG');
+              throw new Error(err.message);
+              //
+              for (const subParam of params) {
+                const { decoder, callback } = subParam;
+                BroadcasterDebug.log(`Resubscribing to ${subParam.topic}`);
+                await WakuObservers.resubScribeLoop(
+                  subscription,
+                  decoder,
+                  callback,
+                );
               }
             });
         }
       } catch (error) {
         console.log('Error in pingAllSubscriptions', error);
-        await WakuObservers.removeAllObservers(waku);
+        console.log('WE HERE');
+        // await WakuObservers.removeAllObservers(waku);
+        WakuObservers.isPinging = false;
+        WakuObservers.subscribedPeers = [];
         await WakuObservers.addSubscriptions(
           WakuObservers.currentChain,
           waku,
@@ -156,7 +163,7 @@ export class WakuObservers {
         });
       }
     }
-    await delay(10 * 1000);
+    await delay(5 * 1000);
     WakuObservers.isPinging = false;
     WakuObservers.pingAllSubscriptions(waku);
   };
@@ -165,7 +172,7 @@ export class WakuObservers {
     if (!isDefined(waku?.lightPush)) {
       return;
     }
-    WakuObservers.isPinging = false;
+    // WakuObservers.isPinging = false;
     if (isDefined(WakuObservers.currentSubscriptions)) {
       for (const { subscription } of WakuObservers.currentSubscriptions) {
         await subscription
@@ -176,7 +183,7 @@ export class WakuObservers {
       }
       WakuObservers.currentSubscriptions = [];
       WakuObservers.currentContentTopics = [];
-      // WakuObservers.subscribedPeers = [];
+      WakuObservers.subscribedPeers = [];
     }
   };
 
@@ -219,8 +226,10 @@ export class WakuObservers {
     await WakuObservers.addSubscriptions(chain, waku).catch(err => {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
     });
-
-    await WakuObservers.pingAllSubscriptions(waku);
+    if (!WakuObservers.hasStartedPinging) {
+      WakuObservers.hasStartedPinging = true;
+      WakuObservers.pingAllSubscriptions(waku);
+    }
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
     BroadcasterDebug.log('Waku content topics:');
@@ -228,6 +237,7 @@ export class WakuObservers {
       BroadcasterDebug.log(observer);
     }
   };
+  static hasStartedPinging: boolean;
 
   static async addTransportSubscription(
     waku: Optional<LightNode>,
@@ -280,7 +290,6 @@ export class WakuObservers {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
-    WakuObservers.subscribedPeers = [];
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
     const topics = subscriptionParams.map(subParam => subParam.topic);
     const newTopics = topics.filter(

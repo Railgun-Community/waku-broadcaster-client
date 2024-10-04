@@ -137,21 +137,22 @@ export class WakuBroadcasterWakuCore {
 
   static getMeshPeerCount(): number {
     // return this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
-    return this.getPubSubPeerCount();
+    return WakuBroadcasterWakuCore.getPubSubPeerCount();
   }
 
   static getPubSubPeerCount(): number {
-    const peers = this.waku?.libp2p.getPeers() ?? [];
+    const peers = WakuBroadcasterWakuCore.waku?.libp2p.getPeers() ?? [];
     return peers.length;
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = (await this.waku?.lightPush.allPeers()) ?? [];
+    const peers =
+      (await WakuBroadcasterWakuCore.waku?.lightPush.allPeers()) ?? [];
     return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = (await this.waku?.filter.allPeers()) ?? [];
+    const peers = (await WakuBroadcasterWakuCore.waku?.filter.allPeers()) ?? [];
     return peers.length;
   }
 
