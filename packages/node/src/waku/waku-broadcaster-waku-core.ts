@@ -55,9 +55,9 @@ export class WakuBroadcasterWakuCore {
     }
 
     // Resets connection status to "Connecting" for this network.
-    if (resetCache) {
-      BroadcasterFeeCache.resetCache(chain);
-    }
+    // if (resetCache) {
+    //   BroadcasterFeeCache.resetCache(chain);
+    // }
 
     await WakuBroadcasterWakuCore.initWaku(chain);
   };

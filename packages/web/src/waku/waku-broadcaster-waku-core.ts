@@ -54,9 +54,9 @@ export class WakuBroadcasterWakuCore {
     }
 
     // Resets connection status to "Connecting" for this network.
-    if (resetCache) {
-      BroadcasterFeeCache.resetCache(chain);
-    }
+    // if (resetCache) {
+    //   BroadcasterFeeCache.resetCache(chain);
+    // }
 
     await WakuBroadcasterWakuCore.initWaku(chain);
   };
@@ -176,16 +176,16 @@ export class WakuBroadcasterWakuCore {
     data: object,
     contentTopic: string,
   ): Promise<void> {
-    if (!WakuBroadcasterWakuCore.waku?.lightPush) {
-      throw new Error('Broadcaster did not receive message. Please try again.');
-    }
+    // if (!WakuBroadcasterWakuCore.waku?.lightPush) {
+    //   throw new Error('Broadcaster did not receive message. Please try again.');
+    // }
 
     const dataString = JSON.stringify(data);
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
 
     try {
-      await WakuBroadcasterWakuCore.waku.lightPush.send(
+      await WakuBroadcasterWakuCore.waku?.lightPush.send(
         createEncoder({
           contentTopic,
           pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
