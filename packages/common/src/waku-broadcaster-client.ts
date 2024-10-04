@@ -289,7 +289,6 @@ export class WakuBroadcasterClient {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
-    console.log('STAUTS', status);
     if (
       status === BroadcasterConnectionStatus.Disconnected ||
       status === BroadcasterConnectionStatus.Error
