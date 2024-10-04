@@ -45,7 +45,7 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static reinitWaku = async (chain: Chain) => {
+  static reinitWaku = async (chain: Chain, resetCache = true) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
       WakuBroadcasterWakuCore.waku.isStarted()
@@ -54,9 +54,9 @@ export class WakuBroadcasterWakuCore {
     }
 
     // Resets connection status to "Connecting" for this network.
-    // if (resetCache) {
-    BroadcasterFeeCache.resetCache(chain);
-    // }
+    if (resetCache) {
+      BroadcasterFeeCache.resetCache(chain);
+    }
 
     await WakuBroadcasterWakuCore.initWaku(chain);
   };

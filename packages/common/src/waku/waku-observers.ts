@@ -13,6 +13,7 @@ import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-re
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_PUB_SUB_TOPIC } from '../models/constants.js';
+import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -101,6 +102,10 @@ export class WakuObservers {
     // });
     if (isDefined(WakuObservers.currentSubscriptions)) {
       try {
+        if (WakuObservers.currentSubscriptions.length === 0) {
+          BroadcasterDebug.log('No subscriptions to ping');
+          throw new Error('No subscriptions to ping');
+        }
         for (const {
           subscription,
           params,
@@ -111,10 +116,12 @@ export class WakuObservers {
             break;
           }
           // BroadcasterDebug.log(`Pinging ${JSON.stringify(subscription)}`);
+          let pingSuccess = false;
           await subscription
             .ping()
             .then(() => {
               BroadcasterDebug.log('Ping Success');
+              pingSuccess = true;
             })
             .catch(async (err: Error) => {
               // No response received for request
@@ -145,11 +152,20 @@ export class WakuObservers {
                   callback,
                 );
               }
+            })
+            .finally(() => {
+              if (!pingSuccess) {
+                BroadcasterDebug.log(
+                  "pingAllSubscriptions: Ping failed, let's reconnect",
+                );
+                throw new Error('Ping failed, lets reconnect');
+              }
             });
         }
       } catch (error) {
         console.log('Error in pingAllSubscriptions', error);
         console.log('WE HERE');
+        await WakuBroadcasterClient.tryReconnect(false);
         // await WakuObservers.removeAllObservers(waku);
         WakuObservers.isPinging = false;
         WakuObservers.subscribedPeers = [];
@@ -163,7 +179,7 @@ export class WakuObservers {
         });
       }
     }
-    await delay(5 * 1000);
+    await delay(15 * 1000);
     WakuObservers.isPinging = false;
     WakuObservers.pingAllSubscriptions(waku);
   };
@@ -299,7 +315,7 @@ export class WakuObservers {
     // const peers1 = await waku.libp2p.services.pubsub?.getPeers();
     // const peers = await waku.filter.connectedPeers();
     const weird = await waku.libp2p.peerStore.all();
-    console.log('WEIRD, all', weird);
+    // console.log('WEIRD, all', weird);
     // console.log('peers1', peers1);
 
     for (const peer of weird) {
