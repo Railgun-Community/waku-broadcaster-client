@@ -45,6 +45,17 @@ export class WakuObservers {
       return;
     }
 
+    // If the chain set in WakuObservers does not match the chain being passed in
+    if (
+      WakuObservers.currentChain &&
+      compareChains(WakuObservers.currentChain, chain)
+    ) {
+      BroadcasterDebug.log(
+        'Chain passed in does not match chain set in WakuObservers',
+      );
+      return;
+    }
+
     BroadcasterDebug.log(
       `Add Waku observers for chain: ${chain.type}:${chain.id}`,
     );

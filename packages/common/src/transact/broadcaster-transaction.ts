@@ -175,6 +175,7 @@ export class BroadcasterTransaction {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
+      console.log(cause);
       BroadcasterDebug.error(
         new Error('Failed to find matching nullifier txid', { cause }),
       );

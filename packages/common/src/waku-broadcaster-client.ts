@@ -72,8 +72,9 @@ export class WakuBroadcasterClient {
     }
   }
 
+  // Only used in testing
   static async stop() {
-    await WakuBroadcasterWakuCore.disconnect(true);
+    await WakuBroadcasterWakuCore.disconnect();
     this.started = false;
     this.updateStatus();
   }
@@ -83,41 +84,22 @@ export class WakuBroadcasterClient {
   }
 
   static async updateChain(chain: Chain): Promise<void> {
-    // Set chain in client
-    this.chain = chain;
-
     // Check that waku instance is initialized
     if (!WakuBroadcasterWakuCore.waku) {
       BroadcasterDebug.log('No waku instance found in updateChain');
       return;
     }
 
-    // Clear current chain in WakuObservers
-    WakuObservers.resetCurrentChain();
+    // Set chain in client
+    this.chain = chain;
 
-    // Since connecting to new chain, make sure we wait for a peer again so subscriptions can retrieve fees
-    BroadcasterDebug.log(
-      `Cleared existing chain. Waiting for remote peer before creating subscriptions for ${chain}...`,
-    );
-    try {
-      // await waitForRemotePeer(
-      //   WakuBroadcasterWakuCore.waku,
-      //   [Protocols.Filter, Protocols.LightPush],
-      //   WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      // );
-      WakuBroadcasterWakuCore.waku.dial;
-    } catch (err) {
-      BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
-
-      // Poller should see the status is hasError and callback the errored status
-      WakuBroadcasterWakuCore.hasError = true;
-    }
-
-    // Set chain in WakuObservers and create new subscriptions for the chain
+    // Set new observers, don't worry about a peer until performing tx
     await WakuObservers.setObserversForChain(
       WakuBroadcasterWakuCore.waku,
       chain,
     );
+
+    // Update status whether peer connection error or not
     this.updateStatus();
   }
 
