@@ -8,6 +8,7 @@ import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { BroadcasterOptions } from '../models/index.js';
 import {
+  WAKU_RAILGUN_DEFAULT_PEERS_NODE,
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
@@ -47,22 +48,6 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static reinitWaku = async (chain: Chain, resetCache = true) => {
-    if (
-      isDefined(WakuBroadcasterWakuCore.waku) &&
-      WakuBroadcasterWakuCore.waku.isStarted()
-    ) {
-      await WakuBroadcasterWakuCore.disconnect();
-    }
-
-    // Resets connection status to "Connecting" for this network.
-    if (resetCache) {
-      BroadcasterFeeCache.resetCache(chain);
-    }
-
-    await WakuBroadcasterWakuCore.initWaku(chain);
-  };
-
   static setBroadcasterOptions(BroadcasterOptions: BroadcasterOptions) {
     if (isDefined(BroadcasterOptions.pubSubTopic)) {
       WakuBroadcasterWakuCore.pubSubTopic = BroadcasterOptions.pubSubTopic;
@@ -77,15 +62,6 @@ export class WakuBroadcasterWakuCore {
     }
   }
 
-  static disconnect = async (removeObservers: boolean = false) => {
-    if (removeObservers) {
-      BroadcasterDebug.log('Disconnecting... Removing Observers.');
-      await WakuObservers.removeAllObservers();
-    }
-    await WakuBroadcasterWakuCore.waku?.stop();
-    WakuBroadcasterWakuCore.waku = undefined;
-  };
-
   private static connect = async (): Promise<void> => {
     BroadcasterDebug.log('Connecting to Waku...');
 
@@ -95,6 +71,7 @@ export class WakuBroadcasterWakuCore {
       BroadcasterDebug.log(`Creating waku light client`);
 
       const peers: string[] = [
+        ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
@@ -103,7 +80,8 @@ export class WakuBroadcasterWakuCore {
       const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
         bootstrapPeers: peers,
-        pingKeepAlive: 6, // 6 seconds
+        pingKeepAlive: 10, // 10 seconds
+        relayKeepAlive: 10, // 10 seconds
       });
 
       BroadcasterDebug.log('Start Waku.');
@@ -124,7 +102,9 @@ export class WakuBroadcasterWakuCore {
       }
 
       if (!isDefined(waku.filter)) {
-        throw new Error('No Waku Relay instantiated.');
+        throw new Error('No Waku Filter instantiated.');
+      } else if (!isDefined(waku.lightPush)) {
+        throw new Error('No Waku LightPush instantiated.');
       }
 
       BroadcasterDebug.log('Waku peers:');
@@ -142,6 +122,11 @@ export class WakuBroadcasterWakuCore {
       WakuBroadcasterWakuCore.hasError = true;
       throw err;
     }
+  };
+
+  static disconnect = async () => {
+    await WakuBroadcasterWakuCore.waku?.stop();
+    WakuBroadcasterWakuCore.waku = undefined;
   };
 
   static getFilterPeerCount(): number {
@@ -192,25 +177,18 @@ export class WakuBroadcasterWakuCore {
     return this.waku?.lightPush.connectedPeers.length;
   }
 
-  static getFilterPeerCount(): number {
-    BroadcasterDebug.log('getFilterPeerCount() is not implemented');
-    return 0;
-  }
-
-  static async relayMessage(
+  static async broadcastMessage(
     data: object,
     contentTopic: string,
-    retry: number = 0,
   ): Promise<void> {
+    if (!WakuBroadcasterWakuCore.waku) {
+      throw new Error('Waku not instantiated.');
+    }
+
+    const dataString = JSON.stringify(data);
+    const payload = utf8ToBytes(dataString);
+    const message: IMessage = { payload };
     try {
-      const dataString = JSON.stringify(data);
-      const payload = utf8ToBytes(dataString);
-      const message: IMessage = { payload };
-
-      if (!WakuBroadcasterWakuCore.waku) {
-        throw new Error('Waku not instantiated.');
-      }
-
       await WakuBroadcasterWakuCore.waku?.lightPush.send(
         createEncoder({
           contentTopic,
