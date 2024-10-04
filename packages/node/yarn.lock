@@ -1015,6 +1015,13 @@
     "@multiformats/multiaddr" "^12.1.14"
     uint8arraylist "^2.4.8"
 
+"@libp2p/interface-peer-id@^2.0.2":
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/@libp2p/interface-peer-id/-/interface-peer-id-2.0.2.tgz#6302e70b6fc17c451bc3daa11447d059357bcc32"
+  integrity sha512-9pZp9zhTDoVwzRmp0Wtxw0Yfa//Yc0GqBCJi3EznBDE6HGIAVvppR91wSh2knt/0eYg0AQj7Y35VSesUTzMCUg==
+  dependencies:
+    multiformats "^11.0.0"
+
 "@libp2p/interface@^1.0.0", "@libp2p/interface@^1.1.4":
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/@libp2p/interface/-/interface-1.1.4.tgz#21c7bbbe7628419d1e4902f0c953db1423b0f40f"

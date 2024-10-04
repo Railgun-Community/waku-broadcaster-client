@@ -252,9 +252,10 @@ export class BroadcasterTransaction {
         return response.txHash;
       }
       if (isDefined(response.error)) {
+        BroadcasterDebug.log(`Broadcast error: ${response.error}`);
         BroadcasterTransactResponse.clearSharedKey();
-        throw new Error(response.error, {
-          cause: new Error('Received response error from broadcaster.'),
+        throw new Error('Received response error from broadcaster.', {
+          cause: new Error(response.error),
         });
       }
     }
