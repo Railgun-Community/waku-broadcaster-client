@@ -25,7 +25,6 @@ export class WakuBroadcasterClient {
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
   private static isRestarting = false;
-  private static failureCount = 0;
 
   static pollDelay = 3000;
 
@@ -43,7 +42,7 @@ export class WakuBroadcasterClient {
     if (broadcasterDebugger) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
-    BroadcasterDebug.log('WE HOOKED IN WEB-APP');
+
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
@@ -56,9 +55,6 @@ export class WakuBroadcasterClient {
 
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
-      // this.pollConnection();
-      BroadcasterDebug.log('NOT PINGING');
-      BroadcasterDebug.log('STARTED');
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -236,14 +232,10 @@ export class WakuBroadcasterClient {
     AddressFilter.setBlocklist(blocklist);
   }
 
-  static async tryReconnect(resetCache = true): Promise<void> {
-    // Reset fees, which will reset status to "Searching".
-    // if (resetCache) {
-    //   BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
-    // }
+  static async tryReconnect(): Promise<void> {
     WakuBroadcasterClient.updateStatus();
 
-    await WakuBroadcasterClient.restart(resetCache);
+    await WakuBroadcasterClient.restart();
   }
 
   static supportsToken(
@@ -258,14 +250,14 @@ export class WakuBroadcasterClient {
     );
   }
 
-  private static async restart(resetCache = true): Promise<void> {
+  private static async restart(): Promise<void> {
     if (this.isRestarting || !this.started) {
       return;
     }
     this.isRestarting = true;
     try {
       BroadcasterDebug.log('Restarting Waku...');
-      await WakuBroadcasterWakuCore.reinitWaku(this.chain, resetCache);
+      await WakuBroadcasterWakuCore.reinitWaku(this.chain);
       this.isRestarting = false;
     } catch (cause) {
       this.isRestarting = false;
@@ -282,14 +274,10 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
-    const pubsubPeers = WakuBroadcasterWakuCore.getPubSubPeerCount();
-    console.log(pubsubPeers);
-
     if (!this.isRestarting) {
-      console.log('POLLING STATUS');
       this.updateStatus();
     } else {
-      this.updateStatus(false);
+      this.updateStatus();
     }
     await delay(WakuBroadcasterClient.pollDelay);
 
@@ -297,7 +285,7 @@ export class WakuBroadcasterClient {
     this.pollStatus();
   }
 
-  private static updateStatus(resetCache = true) {
+  private static updateStatus() {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
@@ -307,7 +295,7 @@ export class WakuBroadcasterClient {
       status === BroadcasterConnectionStatus.Error
     ) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.restart(resetCache);
+      this.restart();
     }
   }
 

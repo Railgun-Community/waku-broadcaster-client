@@ -1,9 +1,8 @@
-import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
+import { Chain, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Protocols, IMessage, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
-import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
@@ -46,18 +45,13 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static reinitWaku = async (chain: Chain, resetCache = true) => {
+  static reinitWaku = async (chain: Chain) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
       WakuBroadcasterWakuCore.waku.isStarted()
     ) {
       await WakuBroadcasterWakuCore.disconnect();
     }
-
-    // Resets connection status to "Connecting" for this network.
-    // if (resetCache) {
-    //   BroadcasterFeeCache.resetCache(chain);
-    // }
 
     await WakuBroadcasterWakuCore.initWaku(chain);
   };
@@ -95,8 +89,8 @@ export class WakuBroadcasterWakuCore {
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: LightNode = await createLightNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        // pingKeepAlive: 60,
-        // relayKeepAlive: 60,
+        pingKeepAlive: 60,
+        relayKeepAlive: 60,
         libp2p: {
           transports: [tcp()],
           peerDiscovery: [
@@ -115,7 +109,7 @@ export class WakuBroadcasterWakuCore {
       await this.waitForRemotePeer(waku);
 
       if (!isDefined(waku.lightPush)) {
-        throw new Error('No Waku Relay instantiated.');
+        throw new Error('No Waku LightPush instantiated.');
       }
 
       BroadcasterDebug.log('Waku peers:');
@@ -137,7 +131,6 @@ export class WakuBroadcasterWakuCore {
 
   static getMeshPeerCount(): number {
     return this.getPubSubPeerCount();
-    //this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0;
   }
 
   static getPubSubPeerCount(): number {
@@ -175,16 +168,11 @@ export class WakuBroadcasterWakuCore {
     data: object,
     contentTopic: string,
   ): Promise<void> {
-    if (!WakuBroadcasterWakuCore.waku?.lightPush) {
-      throw new Error('Broadcaster did not receive message. Please try again.');
-    }
-
     const dataString = JSON.stringify(data);
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
-
     try {
-      const results = await WakuBroadcasterWakuCore.waku.lightPush.send(
+      const results = await WakuBroadcasterWakuCore.waku?.lightPush.send(
         createEncoder({
           contentTopic,
           pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,

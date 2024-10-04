@@ -175,7 +175,6 @@ export class BroadcasterTransaction {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
       }
-      console.log(cause);
       BroadcasterDebug.error(
         new Error('Failed to find matching nullifier txid', { cause }),
       );
@@ -247,7 +246,6 @@ export class BroadcasterTransaction {
       POLL_DELAY_SECONDS * 1000,
       pollIterations,
     );
-    console.log('RESPONSE', response);
     if (isDefined(response)) {
       if (isDefined(response.txHash)) {
         BroadcasterTransactResponse.clearSharedKey();

@@ -44,10 +44,6 @@ describe('waku-broadcaster-client', () => {
       chain,
       broadcasterOptions,
       statusCallback,
-      {
-        log: console.log,
-        error: console.error,
-      },
     );
 
     expect(currentChain).to.deep.equal(chain);
