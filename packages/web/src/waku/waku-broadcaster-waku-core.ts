@@ -79,23 +79,32 @@ export class WakuBroadcasterWakuCore {
       BroadcasterDebug.log(`Creating waku broadcast client`);
 
       const peers: string[] = [
-        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
-        ...this.additionalDirectPeers,
+        // ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
+        // ...this.additionalDirectPeers,
+        '/dns4/fleet.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: LightNode = await createLightNode({
-        pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        pingKeepAlive: 60,
-        relayKeepAlive: 60,
-        libp2p: {
-          peerDiscovery: [
-            bootstrap({
-              list: peers,
-              timeout: waitTimeoutBeforeBootstrap,
-            }),
-          ],
+      const waku = await createLightNode({
+        bootstrapPeers: peers,
+        networkConfig: {
+          clusterId: 1,
+          shards: [0, 1, 2, 3, 4, 5],
         },
       });
+      console.log(waku);
+      // LightNode = await createLightNode({
+      //   pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
+      //   pingKeepAlive: 60,
+      //   relayKeepAlive: 60,
+      //   libp2p: {
+      //     peerDiscovery: [
+      //       bootstrap({
+      //         list: peers,
+      //         timeout: waitTimeoutBeforeBootstrap,
+      //       }),
+      //     ],
+      //   },
+      // });
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
@@ -134,13 +143,13 @@ export class WakuBroadcasterWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers =
-      (await WakuBroadcasterWakuCore.waku?.lightPush.allPeers()) ?? [];
+    const peers = WakuBroadcasterWakuCore.waku?.lightPush.connectedPeers ?? [];
     return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = (await WakuBroadcasterWakuCore.waku?.filter.allPeers()) ?? [];
+    const peers =
+      (await WakuBroadcasterWakuCore.waku?.filter.connectedPeers) ?? [];
     return peers.length;
   }
 

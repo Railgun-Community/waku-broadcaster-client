@@ -1,4 +1,4 @@
-export const WAKU_RAILGUN_PUB_SUB_TOPIC = '/waku/2/railgun-broadcaster';
+export const WAKU_RAILGUN_PUB_SUB_TOPIC = '';
 
 export const WAKU_RAILGUN_DEFAULT_PEERS_WEB: string[] = [
   // Some Websocket broadcasters (web friendly):

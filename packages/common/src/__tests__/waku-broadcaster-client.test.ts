@@ -17,7 +17,7 @@ import { contentTopics } from '../waku/waku-topics.js';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const chain = MOCK_CHAIN_ETHEREUM;
+const chain = { type: 0, id: 42161 } as Chain;
 
 const broadcasterOptions: BroadcasterOptions = {};
 
@@ -44,6 +44,10 @@ describe('waku-broadcaster-client', () => {
       chain,
       broadcasterOptions,
       statusCallback,
+      {
+        log: console.log,
+        error: console.error,
+      },
     );
 
     expect(currentChain).to.deep.equal(chain);
