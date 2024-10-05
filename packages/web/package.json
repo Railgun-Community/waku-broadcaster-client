@@ -19,7 +19,8 @@
     "tsc-test": "tsc -p tsconfig.test.json && tsc-alias -p tsconfig.test.json",
     "compile-test": "npm run clean && npm run tsc-test",
     "test-coverage": "npm run compile-test && c8 mocha",
-    "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'"
+    "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@libp2p/bootstrap": "^10.1.2",
@@ -35,7 +36,8 @@
     "@waku/proto": "^0.0.8",
     "@waku/sdk": "0.0.28",
     "@waku/utils": "0.0.20",
-    "libp2p": "^1.8.1"
+    "libp2p": "^1.8.1",
+    "patch-package": "^8.0.0"
   },
   "peerDependencies": {
     "@railgun-community/shared-models": "7.4.4",
