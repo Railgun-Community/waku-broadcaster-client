@@ -102,7 +102,9 @@ export class WakuObservers {
             BroadcasterDebug.log('Stop pinging');
             break;
           }
+          console.log('SUBSCRIPTION', subscription);
           let pingSuccess = false;
+
           await subscription
             .ping()
             .then(() => {
@@ -115,7 +117,7 @@ export class WakuObservers {
               // the connection is being closed
               // peer has no subscriptions
               BroadcasterDebug.error(new Error(`Ping Error: ${err.message}`));
-              throw new Error(err.message);
+              // throw new Error(err.message);
             })
             .finally(() => {
               if (!pingSuccess) {
@@ -127,28 +129,28 @@ export class WakuObservers {
             });
         }
       } catch (error) {
-        await WakuBroadcasterClient.tryReconnect();
+        // await WakuBroadcasterClient.tryReconnect();
         WakuObservers.isPinging = false;
-        WakuObservers.subscribedPeers = [];
-        await WakuObservers.addSubscriptions(
-          WakuObservers.currentChain,
-          waku,
-        ).catch(err => {
-          BroadcasterDebug.error(
-            new Error(`Error adding subscriptions. ${err.message}`),
-          );
-        });
+        // WakuObservers.subscribedPeers = [];
+        // await WakuObservers.addSubscriptions(
+        //   WakuObservers.currentChain,
+        //   waku,
+        // ).catch(err => {
+        //   BroadcasterDebug.error(
+        //     new Error(`Error adding subscriptions. ${err.message}`),
+        //   );
+        // });
       }
     } else {
-      WakuObservers.subscribedPeers = [];
-      await WakuObservers.addSubscriptions(
-        WakuObservers.currentChain,
-        waku,
-      ).catch(err => {
-        BroadcasterDebug.error(
-          new Error(`Error adding subscriptions. ${err.message}`),
-        );
-      });
+      // WakuObservers.subscribedPeers = [];
+      // await WakuObservers.addSubscriptions(
+      //   WakuObservers.currentChain,
+      //   waku,
+      // ).catch(err => {
+      //   BroadcasterDebug.error(
+      //     new Error(`Error adding subscriptions. ${err.message}`),
+      //   );
+      // });
     }
     await delay(15 * 1000);
     WakuObservers.isPinging = false;
@@ -161,8 +163,8 @@ export class WakuObservers {
     }
     if (isDefined(WakuObservers.currentSubscriptions)) {
       for (const { subscription } of WakuObservers.currentSubscriptions) {
-        await subscription
-          .unsubscribe(WakuObservers.currentContentTopics)
+        await subscription()
+          // .unsubscribe(WakuObservers.currentContentTopics)
           .catch((err: Error) => {
             BroadcasterDebug.log(`Unsubscribe Error ${err.message}`);
           });
@@ -209,10 +211,10 @@ export class WakuObservers {
     }
 
     console.log('ADDING OBSERVERS');
-    await WakuObservers.addSubscriptions(chain, waku).catch(err => {
-      BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
-    });
     if (!WakuObservers.hasStartedPinging) {
+      await WakuObservers.addSubscriptions(chain, waku).catch(err => {
+        BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
+      });
       WakuObservers.hasStartedPinging = true;
       WakuObservers.pingAllSubscriptions(waku);
     }
@@ -278,9 +280,9 @@ export class WakuObservers {
       return;
     }
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
-    console.log('subscriptionParams', subscriptionParams);
+    // console.log('subscriptionParams', subscriptionParams);
     const topics = subscriptionParams.map(subParam => subParam.topic);
-    console.log(topics);
+    // console.log(topics);
     const newTopics = topics.filter(
       topic => !WakuObservers.currentContentTopics.includes(topic),
     );
@@ -289,27 +291,32 @@ export class WakuObservers {
       clusterId: 1,
       shard: 0,
     };
-    const peers = await waku.libp2p.peerStore.all();
-    for (const peer of peers) {
-      console.log('PEER', peer.addresses);
-      if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
-        console.log('CONTINUING ON');
-        continue;
-      }
-      // @ts-ignore
-      console.log('NEW TOPICS', newTopics);
-      // for (const topic of newTopics) {
+    // const peers = await waku.libp2p.peerStore.all();
+    // for (const peer of peers) {
+    // console.log('PEER', peer.addresses);
+    // if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
+    //   console.log('CONTINUING ON');
+    //   continue;
+    // }
+    // @ts-ignore
+    console.log('NEW TOPICS', newTopics, topics, 'TOPICS');
+    for (const topic of topics) {
       //@ts-ignore
       // const filterSubscription = await waku.filter.subscribe(
 
       // )
       console.log('SUB PARAMS', subscriptionParams);
       for (const subParam of subscriptionParams) {
+        // if (newTopics.includes(subParam.topic)) {
+        //   console.log('Skipping topic', subParam);
+        //   continue;
+        // }
         const { decoder, callback } = subParam;
-        console.log(decoder);
-        console.log(callback);
+        console.log('CREATING SUBSCRIPTION');
+        // console.log(decoder);
+        // console.log(callback);
         const subscription = await waku.filter.subscribe([decoder], callback);
-        console.log('Subscription');
+        // console.log('Subscription', subscription);
         this.currentSubscriptions ??= [];
         const newParams = {
           subscription,
@@ -317,12 +324,12 @@ export class WakuObservers {
         };
         WakuObservers.currentSubscriptions?.push(newParams);
       }
-      // }
-      if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
-        WakuObservers.subscribedPeers.push(peer.id.toString());
-        BroadcasterDebug.log(`Adding peer complete ${peer.id.toString()}`);
-      }
     }
+    // if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
+    //   WakuObservers.subscribedPeers.push(peer.id.toString());
+    //   BroadcasterDebug.log(`Adding peer complete ${peer.id.toString()}`);
+    // }
+    // }
   }
 
   static getCurrentContentTopics(): string[] {

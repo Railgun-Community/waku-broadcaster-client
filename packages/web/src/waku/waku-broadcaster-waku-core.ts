@@ -12,6 +12,7 @@ import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
+import { wakuDnsDiscovery } from '@waku/discovery';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -84,14 +85,28 @@ export class WakuBroadcasterWakuCore {
         '/dns4/fleet.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
       ];
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
+      const NODE_REQUIREMENTS = {
+        lightPush: 1,
+        filter: 1,
+      };
       const waku = await createLightNode({
         bootstrapPeers: peers,
         networkConfig: {
           clusterId: 1,
           shards: [0, 1, 2, 3, 4, 5],
         },
+        libp2p: {
+          peerDiscovery: [
+            wakuDnsDiscovery(
+              [
+                'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
+              ],
+              NODE_REQUIREMENTS,
+            ),
+          ],
+        },
       });
-      console.log(waku);
+      // console.log(waku);
       // LightNode = await createLightNode({
       //   pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
       //   pingKeepAlive: 60,
