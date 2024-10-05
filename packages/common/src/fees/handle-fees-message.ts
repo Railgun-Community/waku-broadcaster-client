@@ -134,6 +134,8 @@ const updateFeesForBroadcaster = (
         availableWallets: feeMessageData.availableWallets,
         relayAdapt: feeMessageData.relayAdapt,
         reliability: feeMessageData.reliability,
+        //@ts-ignore
+        version: feeMessageData.version,
       };
       tokenFeeMap[tokenAddress] = cachedFee;
     }

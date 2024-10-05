@@ -12,9 +12,9 @@ import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
-import { wakuDnsDiscovery } from '@waku/discovery';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
-import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
+import { wakuDnsDiscovery } from '@waku/discovery';
+import type { Libp2pOptions } from 'libp2p';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -23,6 +23,10 @@ export class WakuBroadcasterWakuCore {
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
+  private static defaultShard = {
+    clusterId: 0,
+    shard: 1,
+  };
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -83,56 +87,38 @@ export class WakuBroadcasterWakuCore {
 
       BroadcasterDebug.log(`Creating waku broadcast client`);
 
-      const peers: string[] = [
-        // ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
-        // ...this.additionalDirectPeers,
-        '/dns4/fleet.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
-        '/dns4/core.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H',
+      const bootstrapPeers: string[] = [
+        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
+        ...this.additionalDirectPeers,
       ];
       // const enrTree = 'enrtree://[PUBLIC KEY]@[DOMAIN NAME]';
 
-      const enrTree =
+      const enrTreeFleet =
         'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com';
-      const enrTree2 =
+      const enrTreeCore =
         'enrtree://16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H@core.rootedinprivacy.com';
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
+
+      const networkConfig = {
+        clusterId: 0,
+        shards: [0, 1, 2, 3, 4, 5],
+      };
       const NODE_REQUIREMENTS = {
         lightPush: 1,
         filter: 1,
       };
+      // Optional: Add custom libp2p configuration
+      const libp2p: Libp2pOptions = {
+        peerDiscovery: [
+          wakuDnsDiscovery([enrTreeFleet, enrTreeCore], NODE_REQUIREMENTS),
+        ],
+      };
+
       const waku = await createLightNode({
-        bootstrapPeers: peers,
-        networkConfig: {
-          clusterId: 0,
-          shards: [0, 1, 2, 3, 4, 5],
-        },
-        // libp2p: {
-        //   peerDiscovery: [
-        //     wakuDnsDiscovery(
-        //       [
-        //         enrTree,
-        //         enrTree2,
-        //         // 'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
-        //       ],
-        //       NODE_REQUIREMENTS,
-        //     ),
-        //   ],
-        // },
+        bootstrapPeers,
+        networkConfig,
+        // libp2p,
       });
-      // console.log('WAKU', waku);
-      // LightNode = await createLightNode({
-      //   pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-      //   pingKeepAlive: 60,
-      //   relayKeepAlive: 60,
-      //   libp2p: {
-      //     peerDiscovery: [
-      //       bootstrap({
-      //         list: peers,
-      //         timeout: waitTimeoutBeforeBootstrap,
-      //       }),
-      //     ],
-      //   },
-      // });
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
@@ -205,21 +191,10 @@ export class WakuBroadcasterWakuCore {
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
     try {
-      console.log('sending message', message);
-      console.log(dataString);
-      const shard = {
-        clusterId: 0,
-        shard: 1,
-      };
       const encoder = createEncoder({
         contentTopic,
-        pubsubTopicShardInfo: shard,
+        pubsubTopicShardInfo: this.defaultShard,
       });
-      // const encoder = createEncoder({
-      //   contentTopic,
-      //   pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
-      // });
-      console.log(encoder);
       await WakuBroadcasterWakuCore.waku?.lightPush.send(encoder, message);
     } catch (err) {
       if (!(err instanceof Error)) {
