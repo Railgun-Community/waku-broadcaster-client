@@ -11,6 +11,7 @@ import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
+  WAKU_RAILGUN_DEFAULT_SHARD,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { wakuDnsDiscovery } from '@waku/discovery';
@@ -20,13 +21,9 @@ export class WakuBroadcasterWakuCore {
   static hasError = false;
 
   static waku: Optional<LightNode>;
-  private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
-  private static defaultShard = {
-    clusterId: 0,
-    shard: 1,
-  };
+  private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -63,9 +60,6 @@ export class WakuBroadcasterWakuCore {
   };
 
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
-    if (isDefined(broadcasterOptions.pubSubTopic)) {
-      WakuBroadcasterWakuCore.pubSubTopic = broadcasterOptions.pubSubTopic;
-    }
     if (broadcasterOptions.additionalDirectPeers) {
       WakuBroadcasterWakuCore.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
