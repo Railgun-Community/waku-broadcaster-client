@@ -84,7 +84,7 @@ export class WakuObservers {
     if (WakuObservers.isPinging === true) {
       return;
     }
-    console.log('PINGING SUBSCRIPTIONS');
+    // console.log('PINGING SUBSCRIPTIONS');
     // @ts-ignore
     console.log('WAKU HEALTH', waku?.health);
     WakuObservers.isPinging = true;
@@ -103,16 +103,16 @@ export class WakuObservers {
           subscription,
           params,
         } of WakuObservers.currentSubscriptions) {
-          console.log('PINGING SUBSCRIPTION');
+          // console.log('PINGING SUBSCRIPTION');
           if (!WakuObservers.isPinging) {
             // removeAllObservers was called. Stop pinging.
             BroadcasterDebug.log('Stop pinging');
             break;
           }
-          console.log(
-            'SUBSCRIPTION',
-            subscription.subscription.connectionManager,
-          );
+          // console.log(
+          //   'SUBSCRIPTION',
+          //   subscription.subscription.connectionManager,
+          // );
           let pingSuccess = false;
 
           // await subscription
@@ -175,11 +175,12 @@ export class WakuObservers {
     }
     if (isDefined(WakuObservers.currentSubscriptions)) {
       for (const { subscription } of WakuObservers.currentSubscriptions) {
-        await subscription()
-          // .unsubscribe(WakuObservers.currentContentTopics)
-          .catch((err: Error) => {
-            BroadcasterDebug.log(`Unsubscribe Error ${err.message}`);
-          });
+        console.log(subscription);
+        // await subscription()
+        //   // .unsubscribe(WakuObservers.currentContentTopics)
+        //   .catch((err: Error) => {
+        //     BroadcasterDebug.log(`Unsubscribe Error ${err.message}`);
+        //   });
       }
       WakuObservers.currentSubscriptions = [];
       WakuObservers.currentContentTopics = [];
@@ -223,10 +224,10 @@ export class WakuObservers {
     }
 
     console.log('ADDING OBSERVERS');
+    await WakuObservers.addSubscriptions(chain, waku).catch(err => {
+      BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
+    });
     if (!WakuObservers.hasStartedPinging) {
-      await WakuObservers.addSubscriptions(chain, waku).catch(err => {
-        BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
-      });
       WakuObservers.hasStartedPinging = true;
       WakuObservers.pingAllSubscriptions(waku);
     }
@@ -265,7 +266,7 @@ export class WakuObservers {
       }
       // @ts-ignore
       const filterSubscription = await waku.filter.createSubscription(
-        shard,
+        '/waku/2/rs/0/1',
         peer.id,
       );
       const params: SubscriptionParams = {
@@ -273,7 +274,8 @@ export class WakuObservers {
         decoder,
         callback,
       };
-      const subscription = await filterSubscription.subscribe(
+      // @ts-ignore
+      const subscription = await filterSubscription.subscription.subscribe(
         decoder,
         callback,
       );
@@ -315,13 +317,13 @@ export class WakuObservers {
     //   continue;
     // }
     // @ts-ignore
-    console.log('NEW TOPICS', newTopics, topics, 'TOPICS');
+    // console.log('NEW TOPICS', newTopics, topics, 'TOPICS');
     // for (const topic of topics) {
     //@ts-ignore
     // const filterSubscription = await waku.filter.subscribe(
 
     // )
-    console.log('SUB PARAMS', subscriptionParams);
+    // console.log('SUB PARAMS', subscriptionParams);
     const peers = await waku.libp2p.peerStore.all();
     for (const peer of peers)
       for (const subParam of subscriptionParams) {
@@ -330,7 +332,7 @@ export class WakuObservers {
         //   continue;
         // }
         const { decoder, callback } = subParam;
-        console.log('CREATING SUBSCRIPTION');
+        // console.log('CREATING SUBSCRIPTION');
         // console.log(decoder);
         // console.log(callback);
         // @ts-ignore
@@ -345,6 +347,7 @@ export class WakuObservers {
           decoder,
           callback,
         );
+        console.log('SUBSCRIPTION', subscription);
         // // Create the network config
         // const networkConfig = { clusterId: 0, shards: [1] };
         // // @ts-ignore
@@ -361,7 +364,7 @@ export class WakuObservers {
         // );
         // const subscription = await waku.filter.subscribe([decoder], callback);
 
-        console.log('Subscription', subscription);
+        // console.log('Subscription', subscription);
         this.currentSubscriptions = [];
 
         const newParams = {

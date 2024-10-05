@@ -15,6 +15,7 @@ import {
 } from '../broadcaster-fee-cache.js';
 
 import { BroadcasterSearch } from '../../search/best-broadcaster.js';
+import { id } from 'ethers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -23,7 +24,7 @@ const initialState: BroadcasterFeeCacheState = {
   forNetwork: {},
 };
 
-const chain = MOCK_CHAIN_ETHEREUM;
+const chain = { id: 42161, type: 0 };
 
 const tokenAddress = '0x1234567890';
 const cachedTokenFee: CachedTokenFee = {
