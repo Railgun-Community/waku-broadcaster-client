@@ -15,7 +15,6 @@ import {
 } from '../broadcaster-fee-cache.js';
 
 import { BroadcasterSearch } from '../../search/best-broadcaster.js';
-import { id } from 'ethers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
