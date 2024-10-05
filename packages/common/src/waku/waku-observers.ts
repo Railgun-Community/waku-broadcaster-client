@@ -85,18 +85,20 @@ export class WakuObservers {
       return;
     }
     console.log('PINGING SUBSCRIPTIONS');
-    console.log('Current Subscriptions', WakuObservers.currentSubscriptions);
+    // @ts-ignore
+    console.log('WAKU HEALTH', waku?.health);
     WakuObservers.isPinging = true;
     if (isDefined(WakuObservers.currentSubscriptions)) {
+      // console.log('Current Subscriptions', WakuObservers.currentSubscriptions);
       try {
         if (WakuObservers.currentSubscriptions.length === 0) {
           BroadcasterDebug.log('No subscriptions to ping');
           throw new Error('No subscriptions to ping');
         }
-        const peers = await waku?.libp2p.peerStore.all();
-        for (const peer of peers ?? []) {
-          console.log('PEER INFO', peer);
-        }
+        // const peers = await waku?.libp2p.peerStore.all();
+        // for (const peer of peers ?? []) {
+        //   console.log('PEER INFO', peer);
+        // }
         for (const {
           subscription,
           params,
@@ -107,7 +109,10 @@ export class WakuObservers {
             BroadcasterDebug.log('Stop pinging');
             break;
           }
-          console.log('SUBSCRIPTION', subscription);
+          console.log(
+            'SUBSCRIPTION',
+            subscription.subscription.connectionManager,
+          );
           let pingSuccess = false;
 
           // await subscription
@@ -254,6 +259,7 @@ export class WakuObservers {
     const peers = await waku.libp2p.peerStore.all();
 
     for (const peer of peers) {
+      // console.log('PEER INFO', peer);
       if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
         continue;
       }
@@ -272,7 +278,7 @@ export class WakuObservers {
         callback,
       );
       WakuObservers.currentSubscriptions?.push({
-        subscription: filterSubscription,
+        subscription: subscription,
         params: [params],
       });
       WakuObservers.subscribedPeers.push(peer.id.toString());
@@ -337,12 +343,21 @@ export class WakuObservers {
         //   callback,
         // );
         // Create the network config
-        const networkConfig = { clusterId: 0, shards: [0, 1, 2, 3, 4, 5] };
+        const networkConfig = { clusterId: 0, shards: [1] };
         // @ts-ignore
-        const subscription = await waku.filter.createSubscription(
-          // @ts-ignore
-          networkConfig,
-        );
+        //#22 attempt
+        // const filterSubscription = await waku.filter.createSubscription(
+        //   // @ts-ignore
+        //   networkConfig,
+        // );
+        // console.log(filterSubscription);
+        // // @ts-ignore
+        // const subscription = await filterSubscription.subscription.subscribe(
+        //   decoder,
+        //   callback,
+        // );
+        const subscription = await waku.filter.subscribe([decoder], callback);
+
         console.log('Subscription', subscription);
         this.currentSubscriptions = [];
 

@@ -83,11 +83,14 @@ export class WakuBroadcasterWakuCore {
         // ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         // ...this.additionalDirectPeers,
         '/dns4/fleet.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
+        '/dns4/core.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H',
       ];
       // const enrTree = 'enrtree://[PUBLIC KEY]@[DOMAIN NAME]';
 
       const enrTree =
         'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com';
+      const enrTree2 =
+        'enrtree://16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H@core.rootedinprivacy.com';
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const NODE_REQUIREMENTS = {
         lightPush: 1,
@@ -96,7 +99,7 @@ export class WakuBroadcasterWakuCore {
       const waku = await createLightNode({
         bootstrapPeers: peers,
         networkConfig: {
-          clusterId: 1,
+          clusterId: 0,
           shards: [0, 1, 2, 3, 4, 5],
         },
         libp2p: {
@@ -104,6 +107,7 @@ export class WakuBroadcasterWakuCore {
             wakuDnsDiscovery(
               [
                 enrTree,
+                enrTree2,
                 // 'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
               ],
               NODE_REQUIREMENTS,
@@ -111,7 +115,7 @@ export class WakuBroadcasterWakuCore {
           ],
         },
       });
-      // console.log(waku);
+      // console.log('WAKU', waku);
       // LightNode = await createLightNode({
       //   pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
       //   pingKeepAlive: 60,
