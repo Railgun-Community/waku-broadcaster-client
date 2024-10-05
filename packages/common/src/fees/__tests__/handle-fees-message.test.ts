@@ -33,7 +33,7 @@ const validExpiration = Date.now() + 1000000;
 const feesID = 'abc';
 const identifier = 'ID1';
 const availableWallets = 2;
-const version = '6.1.0';
+const version = '7.1.0';
 const relayAdapt = '0xabcd';
 
 let walletA: RailgunWallet;
@@ -170,6 +170,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    console.log(broadcasterFeeCacheStub.called);
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 
@@ -179,6 +180,7 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    console.log(broadcasterFeeCacheStub.called);
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 });
