@@ -5,13 +5,13 @@ import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
-import { bootstrap } from '@libp2p/bootstrap';
 import { createLightNode } from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
   WAKU_RAILGUN_DEFAULT_SHARD,
+  WAKU_RAILGUN_DEFAULT_SHARDS,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { wakuDnsDiscovery } from '@waku/discovery';
@@ -21,6 +21,7 @@ export class WakuBroadcasterWakuCore {
   static hasError = false;
 
   static waku: Optional<LightNode>;
+  private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
@@ -60,6 +61,9 @@ export class WakuBroadcasterWakuCore {
   };
 
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
+    if (isDefined(broadcasterOptions.pubSubTopic)) {
+      WakuBroadcasterWakuCore.pubSubTopic = broadcasterOptions.pubSubTopic;
+    }
     if (broadcasterOptions.additionalDirectPeers) {
       WakuBroadcasterWakuCore.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
@@ -85,33 +89,10 @@ export class WakuBroadcasterWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      // const enrTree = 'enrtree://[PUBLIC KEY]@[DOMAIN NAME]';
-
-      const enrTreeFleet =
-        'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com';
-      const enrTreeCore =
-        'enrtree://16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H@core.rootedinprivacy.com';
-      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-
-      const networkConfig = {
-        clusterId: 0,
-        shards: [0, 1, 2, 3, 4, 5],
-      };
-      const NODE_REQUIREMENTS = {
-        lightPush: 1,
-        filter: 1,
-      };
-      // Optional: Add custom libp2p configuration
-      const libp2p: Libp2pOptions = {
-        peerDiscovery: [
-          wakuDnsDiscovery([enrTreeFleet, enrTreeCore], NODE_REQUIREMENTS),
-        ],
-      };
 
       const waku = await createLightNode({
         bootstrapPeers,
-        networkConfig,
-        // libp2p,
+        networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
       });
 
       BroadcasterDebug.log('Start Waku.');

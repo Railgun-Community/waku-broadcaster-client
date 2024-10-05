@@ -5,6 +5,11 @@ export const WAKU_RAILGUN_DEFAULT_SHARD = {
   shard: 1,
 };
 
+export const WAKU_RAILGUN_DEFAULT_SHARDS = {
+  clusterId: 0,
+  shards: [0, 1, 2, 3, 4, 5],
+};
+
 export const WAKU_RAILGUN_DEFAULT_PEERS_WEB: string[] = [
   // Some Websocket broadcasters (web friendly):
   '/dns4/core.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H',
