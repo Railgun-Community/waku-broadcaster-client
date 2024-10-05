@@ -86,7 +86,7 @@ export class WakuObservers {
     }
     // console.log('PINGING SUBSCRIPTIONS');
     // @ts-ignore
-    console.log('WAKU HEALTH', waku?.health);
+    console.log('WAKU HEALTH', waku?.health.health.overallStatus);
     WakuObservers.isPinging = true;
     if (isDefined(WakuObservers.currentSubscriptions)) {
       // console.log('Current Subscriptions', WakuObservers.currentSubscriptions);
@@ -341,13 +341,13 @@ export class WakuObservers {
           '/waku/2/rs/0/1',
           peer.id,
         );
-        console.log('FILTER SUBSCRIPTION', filterSubscription);
+        // console.log('FILTER SUBSCRIPTION', filterSubscription);
         // @ts-ignore
         const subscription = await filterSubscription.subscription.subscribe(
           decoder,
           callback,
         );
-        console.log('SUBSCRIPTION', subscription);
+        // console.log('SUBSCRIPTION', subscription);
         // // Create the network config
         // const networkConfig = { clusterId: 0, shards: [1] };
         // // @ts-ignore

@@ -57,7 +57,6 @@ export const handleBroadcasterFeesMessage = async (
   message: IMessage,
   contentTopic: string,
 ) => {
-  console.log('handleBroadcasterFeesMessage');
   try {
     if (!isDefined(message.payload)) {
       BroadcasterDebug.log('Skipping Broadcaster fees message: NO PAYLOAD');
@@ -135,6 +134,8 @@ const updateFeesForBroadcaster = (
         availableWallets: feeMessageData.availableWallets,
         relayAdapt: feeMessageData.relayAdapt,
         reliability: feeMessageData.reliability,
+        //@ts-ignore
+        version: feeMessageData.version,
       };
       tokenFeeMap[tokenAddress] = cachedFee;
     }
