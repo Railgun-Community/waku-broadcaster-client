@@ -1,4 +1,4 @@
-export const WAKU_RAILGUN_PUB_SUB_TOPIC = '';
+export const WAKU_RAILGUN_PUB_SUB_TOPIC = '/waku/2/rs/0/1';
 
 export const WAKU_RAILGUN_DEFAULT_SHARD = {
   clusterId: 0,
