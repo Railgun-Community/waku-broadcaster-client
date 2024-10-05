@@ -205,13 +205,22 @@ export class WakuBroadcasterWakuCore {
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
     try {
-      await WakuBroadcasterWakuCore.waku?.lightPush.send(
-        createEncoder({
-          contentTopic,
-          pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
-        }),
-        message,
-      );
+      console.log('sending message', message);
+      console.log(dataString);
+      const shard = {
+        clusterId: 0,
+        shard: 1,
+      };
+      const encoder = createEncoder({
+        contentTopic,
+        pubsubTopicShardInfo: shard,
+      });
+      // const encoder = createEncoder({
+      //   contentTopic,
+      //   pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
+      // });
+      console.log(encoder);
+      await WakuBroadcasterWakuCore.waku?.lightPush.send(encoder, message);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;
