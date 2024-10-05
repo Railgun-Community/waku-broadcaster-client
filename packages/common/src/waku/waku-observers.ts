@@ -4,10 +4,8 @@ import { contentTopics } from './waku-topics.js';
 import {
   LightNode,
   IMessage,
-  // IFilterSubscription,
   IDecoder,
-  Unsubscribe,
-  type SingleShardInfo,
+  type Unsubscribe,
 } from '@waku/interfaces';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
@@ -17,7 +15,6 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
-import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -29,7 +26,7 @@ export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
   private static currentSubscriptions:
-    | { subscription: any; params: SubscriptionParams[] }[]
+    | { subscription: Unsubscribe; params: SubscriptionParams[] }[]
     | undefined = [];
 
   static setObserversForChain = async (
@@ -61,37 +58,11 @@ export class WakuObservers {
     WakuObservers.currentChain = undefined;
   };
 
-  // private static resubScribeLoop = async (
-  //   subscription: IFilterSubscription,
-  //   decoder: IDecoder<any> | IDecoder<any>[],
-  //   callback: (message: any) => void,
-  // ): Promise<void> => {
-  //   BroadcasterDebug.log('Resubscribe Loop');
-  //   const result = await subscription
-  //     .subscribe(decoder, callback)
-  //     .then(() => {
-  //       BroadcasterDebug.log('Resubscribed');
-  //     })
-  //     .catch(err => {
-  //       BroadcasterDebug.error(
-  //         new Error(`Error re-subscribing: ${err.message}`),
-  //       );
-  //       return undefined;
-  //     });
-
-  //   return;
-  // };
-
-  private static isPinging = false;
-  static pingAllSubscriptions = async (waku: Optional<LightNode>) => {
-    if (WakuObservers.isPinging === true) {
-      return;
-    }
+  static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
     BroadcasterDebug.log(
       // @ts-ignore
       `WAKU Health Status: ${waku?.health.health.overallStatus}`,
     );
-    WakuObservers.isPinging = true;
     if (isDefined(WakuObservers.currentSubscriptions)) {
       if (WakuObservers.currentSubscriptions.length === 0) {
         BroadcasterDebug.log('No subscriptions to ping');
@@ -99,8 +70,7 @@ export class WakuObservers {
       }
     }
     await delay(15 * 1000);
-    WakuObservers.isPinging = false;
-    WakuObservers.pingAllSubscriptions(waku);
+    WakuObservers.checkSubscriptionsHealth(waku);
   };
 
   private static removeAllObservers = async (waku: Optional<LightNode>) => {
@@ -155,7 +125,7 @@ export class WakuObservers {
     });
     if (!WakuObservers.hasStartedPinging) {
       WakuObservers.hasStartedPinging = true;
-      WakuObservers.pingAllSubscriptions(waku);
+      WakuObservers.checkSubscriptionsHealth(waku);
     }
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
