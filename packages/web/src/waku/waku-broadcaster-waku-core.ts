@@ -13,6 +13,8 @@ import {
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 import { wakuDnsDiscovery } from '@waku/discovery';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
+import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -48,9 +50,11 @@ export class WakuBroadcasterWakuCore {
       isDefined(WakuBroadcasterWakuCore.waku) &&
       WakuBroadcasterWakuCore.waku.isStarted()
     ) {
+      // Reset fees, which will reset status to "Searching".
       await WakuBroadcasterWakuCore.disconnect();
     }
 
+    BroadcasterFeeCache.resetCache(chain);
     await WakuBroadcasterWakuCore.initWaku(chain);
   };
 
@@ -102,18 +106,18 @@ export class WakuBroadcasterWakuCore {
           clusterId: 0,
           shards: [0, 1, 2, 3, 4, 5],
         },
-        libp2p: {
-          peerDiscovery: [
-            wakuDnsDiscovery(
-              [
-                enrTree,
-                enrTree2,
-                // 'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
-              ],
-              NODE_REQUIREMENTS,
-            ),
-          ],
-        },
+        // libp2p: {
+        //   peerDiscovery: [
+        //     wakuDnsDiscovery(
+        //       [
+        //         enrTree,
+        //         enrTree2,
+        //         // 'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
+        //       ],
+        //       NODE_REQUIREMENTS,
+        //     ),
+        //   ],
+        // },
       });
       // console.log('WAKU', waku);
       // LightNode = await createLightNode({

@@ -110,6 +110,7 @@ export class BroadcasterFeeCache {
   static resetCache(chain: Chain) {
     const network = networkForChain(chain);
     if (!network) {
+      console.log('Chain not found.');
       return;
     }
     this.cache.forNetwork ??= {};

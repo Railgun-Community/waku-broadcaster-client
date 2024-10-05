@@ -57,6 +57,7 @@ export const handleBroadcasterFeesMessage = async (
   message: IMessage,
   contentTopic: string,
 ) => {
+  console.log('handleBroadcasterFeesMessage');
   try {
     if (!isDefined(message.payload)) {
       BroadcasterDebug.log('Skipping Broadcaster fees message: NO PAYLOAD');

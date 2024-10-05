@@ -334,18 +334,21 @@ export class WakuObservers {
         // console.log(decoder);
         // console.log(callback);
         // @ts-ignore
-        // const filterSubscription = await waku.filter.createSubscription(
-        //   shard,
-        //   peer.id,
-        // );
-        // const subscription = await filterSubscription.subscribe(
-        //   decoder,
-        //   callback,
-        // );
-        // Create the network config
-        const networkConfig = { clusterId: 0, shards: [1] };
+
+        const filterSubscription = await waku.filter.createSubscription(
+          '/waku/2/rs/0/1',
+          peer.id,
+        );
+        console.log('FILTER SUBSCRIPTION', filterSubscription);
         // @ts-ignore
-        //#22 attempt
+        const subscription = await filterSubscription.subscription.subscribe(
+          decoder,
+          callback,
+        );
+        // // Create the network config
+        // const networkConfig = { clusterId: 0, shards: [1] };
+        // // @ts-ignore
+        // //#22 attempt
         // const filterSubscription = await waku.filter.createSubscription(
         //   // @ts-ignore
         //   networkConfig,
@@ -356,7 +359,7 @@ export class WakuObservers {
         //   decoder,
         //   callback,
         // );
-        const subscription = await waku.filter.subscribe([decoder], callback);
+        // const subscription = await waku.filter.subscribe([decoder], callback);
 
         console.log('Subscription', subscription);
         this.currentSubscriptions = [];
