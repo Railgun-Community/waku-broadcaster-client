@@ -136,6 +136,7 @@ const updateFeesForBroadcaster = (
         reliability: feeMessageData.reliability,
         //@ts-ignore
         version: feeMessageData.version,
+        // TODO: remove this
       };
       tokenFeeMap[tokenAddress] = cachedFee;
     }
