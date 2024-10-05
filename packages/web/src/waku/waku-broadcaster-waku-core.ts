@@ -84,6 +84,10 @@ export class WakuBroadcasterWakuCore {
         // ...this.additionalDirectPeers,
         '/dns4/fleet.rootedinprivacy.com/tcp/8000/wss/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
       ];
+      // const enrTree = 'enrtree://[PUBLIC KEY]@[DOMAIN NAME]';
+
+      const enrTree =
+        'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com';
       const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const NODE_REQUIREMENTS = {
         lightPush: 1,
@@ -99,7 +103,8 @@ export class WakuBroadcasterWakuCore {
           peerDiscovery: [
             wakuDnsDiscovery(
               [
-                'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
+                enrTree,
+                // 'enrtree://16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP@fleet.rootedinprivacy.com',
               ],
               NODE_REQUIREMENTS,
             ),

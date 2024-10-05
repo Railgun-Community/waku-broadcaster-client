@@ -27,7 +27,7 @@ export class WakuObservers {
   private static currentContentTopics: string[] = [];
   private static currentSubscriptions:
     | { subscription: any; params: SubscriptionParams[] }[]
-    | undefined;
+    | undefined = [];
 
   static setObserversForChain = async (
     waku: Optional<LightNode>,
@@ -85,12 +85,17 @@ export class WakuObservers {
       return;
     }
     console.log('PINGING SUBSCRIPTIONS');
+    console.log('Current Subscriptions', WakuObservers.currentSubscriptions);
     WakuObservers.isPinging = true;
     if (isDefined(WakuObservers.currentSubscriptions)) {
       try {
         if (WakuObservers.currentSubscriptions.length === 0) {
           BroadcasterDebug.log('No subscriptions to ping');
           throw new Error('No subscriptions to ping');
+        }
+        const peers = await waku?.libp2p.peerStore.all();
+        for (const peer of peers ?? []) {
+          console.log('PEER INFO', peer);
         }
         for (const {
           subscription,
@@ -105,28 +110,30 @@ export class WakuObservers {
           console.log('SUBSCRIPTION', subscription);
           let pingSuccess = false;
 
-          await subscription
-            .ping()
-            .then(() => {
-              BroadcasterDebug.log('Ping Success');
-              pingSuccess = true;
-            })
-            .catch(async (err: Error) => {
-              // No response received for request
-              // Failed to get a connection to the peer
-              // the connection is being closed
-              // peer has no subscriptions
-              BroadcasterDebug.error(new Error(`Ping Error: ${err.message}`));
-              // throw new Error(err.message);
-            })
-            .finally(() => {
-              if (!pingSuccess) {
-                BroadcasterDebug.log(
-                  "pingAllSubscriptions: Ping failed, let's reconnect",
-                );
-                throw new Error('Ping failed, lets reconnect');
-              }
-            });
+          // await subscription
+          //   .ping()
+          //   .then(() => {
+          //     BroadcasterDebug.log('Ping Success');
+          //     pingSuccess = true;
+          //   })
+          //   .catch(async (err: Error) => {
+          //     // No response received for request
+          //     // Failed to get a connection to the peer
+          //     // the connection is being closed
+          //     // peer has no subscriptions
+          //     BroadcasterDebug.error(new Error(`Ping Error: ${err.message}`));
+          //     // throw new Error(err.message);
+          //   })
+          //   .finally(() => {
+          //     console.log('WE HIT FINALLY');
+          //     if (!pingSuccess) {
+          //       console.log('NO PING SUCCESS');
+          //       BroadcasterDebug.log(
+          //         "pingAllSubscriptions: Ping failed, let's reconnect",
+          //       );
+          //       throw new Error('Ping failed, lets reconnect');
+          //     }
+          //   });
         }
       } catch (error) {
         // await WakuBroadcasterClient.tryReconnect();
@@ -178,7 +185,7 @@ export class WakuObservers {
   private static getDecodersForChain = (chain: Chain) => {
     const contentTopicFees = contentTopics.fees(chain);
     const contentTopicTransactResponse = contentTopics.transactResponse(chain);
-    const networkConfig = { clusterId: 1, shard: 0 };
+    const networkConfig = { clusterId: 0, shard: 1 };
 
     const feesDecoder = createDecoder(contentTopicFees, networkConfig);
     const transactResponseDecoder = createDecoder(
@@ -240,8 +247,8 @@ export class WakuObservers {
     }
     const transportTopic = contentTopics.encrypted(topic);
     const shard = {
-      clusterId: 1,
-      shard: 0,
+      clusterId: 0,
+      shard: 1,
     };
     const decoder = createDecoder(transportTopic, shard);
     const peers = await waku.libp2p.peerStore.all();
@@ -260,7 +267,10 @@ export class WakuObservers {
         decoder,
         callback,
       };
-      await filterSubscription.subscribe(decoder, callback);
+      const subscription = await filterSubscription.subscribe(
+        decoder,
+        callback,
+      );
       WakuObservers.currentSubscriptions?.push({
         subscription: filterSubscription,
         params: [params],
@@ -288,8 +298,8 @@ export class WakuObservers {
     );
     WakuObservers.currentContentTopics.push(...newTopics);
     const shard: SingleShardInfo = {
-      clusterId: 1,
-      shard: 0,
+      clusterId: 0,
+      shard: 1,
     };
     // const peers = await waku.libp2p.peerStore.all();
     // for (const peer of peers) {
@@ -300,12 +310,14 @@ export class WakuObservers {
     // }
     // @ts-ignore
     console.log('NEW TOPICS', newTopics, topics, 'TOPICS');
-    for (const topic of topics) {
-      //@ts-ignore
-      // const filterSubscription = await waku.filter.subscribe(
+    // for (const topic of topics) {
+    //@ts-ignore
+    // const filterSubscription = await waku.filter.subscribe(
 
-      // )
-      console.log('SUB PARAMS', subscriptionParams);
+    // )
+    console.log('SUB PARAMS', subscriptionParams);
+    const peers = await waku.libp2p.peerStore.all();
+    for (const peer of peers)
       for (const subParam of subscriptionParams) {
         // if (newTopics.includes(subParam.topic)) {
         //   console.log('Skipping topic', subParam);
@@ -315,16 +327,32 @@ export class WakuObservers {
         console.log('CREATING SUBSCRIPTION');
         // console.log(decoder);
         // console.log(callback);
-        const subscription = await waku.filter.subscribe([decoder], callback);
-        // console.log('Subscription', subscription);
-        this.currentSubscriptions ??= [];
+        // @ts-ignore
+        // const filterSubscription = await waku.filter.createSubscription(
+        //   shard,
+        //   peer.id,
+        // );
+        // const subscription = await filterSubscription.subscribe(
+        //   decoder,
+        //   callback,
+        // );
+        // Create the network config
+        const networkConfig = { clusterId: 0, shards: [0, 1, 2, 3, 4, 5] };
+        // @ts-ignore
+        const subscription = await waku.filter.createSubscription(
+          // @ts-ignore
+          networkConfig,
+        );
+        console.log('Subscription', subscription);
+        this.currentSubscriptions = [];
+
         const newParams = {
           subscription,
           params: subscriptionParams,
         };
         WakuObservers.currentSubscriptions?.push(newParams);
       }
-    }
+    // }
     // if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
     //   WakuObservers.subscribedPeers.push(peer.id.toString());
     //   BroadcasterDebug.log(`Adding peer complete ${peer.id.toString()}`);
