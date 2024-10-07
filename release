@@ -12,6 +12,7 @@ VERSION_TYPE=${1-patch}
 
 # Sync
 git fetch;
+git pull; # In case there are new commits in main
 git checkout release --;
 git rebase main;
 
