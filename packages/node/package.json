@@ -1,6 +1,6 @@
 {
   "name": "@railgun-community/waku-broadcaster-client-node",
-  "version": "7.2.7",
+  "version": "8.0.0",
   "license": "MIT",
   "main": "dist/index.js",
   "type": "module",
