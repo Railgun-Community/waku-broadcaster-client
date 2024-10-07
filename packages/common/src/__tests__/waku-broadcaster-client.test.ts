@@ -30,7 +30,6 @@ let currentStatus: BroadcasterConnectionStatus;
 const statusCallback = (chain: Chain, status: BroadcasterConnectionStatus) => {
   currentChain = chain;
   currentStatus = status;
-  console.log(`Status: ${status}`);
 };
 
 describe('waku-broadcaster-client', () => {
