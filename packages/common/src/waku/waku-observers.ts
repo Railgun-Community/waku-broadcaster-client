@@ -22,12 +22,15 @@ type SubscriptionParams = {
   callback: (message: any) => void;
 };
 
+type ActiveSubscription = {
+  subscription: Unsubscribe;
+  params: SubscriptionParams;
+};
+
 export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
-  private static currentSubscriptions:
-    | { subscription: Unsubscribe; params: SubscriptionParams[] }[]
-    | undefined = [];
+  private static currentSubscriptions: ActiveSubscription[] | undefined = [];
 
   static setObserversForChain = async (
     waku: Optional<LightNode>,
@@ -77,10 +80,12 @@ export class WakuObservers {
     if (!isDefined(waku?.lightPush)) {
       return;
     }
-    if (isDefined(WakuObservers.currentSubscriptions)) {
-      WakuObservers.currentSubscriptions = [];
-      WakuObservers.currentContentTopics = [];
-      WakuObservers.subscribedPeers = [];
+    if (isDefined(this.currentSubscriptions)) {
+      for (const { subscription, params } of this.currentSubscriptions) {
+        await subscription();
+      }
+      this.currentSubscriptions = [];
+      this.currentContentTopics = [];
     }
   };
 
@@ -112,8 +117,6 @@ export class WakuObservers {
     };
     return [feesSubscriptionParams, transactResponseSubscriptionParams];
   };
-
-  static subscribedPeers: string[] = [];
 
   private static addChainObservers = async (waku: LightNode, chain: Chain) => {
     if (!isDefined(waku.filter)) {
@@ -149,34 +152,19 @@ export class WakuObservers {
     }
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_DEFAULT_SHARD);
-    const peers = await waku.libp2p.peerStore.all();
-
-    for (const peer of peers) {
-      if (WakuObservers.subscribedPeers.includes(peer.id.toString())) {
-        continue;
-      }
-      // @ts-ignore
-      const filterSubscription = await waku.filter.createSubscription(
-        WAKU_RAILGUN_PUB_SUB_TOPIC,
-        peer.id,
-      );
-      const params: SubscriptionParams = {
-        topic: transportTopic,
-        decoder,
-        callback,
-      };
-      // @ts-ignore
-      const subscription = await filterSubscription.subscription.subscribe(
-        decoder,
-        callback,
-      );
-      WakuObservers.currentSubscriptions?.push({
-        subscription: subscription,
-        params: [params],
-      });
-      WakuObservers.subscribedPeers.push(peer.id.toString());
-      BroadcasterDebug.log(`Adding peer complete ${peer.id.toString()}`);
-    }
+    const params: SubscriptionParams = {
+      topic: transportTopic,
+      decoder,
+      callback,
+    };
+    const subscription = await waku.filter.subscribeWithUnsubscribe(
+      decoder,
+      callback,
+    );
+    WakuObservers.currentSubscriptions?.push({
+      subscription,
+      params,
+    });
     WakuObservers.currentContentTopics.push(transportTopic);
   }
 
@@ -189,32 +177,22 @@ export class WakuObservers {
       return;
     }
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
-    const topics = subscriptionParams.map(subParam => subParam.topic);
+    const topics = subscriptionParams.map(params => params.topic);
     const newTopics = topics.filter(
       topic => !WakuObservers.currentContentTopics.includes(topic),
     );
     WakuObservers.currentContentTopics.push(...newTopics);
-    const peers = await waku.libp2p.peerStore.all();
-    for (const peer of peers)
-      for (const subParam of subscriptionParams) {
-        const { decoder, callback } = subParam;
-        // @ts-ignore
-        const filterSubscription = await waku.filter.createSubscription(
-          WAKU_RAILGUN_PUB_SUB_TOPIC,
-          peer.id,
-        );
-        // @ts-ignore
-        const subscription = await filterSubscription.subscription.subscribe(
-          decoder,
-          callback,
-        );
-        this.currentSubscriptions = [];
-        const newParams = {
-          subscription,
-          params: subscriptionParams,
-        };
-        WakuObservers.currentSubscriptions?.push(newParams);
-      }
+    for (const params of subscriptionParams) {
+      const { decoder, callback } = params;
+      const subscription = await waku.filter.subscribeWithUnsubscribe(
+        decoder,
+        callback,
+      );
+      WakuObservers.currentSubscriptions?.push({
+        subscription,
+        params,
+      });
+    }
   }
 
   static getCurrentContentTopics(): string[] {
