@@ -23,7 +23,7 @@ const initialState: BroadcasterFeeCacheState = {
   forNetwork: {},
 };
 
-const chain = { id: 42161, type: 0 };
+const chain = MOCK_CHAIN_ETHEREUM;
 
 const tokenAddress = '0x1234567890';
 const cachedTokenFee: CachedTokenFee = {
