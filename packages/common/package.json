@@ -25,7 +25,7 @@
     "@waku/discovery": "0.0.5",
     "@waku/interfaces": "0.0.27",
     "@waku/message-hash": "0.1.16",
-    "@waku/proto": "^0.0.8",
+    "@waku/proto": "0.0.8",
     "@waku/sdk": "0.0.28",
     "@waku/utils": "0.0.20",
     "libp2p": "^1.8.1"
