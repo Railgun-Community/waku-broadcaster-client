@@ -249,41 +249,58 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   static async pollStatus() {
-    // Avoid stack overflow
-    while (true) {
-      BroadcasterDebug.log(
-        '********** Polling broadcaster status... **********',
-      );
+    const waku = WakuBroadcasterWakuCore.waku;
 
-      // Log the peers (use the same connectedPeers value used by waitForRemotePeer())
+    // Store all peers bootstrapped in so we can use peer id of first bootstrapped peer to dial
+    const connectedPeersLibp2p = await waku?.libp2p.peerStore.all();
+
+    // Avoid stack overflow by using a while loop
+    while (true) {
+      // Delay on each call
+      await delay(this.pollDelay);
+
+      BroadcasterDebug.log('********** Polling broadcaster status **********');
+
+      // Log the peers (same connectedPeers value used by waitForRemotePeer())
       const peers = WakuBroadcasterWakuCore.getFilterPeerCount();
       console.log(`Connected peers: ${peers}`);
 
       // Check that the waku instance is initialized
       if (!WakuBroadcasterWakuCore.waku) {
         BroadcasterDebug.log('No waku instance found in poller');
-
-        // Delay and try again
-        await delay(this.pollDelay);
         continue; // Restart the loop
       }
 
       // Check that a chain has been set in WakuObservers
       if (!WakuObservers.getCurrentChain()) {
         BroadcasterDebug.log('No current chain set in WakuObservers yet');
-
-        // Delay and try again
-        await delay(this.pollDelay);
         continue; // Restart the loop
       }
 
       // Check if loop has found no peers 10 times, if so wait for remote peer (hopefully sends some reconnect signal)
-      if (this.noPeersFoundCounter > 9) {
+      if (this.noPeersFoundCounter > 4) {
         BroadcasterDebug.log(
           'No peers found after 10 loops, waiting for remote peer...',
         );
 
         try {
+          BroadcasterDebug.log('Dialing Waku Railgun default peer...');
+          console.log(
+            'stored peer for dialing: ',
+            connectedPeersLibp2p ? connectedPeersLibp2p[0] : 'none',
+          );
+
+          if (connectedPeersLibp2p && connectedPeersLibp2p.length > 0) {
+            await waku?.dial(connectedPeersLibp2p[0].id, [
+              Protocols.Filter,
+              Protocols.LightPush,
+            ]);
+          } else {
+            BroadcasterDebug.log(
+              'No peers available to dial when poller kicked in',
+            );
+          }
+
           // If we get a peer, let the poller continue through the logic
           await waitForRemotePeer(
             WakuBroadcasterWakuCore.waku,
@@ -294,19 +311,19 @@ export class WakuBroadcasterClient {
           // If no peer after waiting, update the status and continue polling again
           BroadcasterDebug.log(`Error waiting for remote peer: ${err.message}`);
 
-          // Poller should see the status is hasError and callback the errored status
+          // Send hasError status to the poller so it shows no connected peers
           WakuBroadcasterWakuCore.hasError = true;
 
-          // Reset the counter
-          this.noPeersFoundCounter = 0;
+          // Don't reset the counter since we want to keep retrying until we get a peer
+          this.updateStatus();
 
-          // Delay and try again
-          this.updateStatus(); // if waitForRemotePeer() fails, this sees the .hasError status it sets
-          await delay(this.pollDelay);
+          // Will add just to show how many failures in logs
+          this.noPeersFoundCounter += 1;
+
           continue; // Restart the loop
         }
 
-        // Reset the counter
+        // Reset the counter if waitForRemotePeer() succeeds
         this.noPeersFoundCounter = 0;
       }
 

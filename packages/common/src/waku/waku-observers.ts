@@ -16,7 +16,6 @@ import {
 type SubscriptionParams = {
   decoder: IDecoder<any> | IDecoder<any>[]; // unique to each contentTopic
   callback: (message: any) => void; // unique to each contentTopic
-  pubsubSubscription: IFilterSubscription; // is the same for all topics when created using the same pubsub topic
 };
 
 export class WakuObservers {
@@ -179,7 +178,6 @@ export class WakuObservers {
       WakuObservers.currentSubscriptions.set(transportTopic, {
         decoder: decoder,
         callback: callback,
-        pubsubSubscription: pubsubSubscription,
       });
 
       BroadcasterDebug.log(`Subscribed to ${transportTopic}`);
@@ -223,7 +221,6 @@ export class WakuObservers {
 
         // Store the subscription
         WakuObservers.currentSubscriptions.set(preparedTopic.topic, {
-          pubsubSubscription: pubsubSubscription,
           decoder: decoder,
           callback: callback,
         });

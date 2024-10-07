@@ -247,6 +247,7 @@ export class BroadcasterTransaction {
       POLL_DELAY_SECONDS * 1000,
       pollIterations,
     );
+    console.log('response in broadcast()', response);
     if (isDefined(response)) {
       if (isDefined(response.txHash)) {
         BroadcasterTransactResponse.clearSharedKey();
