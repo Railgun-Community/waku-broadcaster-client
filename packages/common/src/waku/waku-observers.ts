@@ -23,7 +23,7 @@ type SubscriptionParams = {
 };
 
 type ActiveSubscription = {
-  subscription: Unsubscribe;
+  unsubscribe: Unsubscribe;
   params: SubscriptionParams;
 };
 
@@ -81,8 +81,8 @@ export class WakuObservers {
       return;
     }
     if (isDefined(this.currentSubscriptions)) {
-      for (const { subscription, params } of this.currentSubscriptions) {
-        await subscription();
+      for (const { unsubscribe } of this.currentSubscriptions) {
+        await unsubscribe();
       }
       this.currentSubscriptions = [];
       this.currentContentTopics = [];
@@ -157,12 +157,12 @@ export class WakuObservers {
       decoder,
       callback,
     };
-    const subscription = await waku.filter.subscribeWithUnsubscribe(
+    const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
       decoder,
       callback,
     );
     WakuObservers.currentSubscriptions?.push({
-      subscription,
+      unsubscribe,
       params,
     });
     WakuObservers.currentContentTopics.push(transportTopic);
@@ -184,12 +184,12 @@ export class WakuObservers {
     WakuObservers.currentContentTopics.push(...newTopics);
     for (const params of subscriptionParams) {
       const { decoder, callback } = params;
-      const subscription = await waku.filter.subscribeWithUnsubscribe(
+      const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
         decoder,
         callback,
       );
       WakuObservers.currentSubscriptions?.push({
-        subscription,
+        unsubscribe,
         params,
       });
     }
