@@ -170,7 +170,6 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    console.log(broadcasterFeeCacheStub.called);
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 
@@ -180,7 +179,6 @@ describe('handle-fees-message', () => {
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
-    console.log(broadcasterFeeCacheStub.called);
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 });
