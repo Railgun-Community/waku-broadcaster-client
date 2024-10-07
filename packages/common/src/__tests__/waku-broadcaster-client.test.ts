@@ -44,6 +44,10 @@ describe('waku-broadcaster-client', () => {
       chain,
       broadcasterOptions,
       statusCallback,
+      {
+        log: console.log,
+        error: console.error,
+      },
     );
 
     expect(currentChain).to.deep.equal(chain);
@@ -108,8 +112,8 @@ describe('waku-broadcaster-client', () => {
     const statusConnected = await poll(
       async () => currentStatus,
       status => status === BroadcasterConnectionStatus.Connected,
-      20,
-      20000 / 20, // 20 sec.
+      40,
+      40000 / 40, // 20 sec.
     );
     if (statusConnected !== BroadcasterConnectionStatus.Connected) {
       throw new Error(
@@ -123,15 +127,15 @@ describe('waku-broadcaster-client', () => {
 
     await WakuBroadcasterClient.setChain(MOCK_CHAIN_GOERLI);
     expect(WakuBroadcasterClient.getContentTopics()).to.deep.equal([
-      '/railgun/v2/0/5/fees/json',
-      '/railgun/v2/0/5/transact-response/json',
+      '/railgun/v2/0-5-fees/json',
+      '/railgun/v2/0-5-transact-response/json',
     ]);
   }).timeout(90000);
 
   describe('addTransportSubscription', () => {
     it('should add a transport subscription', async () => {
       const waku: LightNode = {} as LightNode; // Mock LightNode object
-      const topic = '/test-topic';
+      const topic = 'test-topic';
       const callback = (message: any) => {
         // Mock callback function
       };
