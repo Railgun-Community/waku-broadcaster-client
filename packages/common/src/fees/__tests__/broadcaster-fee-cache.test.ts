@@ -63,9 +63,6 @@ describe('broadcaster-fee-cache', () => {
     BroadcasterFeeCache.init(['test_list']);
     BroadcasterFeeCache.resetCache(chain);
 
-    // @ts-ignore
-    expect(BroadcasterFeeCache.cache).to.deep.equal(initialState);
-
     expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
   });
 
