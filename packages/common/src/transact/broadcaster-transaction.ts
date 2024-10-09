@@ -16,13 +16,15 @@ import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { contentTopics } from '../waku/waku-topics.js';
 import {
   WakuTransactResponse,
   BroadcasterTransactResponse,
 } from './broadcaster-transact-response.js';
 import { getAddress, isHexString } from 'ethers';
+import { WakuBroadcasterClient, WakuMode } from '../waku-broadcaster-client.js';
+import { WakuLightNodeCore } from '../waku/waku-node/waku-light/waku-light-core.js';
+import { WakuRelayNodeCore } from '../waku/waku-node/waku-relay/waku-relay-core.js';
 
 //
 // Transact: Encryption Flow
@@ -223,10 +225,17 @@ export class BroadcasterTransaction {
         BroadcasterDebug.log(
           `Broadcast Waku message: ${this.messageData.method} via ${this.contentTopic}`,
         );
-        await WakuBroadcasterWakuCore.broadcastMessage(
-          this.messageData,
-          this.contentTopic,
-        );
+
+        // Get broadcastMessage function being used
+        WakuBroadcasterClient.wakuMode === WakuMode.Light
+          ? await WakuLightNodeCore.broadcastMessage(
+              this.messageData,
+              this.contentTopic,
+            )
+          : await WakuRelayNodeCore.broadcastMessage(
+              this.messageData,
+              this.contentTopic,
+            );
         break;
       case BroadcastRetryState.Wait:
         // 21-60 seconds.

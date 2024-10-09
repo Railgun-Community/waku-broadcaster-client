@@ -48,6 +48,7 @@ export class BroadcasterFeeCache {
   ) {
     const network = networkForChain(chain);
     if (!network) {
+      BroadcasterDebug.log(`No network found in addTokenFees: ${chain.id}`);
       return;
     }
 
@@ -82,11 +83,13 @@ export class BroadcasterFeeCache {
       return;
     }
 
+    // Update token fees
     const tokenAddresses = Object.keys(tokenFeeMap);
     BroadcasterDebug.log(
       `[Fees] Updating fees for ${networkName} (${broadcasterName}): ${tokenAddresses.length} tokens`,
     );
 
+    // Initialize cache if necessary
     this.cache.forNetwork[networkName] ??= { forToken: {} };
 
     const tokenAddressesLowercase = tokenAddresses.map(address =>
@@ -110,6 +113,7 @@ export class BroadcasterFeeCache {
   static resetCache(chain: Chain) {
     const network = networkForChain(chain);
     if (!network) {
+      BroadcasterDebug.log(`No network found in resetCache: ${chain.id}`);
       return;
     }
     this.cache.forNetwork ??= {};

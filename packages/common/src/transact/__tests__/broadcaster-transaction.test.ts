@@ -1,12 +1,11 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  MOCK_CHAIN_ETHEREUM,
-  MOCK_FALLBACK_PROVIDER_JSON_CONFIG,
+  MOCK_FALLBACK_PROVIDER_JSON_CONFIG_ETHEREUM,
   MOCK_RAILGUN_WALLET_ADDRESS,
+  MOCK_CHAIN,
 } from '../../tests/mocks.test.js';
 import sinon, { SinonStub } from 'sinon';
-import { WakuBroadcasterWakuCore } from '../../waku/waku-broadcaster-waku-core.js';
 import { BroadcasterTransaction } from '../broadcaster-transaction.js';
 import {
   TXIDVersion,
@@ -22,13 +21,19 @@ import {
   stopRailgunEngine,
   unloadProvider,
 } from '@railgun-community/wallet';
+import { WakuLightNodeCore } from '../../waku/waku-node/waku-light/waku-light-core.js';
+import { WakuRelayNodeCore } from '../../waku/waku-node/waku-relay/waku-relay-core.js';
+import {
+  WakuBroadcasterClient,
+  WakuMode,
+} from '../../waku-broadcaster-client.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
 let wakuBroadcastMessageStub: SinonStub;
 
-const chain = MOCK_CHAIN_ETHEREUM;
+const chain = MOCK_CHAIN;
 
 const MOCK_TX_HASH = 'txid';
 
@@ -49,11 +54,10 @@ describe('broadcaster-transaction', () => {
     if (network == null) {
       throw new Error('Network is null');
     }
-    await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
-
-    wakuBroadcastMessageStub = sinon
-      .stub(WakuBroadcasterWakuCore, 'broadcastMessage')
-      .resolves();
+    await loadProvider(
+      MOCK_FALLBACK_PROVIDER_JSON_CONFIG_ETHEREUM,
+      network.name,
+    );
   });
 
   afterEach(() => {
@@ -61,12 +65,21 @@ describe('broadcaster-transaction', () => {
   });
 
   after(async () => {
-    wakuBroadcastMessageStub.restore();
+    sinon.restore();
     await unloadProvider(networkForChain(chain)!.name);
     stopRailgunEngine();
   });
 
   it('Should generate and relay a Broadcaster transaction', async () => {
+    wakuBroadcastMessageStub = sinon
+      .stub(
+        WakuBroadcasterClient.wakuMode === WakuMode.Light
+          ? WakuLightNodeCore
+          : WakuRelayNodeCore,
+        'broadcastMessage',
+      )
+      .resolves();
+
     const broadcasterRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
     const broadcasterFeesID = 'abc';
     const nullifiers = ['0x012345'];

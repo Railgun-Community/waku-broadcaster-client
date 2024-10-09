@@ -3,21 +3,29 @@ const Path = require('path');
 
 function copyDirectoryWithLinks(src, dst) {
   if (!FS.existsSync(dst)) {
-    FS.mkdirSync(dst);
+    FS.mkdirSync(dst, { recursive: true });
   }
   for (const file of FS.readdirSync(src)) {
     const srcPath = Path.join(src, file);
     const dstPath = Path.join(dst, file);
 
     if (FS.lstatSync(srcPath).isDirectory()) {
-      if (!FS.existsSync(dstPath)) {
-        FS.mkdirSync(dstPath);
-      }
       copyDirectoryWithLinks(srcPath, dstPath);
-    } else if (FS.existsSync(dstPath)) {
-      continue;
+    } else if (FS.lstatSync(srcPath).isSymbolicLink()) {
+      const linkTarget = FS.readlinkSync(srcPath);
+      try {
+        FS.symlinkSync(linkTarget, dstPath);
+      } catch (err) {
+        if (err.code === 'EEXIST') {
+          // If the symlink already exists, remove it and create a new one
+          FS.unlinkSync(dstPath);
+          FS.symlinkSync(linkTarget, dstPath);
+        } else {
+          throw err;
+        }
+      }
     } else {
-      FS.symlinkSync(srcPath, dstPath);
+      FS.copyFileSync(srcPath, dstPath);
     }
   }
 }

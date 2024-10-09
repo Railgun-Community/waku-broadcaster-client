@@ -1,8 +1,8 @@
 import {
+  BroadcasterConnectionStatus,
   Chain,
   delay,
   POI_REQUIRED_LISTS,
-  BroadcasterConnectionStatus,
   SelectedBroadcaster,
 } from '@railgun-community/shared-models';
 import { BroadcasterFeeCache } from './fees/broadcaster-fee-cache.js';
@@ -15,18 +15,29 @@ import {
 import { BroadcasterSearch } from './search/best-broadcaster.js';
 import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
-import { WakuObservers } from './waku/waku-observers.js';
-import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import type { LightNode } from '@waku/interfaces';
 import { contentTopics } from './waku/waku-topics.js';
+import { LightNode, RelayNode } from '@waku/sdk';
+import { WakuLightNodeCore } from './waku/waku-node/waku-light/waku-light-core.js';
+import { WakuRelayNodeCore } from './waku/waku-node/waku-relay/waku-relay-core.js';
+import { WakuLightSubscriptions } from './waku/waku-node/waku-light/waku-light-subscriptions.js';
+import { WakuRelaySubscriptions } from './waku/waku-node/waku-relay/waku-relay-subscriptions.js';
+
+// Use Light or Relay node for Waku connection
+export enum WakuMode {
+  Light = 'light',
+  Relay = 'relay',
+}
 
 export class WakuBroadcasterClient {
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
-  private static isRestarting = false;
+  private static polling = false;
+  static wakuMode: WakuMode = WakuMode.Light;
+  private static pollCount = 0;
 
   static pollDelay = 3000;
+  static maxLightNodePolls = 5; // Revert to relay node if light node is not connecting
 
   static async start(
     chain: Chain,
@@ -34,27 +45,44 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
-    this.chain = chain;
-    this.statusCallback = statusCallback;
-
-    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
-
     if (broadcasterDebugger) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
+    BroadcasterDebug.log('Starting Waku...');
+
+    // Store chain and status callback
+    this.chain = chain;
+    this.statusCallback = statusCallback;
+
+    BroadcasterDebug.log('Setting broadcaster options...');
+    WakuLightNodeCore.setBroadcasterOptions(broadcasterOptions);
+    WakuRelayNodeCore.setBroadcasterOptions(broadcasterOptions);
+
+    BroadcasterDebug.log('Initializing BroadcasterFeeCache...');
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
     );
 
-    try {
-      this.started = false;
-      await WakuBroadcasterWakuCore.initWaku(chain);
-      this.started = true;
+    BroadcasterDebug.log('Initializing waku...');
+    await this.initializeWaku(chain);
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.pollStatus();
+    BroadcasterDebug.log('~ Waku Broadcaster Client start() has completed ~');
+  }
+
+  /**
+   * Initialize the waku client
+   *
+   * @param chain - The chain to connect to
+   */
+  private static async initializeWaku(chain: Chain): Promise<void> {
+    try {
+      if (this.wakuMode === WakuMode.Light) {
+        await this.initializeWakuLightNode(chain);
+      } else {
+        await this.initializeWakuRelayNode(chain);
+      }
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -62,65 +90,166 @@ export class WakuBroadcasterClient {
       throw new Error('Cannot connect to Broadcaster network.', { cause });
     }
   }
-  private static peerRetryCount = 0;
-  private static pollConnection = async () => {
-    const peerCount = WakuBroadcasterWakuCore.getMeshPeerCount();
-    if (peerCount < 1) {
-      if (this.peerRetryCount >= 2) {
-        this.peerRetryCount = 0;
-        await this.restart();
+
+  /**
+   * Start keep-alive poller which keeps connection status updated.
+   * It assumes Waku handles reconnections automatically.
+   *
+   * Retries init if initial connection fails.
+   * This function should be used for keeping connection alive if needed.
+   *
+   * @returns void
+   */
+  static async pollStatus(): Promise<void> {
+    this.polling = true;
+
+    while (this.polling) {
+      BroadcasterDebug.log('Polling status...');
+
+      const status = this.updateStatusCallback();
+      BroadcasterDebug.log('Status updated.');
+
+      if (status === BroadcasterConnectionStatus.Searching) {
+        this.pollCount++;
+        BroadcasterDebug.log(`Status searching: ${this.pollCount} times`);
+
+        if (
+          this.pollCount >= this.maxLightNodePolls &&
+          this.wakuMode === WakuMode.Light
+        ) {
+          BroadcasterDebug.log(
+            'Light node failed to connect after max polls, switching to relay node...',
+          );
+          this.wakuMode = WakuMode.Relay;
+          await this.switchToRelayNode();
+          this.pollCount = 0;
+        }
       } else {
-        this.peerRetryCount += 1;
+        this.pollCount = 0;
       }
-    } else {
-      this.peerRetryCount = 0;
+
+      if (status === BroadcasterConnectionStatus.Error) {
+        if (
+          this.wakuMode === WakuMode.Light
+            ? WakuLightNodeCore.connectFailed
+            : WakuRelayNodeCore.connectFailed
+        ) {
+          BroadcasterDebug.log(
+            'Reinitializing Waku after connection failure...',
+          );
+          await this.initializeWaku(this.chain);
+        }
+      }
+
+      await delay(WakuBroadcasterClient.pollDelay);
     }
-    await delay(WakuBroadcasterClient.pollDelay);
-    this.pollConnection();
-  };
+  }
 
-  static async stop() {
-    await WakuBroadcasterWakuCore.disconnect();
+  private static async switchToRelayNode(): Promise<void> {
+    await WakuLightNodeCore.disconnect();
+    WakuLightSubscriptions.resetCurrentChain();
+    await this.initializeWakuRelayNode(this.chain);
+  }
+
+  private static async initializeWakuLightNode(chain: Chain): Promise<void> {
+    try {
+      this.started = false;
+      await WakuLightNodeCore.initWaku(chain);
+      this.started = true;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
+      }
+      throw new Error('Cannot connect to Broadcaster network.', { cause });
+    }
+  }
+
+  private static async initializeWakuRelayNode(chain: Chain): Promise<void> {
+    try {
+      this.started = false;
+      await WakuRelayNodeCore.initWaku(chain);
+      this.started = true;
+    } catch (cause) {
+      if (!(cause instanceof Error)) {
+        throw new Error('Unexpected non-error thrown', { cause });
+      }
+      throw new Error('Cannot connect to Broadcaster network.', { cause });
+    }
+  }
+
+  /**
+   * Allow for stopping the Waku broadcaster client.
+   */
+  static async stop(): Promise<{
+    chain: Chain;
+    broadcasterOptions: BroadcasterOptions;
+  }> {
+    BroadcasterDebug.log('Stopping Waku...');
+
+    if (this.wakuMode === WakuMode.Light) {
+      await WakuLightNodeCore.disconnect();
+    } else {
+      await WakuRelayNodeCore.disconnect();
+    }
+
     this.started = false;
-    this.updateStatus();
+    this.polling = false;
+    BroadcasterDebug.log('Waku stopped.');
+
+    const broadcasterOptions =
+      this.wakuMode === WakuMode.Light
+        ? WakuLightNodeCore.getBroadcasterOptions()
+        : WakuRelayNodeCore.getBroadcasterOptions();
+
+    return {
+      chain: this.chain,
+      broadcasterOptions,
+    };
   }
 
-  static isStarted() {
-    return this.started;
-  }
-
-  static async setChain(chain: Chain): Promise<void> {
+  static async updateChain(chain: Chain): Promise<void> {
     if (!WakuBroadcasterClient.started) {
+      BroadcasterDebug.log('Waku not started in updateChain()');
       return;
     }
 
+    BroadcasterDebug.log(`Setting chain to ${chain.id}`);
     WakuBroadcasterClient.chain = chain;
-    await WakuObservers.setObserversForChain(
-      WakuBroadcasterWakuCore.waku,
-      chain,
-    );
-    WakuBroadcasterClient.updateStatus();
+
+    const waku = this.getWakuCore();
+    if (this.wakuMode === WakuMode.Light) {
+      await WakuLightSubscriptions.createSubscriptionsForChain(
+        waku as LightNode,
+        chain,
+      );
+    } else {
+      await WakuRelaySubscriptions.createSubscriptionsForChain(
+        waku as RelayNode,
+        chain,
+      );
+    }
+
+    WakuBroadcasterClient.updateStatusCallback();
   }
 
   static getContentTopics(): string[] {
-    return WakuObservers.getCurrentContentTopics();
-  }
-
-  static getMeshPeerCount(): number {
-    return WakuBroadcasterWakuCore.getMeshPeerCount();
-  }
-
-  static getPubSubPeerCount(): number {
-    return WakuBroadcasterWakuCore.getPubSubPeerCount();
+    return this.wakuMode === WakuMode.Light
+      ? WakuLightSubscriptions.getCurrentContentTopics()
+      : WakuRelaySubscriptions.getCurrentContentTopics();
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getLightPushPeerCount();
+    return this.wakuMode === WakuMode.Light
+      ? await WakuLightNodeCore.getLightPushPeerCount()
+      : await WakuRelayNodeCore.getLightPushPeerCount();
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getFilterPeerCount();
+    return this.wakuMode === WakuMode.Light
+      ? await WakuLightNodeCore.getFilterPeerCount()
+      : await WakuRelayNodeCore.getFilterPeerCount();
   }
+
   /**
    * The function `findBestBroadcaster` finds the broadcaster with the lowest fees for a given chain and token.
    * @param {Chain} chain - The `chain` parameter is a Chain object that represents the network to find a broadcaster for.
@@ -224,6 +353,12 @@ export class WakuBroadcasterClient {
     );
   }
 
+  /**
+   * Sets the allowlist and blocklist for pre-broadcast checks.
+   *
+   * @param allowlist
+   * @param blocklist
+   */
   static setAddressFilters(
     allowlist: Optional<string[]>,
     blocklist: Optional<string[]>,
@@ -232,19 +367,19 @@ export class WakuBroadcasterClient {
     AddressFilter.setBlocklist(blocklist);
   }
 
-  static async tryReconnect(): Promise<void> {
-    // Reset fees, which will reset status to "Searching".
-    BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
-    WakuBroadcasterClient.updateStatus();
-
-    await WakuBroadcasterClient.restart();
-  }
-
+  /**
+   * Checks if a token is supported by the broadcaster using the fee topic message recieved.
+   *
+   * @param chain
+   * @param tokenAddress
+   * @param useRelayAdapt
+   * @returns boolean
+   */
   static supportsToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ) {
+  ): boolean {
     return BroadcasterFeeCache.supportsToken(
       chain,
       tokenAddress,
@@ -252,73 +387,50 @@ export class WakuBroadcasterClient {
     );
   }
 
-  private static async restart(): Promise<void> {
-    if (this.isRestarting || !this.started) {
-      return;
-    }
-    this.isRestarting = true;
-    try {
-      BroadcasterDebug.log('Restarting Waku...');
-      await WakuBroadcasterWakuCore.reinitWaku(this.chain);
-      this.isRestarting = false;
-    } catch (cause) {
-      this.isRestarting = false;
-      if (!(cause instanceof Error)) {
-        return;
-      }
-      BroadcasterDebug.error(
-        new Error('Error reinitializing Waku Broadcaster Client', { cause }),
-      );
-    }
-  }
-
-  /**
-   * Start keep-alive poller which checks Broadcaster status every few seconds.
-   */
-  private static async pollStatus(): Promise<void> {
-    if (!this.isRestarting) {
-      this.updateStatus();
-    } else {
-      this.updateStatus();
-    }
-    await delay(WakuBroadcasterClient.pollDelay);
-
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
-  }
-
-  private static updateStatus() {
+  private static updateStatusCallback(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
+    BroadcasterDebug.log(
+      `Status updated: ${status} for chain ${this.chain.id}`,
+    );
     this.statusCallback(this.chain, status);
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.restart();
-    }
+
+    return status;
   }
 
   // Waku Transport functions
   static async addTransportSubscription(
-    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
-    await WakuObservers.addTransportSubscription(
-      WakuBroadcasterWakuCore.waku,
-      topic,
-      callback,
-    );
+    const waku = this.getWakuCore();
+    if (this.wakuMode === WakuMode.Light) {
+      await WakuLightSubscriptions.addTransportSubscription(
+        waku as LightNode,
+        topic,
+        callback,
+      );
+    } else {
+      await WakuRelaySubscriptions.addTransportSubscription(
+        waku as RelayNode,
+        topic,
+        callback,
+      );
+    }
   }
 
   static sendTransport(data: object, topic: string): void {
     const customTopic = contentTopics.encrypted(topic);
-    WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
+    if (this.wakuMode === WakuMode.Light) {
+      WakuLightNodeCore.broadcastMessage(data, customTopic);
+    } else {
+      WakuRelayNodeCore.broadcastMessage(data, customTopic);
+    }
   }
 
-  static getWakuCore(): Optional<LightNode> {
-    return WakuBroadcasterWakuCore.waku;
+  private static getWakuCore(): Optional<LightNode | RelayNode> {
+    return this.wakuMode === WakuMode.Light
+      ? WakuLightNodeCore.waku
+      : WakuRelayNodeCore.waku;
   }
 }

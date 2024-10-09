@@ -1,19 +1,16 @@
 /// <reference types="../../types/index.js" />
-import {
-  CachedTokenFee,
-  type SelectedBroadcaster,
-} from '@railgun-community/shared-models';
+import { CachedTokenFee } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  MOCK_CHAIN_ETHEREUM,
-  MOCK_CHAIN_GOERLI,
+  MOCK_CHAIN,
+  MOCK_CHAIN_SEPOLIA,
+  MOCK_TOKEN,
 } from '../../tests/mocks.test.js';
 import {
   BroadcasterFeeCache,
   BroadcasterFeeCacheState,
 } from '../broadcaster-fee-cache.js';
-
 import { BroadcasterSearch } from '../../search/best-broadcaster.js';
 
 chai.use(chaiAsPromised);
@@ -23,9 +20,7 @@ const initialState: BroadcasterFeeCacheState = {
   forNetwork: {},
 };
 
-const chain = MOCK_CHAIN_ETHEREUM;
-
-const tokenAddress = '0x1234567890';
+const tokenAddress = MOCK_TOKEN;
 const cachedTokenFee: CachedTokenFee = {
   feePerUnitGas: '0x01',
   expiration: 10000,
@@ -59,21 +54,27 @@ const identifier = 'abc';
 const feeExpiration = Date.now() + 10000000;
 
 describe('broadcaster-fee-cache', () => {
+  beforeEach(() => {
+    BroadcasterFeeCache.resetCache(MOCK_CHAIN);
+  });
+
+  after(() => {
+    BroadcasterFeeCache.resetCache(MOCK_CHAIN);
+  });
+
   it('Should return broadcaster-fee-cache initial state', () => {
     BroadcasterFeeCache.init(['test_list']);
-    BroadcasterFeeCache.resetCache(chain);
 
+    // NOTE: cache is private so this is a hack to compare it
     // @ts-ignore
     expect(BroadcasterFeeCache.cache).to.deep.equal(initialState);
 
-    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(MOCK_CHAIN)).to.equal(undefined);
   });
 
   it('Should not update broadcaster fees for bad broadcaster versions', () => {
-    BroadcasterFeeCache.resetCache(chain);
-
     BroadcasterFeeCache.addTokenFees(
-      chain,
+      MOCK_CHAIN,
       railgunAddress,
       feeExpiration,
       tokenFeeMap,
@@ -83,7 +84,7 @@ describe('broadcaster-fee-cache', () => {
     );
 
     BroadcasterFeeCache.addTokenFees(
-      chain,
+      MOCK_CHAIN,
       railgunAddress,
       feeExpiration,
       tokenFeeMap,
@@ -92,14 +93,12 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(MOCK_CHAIN)).to.equal(undefined);
   });
 
-  it('Should not update broadcaster fees for incorrect chain', () => {
-    BroadcasterFeeCache.resetCache(chain);
-
+  it('Should not update broadcaster fees for incorrect MOCK_CHAIN', () => {
     BroadcasterFeeCache.addTokenFees(
-      { ...MOCK_CHAIN_ETHEREUM, id: 2 },
+      { id: 11115555, type: 0 }, // Sepolia
       railgunAddress,
       feeExpiration,
       tokenFeeMap,
@@ -108,14 +107,12 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(MOCK_CHAIN)).to.equal(undefined);
   });
 
   it('Should not update broadcaster fees for invalid list keys', () => {
-    BroadcasterFeeCache.resetCache(chain);
-
     BroadcasterFeeCache.addTokenFees(
-      chain,
+      MOCK_CHAIN,
       railgunAddress,
       feeExpiration,
       tokenFeeMap,
@@ -124,14 +121,12 @@ describe('broadcaster-fee-cache', () => {
       ['test_list_INVALID'],
     );
 
-    expect(BroadcasterFeeCache.feesForChain(chain)).to.equal(undefined);
+    expect(BroadcasterFeeCache.feesForChain(MOCK_CHAIN)).to.equal(undefined);
   });
 
-  it('Should update broadcaster fees for chain', () => {
-    BroadcasterFeeCache.resetCache(chain);
-
+  it('Should update broadcaster fees for MOCK_CHAIN', () => {
     BroadcasterFeeCache.addTokenFees(
-      chain,
+      MOCK_CHAIN,
       railgunAddress,
       feeExpiration,
       tokenFeeMap,
@@ -140,7 +135,7 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
 
-    expect(BroadcasterFeeCache.feesForChain(chain)).to.deep.equal({
+    expect(BroadcasterFeeCache.feesForChain(MOCK_CHAIN)).to.deep.equal({
       forToken: {
         [tokenAddress]: {
           forBroadcaster: {
@@ -154,10 +149,12 @@ describe('broadcaster-fee-cache', () => {
   });
 
   it('Should sort broadcasters by reliability', () => {
-    const mockChain = MOCK_CHAIN_GOERLI;
-    BroadcasterFeeCache.resetCache(mockChain);
+    // NOTE: Different chain used here because when start test fails, this also seems to fail
+    // Something is linked between the 2 tests and not clearing if same chain is used
+    const sepolia = MOCK_CHAIN_SEPOLIA;
+
     BroadcasterFeeCache.addTokenFees(
-      mockChain,
+      sepolia,
       railgunAddress,
       feeExpiration,
       tokenFeeMap2,
@@ -166,7 +163,7 @@ describe('broadcaster-fee-cache', () => {
       ['test_list'],
     );
     BroadcasterFeeCache.addTokenFees(
-      mockChain,
+      sepolia,
       railgunAddress2,
       feeExpiration,
       tokenFeeMap3,
@@ -176,7 +173,7 @@ describe('broadcaster-fee-cache', () => {
     );
 
     const broadcasters = BroadcasterSearch.findAllBroadcastersForChain(
-      mockChain,
+      sepolia,
       false,
     );
 

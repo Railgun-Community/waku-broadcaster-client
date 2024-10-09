@@ -84,6 +84,7 @@ export class BroadcasterSearch {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
     if (!isDefined(broadcasterTokenFees)) {
+      BroadcasterDebug.log(`No broadcaster fees found for chain ${chain.id}`);
       return undefined;
     }
     const allTokens = Object.keys(broadcasterTokenFees);
@@ -95,6 +96,7 @@ export class BroadcasterSearch {
         useRelayAdapt,
       );
       if (!broadcastersForToken) {
+        BroadcasterDebug.log(`No broadcasters found for token ${tokenAddress}`);
         return;
       }
       selectedBroadcasters.push(...broadcastersForToken);
