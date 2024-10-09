@@ -9,10 +9,10 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonStub } from 'sinon';
 import {
-  MOCK_CHAIN_ETHEREUM,
   MOCK_DB_ENCRYPTION_KEY,
   MOCK_MNEMONIC,
   MOCK_MNEMONIC_2,
+  MOCK_CHAIN,
 } from '../../tests/mocks.test.js';
 import { initTestEngine } from '../../tests/setup.test.js';
 import { utf8ToBytes } from '../../utils/conversion.js';
@@ -23,13 +23,11 @@ import { BroadcasterFeeCache } from '../broadcaster-fee-cache.js';
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const chain = MOCK_CHAIN_ETHEREUM;
+const chain = MOCK_CHAIN;
 const contentTopic = contentTopics.fees(chain);
 
-const validTimestamp = new Date();
-const invalidTimestamp = new Date(Date.now() - 46 * 1000); // 46 seconds ago.
 const fees = { '0x1234': '0x9999' };
-const validExpiration = Date.now() + 1000000;
+const validTimestamp = new Date('2024-10-15T23:45:00.000Z');
 const feesID = 'abc';
 const identifier = 'ID1';
 const availableWallets = 2;
@@ -59,7 +57,11 @@ const createPayload = async (
 };
 
 describe('handle-fees-message', () => {
-  before(async () => {
+  let clock: sinon.SinonFakeTimers;
+
+  beforeEach(async () => {
+    clock = sinon.useFakeTimers(new Date('2024-10-15T23:45:00.000Z').getTime());
+
     await initTestEngine();
 
     broadcasterFeeCacheStub = sinon
@@ -82,7 +84,7 @@ describe('handle-fees-message', () => {
 
     validFeeMessageData = {
       fees,
-      feeExpiration: validExpiration,
+      feeExpiration: new Date('2024-10-16T00:01:44.982Z').getTime(),
       feesID,
       railgunAddress: walletA.getAddress(),
       identifier,
@@ -94,12 +96,14 @@ describe('handle-fees-message', () => {
     };
   });
 
-  afterEach(() => {
+  beforeEach(() => {
     broadcasterFeeCacheStub.resetHistory();
   });
 
-  after(() => {
-    broadcasterFeeCacheStub.restore();
+  afterEach(() => {
+    clock.restore();
+    broadcasterFeeCacheStub.resetHistory();
+    sinon.restore();
   });
 
   it('Should not cache fees with invalid signature', async () => {
@@ -138,6 +142,7 @@ describe('handle-fees-message', () => {
   });
 
   it('Should not cache fees with invalid timestamp', async () => {
+    const invalidTimestamp = new Date('2024-10-15T23:44:14.982Z'); // 46 seconds ago
     const message: IMessage = {
       payload: await createPayload(validFeeMessageData, walletA),
       timestamp: invalidTimestamp,
@@ -164,12 +169,15 @@ describe('handle-fees-message', () => {
   });
 
   it('Should cache fees with valid fields and signature', async () => {
+    // Create mock message to be received by handleBroadcasterFeesMessage
     const message: IMessage = {
       payload: await createPayload(validFeeMessageData, walletA),
       timestamp: validTimestamp,
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
+
+    // Ensure addTokenFees was called once
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 

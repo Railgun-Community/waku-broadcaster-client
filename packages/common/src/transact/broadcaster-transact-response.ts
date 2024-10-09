@@ -1,8 +1,8 @@
 import { decryptAESGCM256 } from '@railgun-community/wallet';
-import { IMessage } from '@waku/interfaces';
 import { bytesToUtf8 } from '../utils/conversion.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
+import { IMessage } from '@waku/sdk';
 
 export type WakuTransactResponse = {
   id: string;
@@ -27,9 +27,11 @@ export class BroadcasterTransactResponse {
   static async handleBroadcasterTransactionResponseMessage(message: IMessage) {
     BroadcasterDebug.log('Transact Response received.');
     if (!BroadcasterTransactResponse.sharedKey) {
+      BroadcasterDebug.log('No shared key set for transact response.');
       return;
     }
     if (!isDefined(message.payload)) {
+      BroadcasterDebug.log('No payload in transact response message.');
       return;
     }
     try {
@@ -44,6 +46,7 @@ export class BroadcasterTransactResponse {
         BroadcasterTransactResponse.sharedKey,
       );
       if (decrypted == null) {
+        BroadcasterDebug.log('Could not decrypt transact response message.');
         return;
       }
 

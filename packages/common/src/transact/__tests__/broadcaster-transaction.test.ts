@@ -1,9 +1,9 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  MOCK_CHAIN_ETHEREUM,
-  MOCK_FALLBACK_PROVIDER_JSON_CONFIG,
+  MOCK_FALLBACK_PROVIDER_JSON_CONFIG_ETHEREUM,
   MOCK_RAILGUN_WALLET_ADDRESS,
+  MOCK_CHAIN,
 } from '../../tests/mocks.test.js';
 import sinon, { SinonStub } from 'sinon';
 import { WakuBroadcasterWakuCore } from '../../waku/waku-broadcaster-waku-core.js';
@@ -28,7 +28,7 @@ const { expect } = chai;
 
 let wakuBroadcastMessageStub: SinonStub;
 
-const chain = MOCK_CHAIN_ETHEREUM;
+const chain = MOCK_CHAIN;
 
 const MOCK_TX_HASH = 'txid';
 
@@ -49,7 +49,10 @@ describe('broadcaster-transaction', () => {
     if (network == null) {
       throw new Error('Network is null');
     }
-    await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
+    await loadProvider(
+      MOCK_FALLBACK_PROVIDER_JSON_CONFIG_ETHEREUM,
+      network.name,
+    );
 
     wakuBroadcastMessageStub = sinon
       .stub(WakuBroadcasterWakuCore, 'broadcastMessage')
@@ -61,7 +64,7 @@ describe('broadcaster-transaction', () => {
   });
 
   after(async () => {
-    wakuBroadcastMessageStub.restore();
+    sinon.restore();
     await unloadProvider(networkForChain(chain)!.name);
     stopRailgunEngine();
   });
