@@ -63,8 +63,7 @@ export class WakuObservers {
 
   static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
     BroadcasterDebug.log(
-      // @ts-ignore
-      `WAKU Health Status: ${waku?.health.health.overallStatus}`,
+      `WAKU Health Status: ${waku?.health.getHealthStatus()}`,
     );
     if (isDefined(WakuObservers.currentSubscriptions)) {
       if (WakuObservers.currentSubscriptions.length === 0) {
