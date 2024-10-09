@@ -14,8 +14,6 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARDS,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
-import { wakuDnsDiscovery } from '@waku/discovery';
-import type { Libp2pOptions } from 'libp2p';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
