@@ -24,6 +24,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
+    "@libp2p/tcp": "10.0.7",
     "@waku/proto": "0.0.8",
     "@waku/sdk": "0.0.28",
     "patch-package": "^8.0.0"
