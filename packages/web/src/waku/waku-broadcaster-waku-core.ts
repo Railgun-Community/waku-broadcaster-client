@@ -1,7 +1,7 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
 import { Protocols, IMessage, LightNode } from '@waku/interfaces';
-import { WakuObservers } from './waku-observers.js';
+import { WakuSubscriptions } from './waku-subscriptions.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
@@ -9,32 +9,38 @@ import { createLightNode } from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
-  WAKU_RAILGUN_PUB_SUB_TOPIC,
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_DEFAULT_SHARDS,
 } from '../models/constants.js';
-import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
-import { wakuDnsDiscovery } from '@waku/discovery';
-import type { Libp2pOptions } from 'libp2p';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
 
+  // NOTE: Subscriptions should only subscribe from this instance
+  //... for example: waku.filter.subscribe, not subscription.subscribe
+  // This prevents subscriptions having subscriptions themselves
   static waku: Optional<LightNode>;
-  private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
+
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
+      // Create waku instance with bootstrap peers
       await WakuBroadcasterWakuCore.connect();
+
+      // Check if waku instance is created
       if (!WakuBroadcasterWakuCore.waku) {
-        BroadcasterDebug.log('No waku instance found');
+        BroadcasterDebug.log('No waku instance found in initWaku()');
         return;
       }
-      WakuObservers.resetCurrentChain();
-      await WakuObservers.setObserversForChain(
+
+      // TODO why is this here, why reset chain if init occurs one time
+      // WakuSubscriptions.resetCurrentChain();
+
+      // Create initial subscriptions for the chain
+      await WakuSubscriptions.createSubscriptionsForChain(
         WakuBroadcasterWakuCore.waku,
         chain,
       );
@@ -47,23 +53,7 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static reinitWaku = async (chain: Chain) => {
-    if (
-      isDefined(WakuBroadcasterWakuCore.waku) &&
-      WakuBroadcasterWakuCore.waku.isStarted()
-    ) {
-      // Reset fees, which will reset status to "Searching".
-      await WakuBroadcasterWakuCore.disconnect();
-    }
-
-    BroadcasterFeeCache.resetCache(chain);
-    await WakuBroadcasterWakuCore.initWaku(chain);
-  };
-
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
-    if (isDefined(broadcasterOptions.pubSubTopic)) {
-      WakuBroadcasterWakuCore.pubSubTopic = broadcasterOptions.pubSubTopic;
-    }
     if (broadcasterOptions.additionalDirectPeers) {
       WakuBroadcasterWakuCore.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
@@ -85,29 +75,30 @@ export class WakuBroadcasterWakuCore {
 
       BroadcasterDebug.log(`Creating waku broadcast client`);
 
+      // Get default bootstrap peers
       const bootstrapPeers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
 
+      // Create the Waku instance
       const waku = await createLightNode({
         bootstrapPeers,
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
       });
 
-      BroadcasterDebug.log('Start Waku.');
+      BroadcasterDebug.log('Starting Waku');
       await waku.start();
 
-      BroadcasterDebug.log('Waiting for remote peer.');
-      await this.waitForRemotePeer(waku);
+      BroadcasterDebug.log('Waiting for remote peer');
+      await waitForRemotePeer(
+        waku,
+        [Protocols.LightPush, Protocols.Filter],
+        WakuBroadcasterWakuCore.peerDiscoveryTimeout,
+      );
 
       if (!isDefined(waku.lightPush)) {
         throw new Error('No Waku LightPush instantiated.');
-      }
-
-      BroadcasterDebug.log('Waku peers:');
-      for (const peer of waku.libp2p.getPeers()) {
-        BroadcasterDebug.log(JSON.stringify(peer));
       }
 
       BroadcasterDebug.log('Connected to Waku');
@@ -122,60 +113,56 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static getMeshPeerCount(): number {
-    return WakuBroadcasterWakuCore.getPubSubPeerCount();
-  }
-
-  static getPubSubPeerCount(): number {
-    const peers = WakuBroadcasterWakuCore.waku?.libp2p.getPeers() ?? [];
-    return peers.length;
-  }
-
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = WakuBroadcasterWakuCore.waku?.lightPush.connectedPeers ?? [];
+    const peers = WakuBroadcasterWakuCore.waku?.lightPush.connectedPeers;
+
+    if (!isDefined(peers)) {
+      BroadcasterDebug.log('No waku.lightPush connectedPeers found');
+      return 0;
+    }
+
     return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers =
-      (await WakuBroadcasterWakuCore.waku?.filter.connectedPeers) ?? [];
-    return peers.length;
-  }
+    const peers = WakuBroadcasterWakuCore.waku?.filter.connectedPeers;
 
-  private static async waitForRemotePeer(waku: LightNode) {
-    try {
-      const protocols = [Protocols.LightPush, Protocols.Filter];
-      await promiseTimeout(
-        waitForRemotePeer(waku, protocols),
-        WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      );
-    } catch (err) {
-      if (!(err instanceof Error)) {
-        throw err;
-      }
-      BroadcasterDebug.error(err);
-      throw new Error(err.message);
+    if (!isDefined(peers)) {
+      BroadcasterDebug.log('No waku.filter connectedPeers found');
+      return 0;
     }
+
+    return peers.length;
   }
 
   static async broadcastMessage(
     data: object,
     contentTopic: string,
   ): Promise<void> {
+    if (!WakuBroadcasterWakuCore.waku) {
+      throw new Error('Waku not instantiated.');
+    }
+
+    // Create message to be sent to Waku
     const dataString = JSON.stringify(data);
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
+
     try {
+      // Create encoder to be used for sending message
       const encoder = createEncoder({
         contentTopic,
         pubsubTopicShardInfo: this.defaultShard,
       });
-      await WakuBroadcasterWakuCore.waku?.lightPush.send(encoder, message);
+
+      // Send message to Waku
+      await WakuBroadcasterWakuCore.waku.lightPush.send(encoder, message);
     } catch (err) {
+      BroadcasterDebug.error(err);
+
       if (!(err instanceof Error)) {
         throw err;
       }
-      BroadcasterDebug.error(err);
     }
   }
 }

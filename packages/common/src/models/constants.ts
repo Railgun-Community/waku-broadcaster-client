@@ -1,3 +1,9 @@
+import {
+  Chain,
+  NETWORK_CONFIG,
+  NetworkName,
+} from '@railgun-community/shared-models';
+
 export const WAKU_RAILGUN_PUB_SUB_TOPIC = '/waku/2/rs/0/1';
 
 export const WAKU_RAILGUN_DEFAULT_SHARD = {
@@ -21,3 +27,9 @@ export const WAKU_RAILGUN_DEFAULT_PEERS_NODE: string[] = [
   '/dns4/core.rootedinprivacy.com/tcp/60000/p2p/16Uiu2HAm4Ai1GzKv4EykU26ST1BPT4AHtABsYCLKrDG74GWX7D6H',
   '/dns4/fleet.rootedinprivacy.com/tcp/60000/p2p/16Uiu2HAm3GnUDQhBfax298CMkZX9MBHTJ9B8GXhrbueozESUaRZP',
 ];
+
+// TESTS
+export const TESTS_TOKEN: string =
+  NETWORK_CONFIG[NetworkName.EthereumSepolia].baseToken.wrappedAddress;
+export const TESTS_CHAIN: Chain =
+  NETWORK_CONFIG[NetworkName.EthereumSepolia].chain;

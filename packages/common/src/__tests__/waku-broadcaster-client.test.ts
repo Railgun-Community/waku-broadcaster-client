@@ -8,27 +8,24 @@ import {
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
-import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { BroadcasterOptions } from '../models/index.js';
 import { LightNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
+import { TESTS_CHAIN, TESTS_TOKEN } from '../models/constants.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const chain = MOCK_CHAIN_ETHEREUM;
-
 const broadcasterOptions: BroadcasterOptions = {};
-
-const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const WETH_ADDRESS_GOERLI = '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6';
-const CURRENT_TEST_TOKEN = WETH_ADDRESS;
 
 let currentChain: Chain;
 let currentStatus: BroadcasterConnectionStatus;
-const statusCallback = (chain: Chain, status: BroadcasterConnectionStatus) => {
-  currentChain = chain;
+const statusCallback = (
+  TESTS_CHAIN: Chain,
+  status: BroadcasterConnectionStatus,
+) => {
+  currentChain = TESTS_CHAIN;
   currentStatus = status;
 };
 
@@ -41,7 +38,7 @@ describe('waku-broadcaster-client', () => {
     WakuBroadcasterClient.pollDelay = 500;
 
     await WakuBroadcasterClient.start(
-      chain,
+      TESTS_CHAIN,
       broadcasterOptions,
       statusCallback,
       {
@@ -50,7 +47,7 @@ describe('waku-broadcaster-client', () => {
       },
     );
 
-    expect(currentChain).to.deep.equal(chain);
+    expect(currentChain).to.deep.equal(TESTS_CHAIN);
     expect(currentStatus).to.equal(BroadcasterConnectionStatus.Searching);
 
     // Poll until currentStatus is Connected.
@@ -67,14 +64,14 @@ describe('waku-broadcaster-client', () => {
     const useRelayAdapt = true;
     const selectedBroadcaster: Optional<SelectedBroadcaster> =
       WakuBroadcasterClient.findBestBroadcaster(
-        chain,
-        CURRENT_TEST_TOKEN,
+        TESTS_CHAIN,
+        TESTS_TOKEN,
         useRelayAdapt,
       );
 
     expect(selectedBroadcaster).to.be.an('object');
     expect(selectedBroadcaster?.railgunAddress).to.be.a('string');
-    expect(selectedBroadcaster?.tokenAddress).to.equal(CURRENT_TEST_TOKEN);
+    expect(selectedBroadcaster?.tokenAddress).to.equal(TESTS_TOKEN);
     expect(
       selectedBroadcaster?.tokenFee.availableWallets,
     ).to.be.greaterThanOrEqual(1);
@@ -125,7 +122,7 @@ describe('waku-broadcaster-client', () => {
     //   WakuBroadcasterClient.getMeshPeerCount(),
     // ).to.be.greaterThanOrEqual(1);
 
-    await WakuBroadcasterClient.setChain(MOCK_CHAIN_GOERLI);
+    await WakuBroadcasterClient.setChain(TESTS_CHAIN);
     expect(WakuBroadcasterClient.getContentTopics()).to.deep.equal([
       '/railgun/v2/0-5-fees/json',
       '/railgun/v2/0-5-transact-response/json',

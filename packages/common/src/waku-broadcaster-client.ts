@@ -2,7 +2,6 @@ import {
   Chain,
   delay,
   POI_REQUIRED_LISTS,
-  BroadcasterConnectionStatus,
   SelectedBroadcaster,
 } from '@railgun-community/shared-models';
 import { BroadcasterFeeCache } from './fees/broadcaster-fee-cache.js';
@@ -15,16 +14,15 @@ import {
 import { BroadcasterSearch } from './search/best-broadcaster.js';
 import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
-import { WakuObservers } from './waku/waku-observers.js';
+import { WakuObservers } from './waku/waku-subscriptions.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import type { LightNode } from '@waku/interfaces';
 import { contentTopics } from './waku/waku-topics.js';
+import { LightNode } from '@waku/sdk';
 
 export class WakuBroadcasterClient {
   private static chain: Chain;
   private static statusCallback: BroadcasterConnectionStatusCallback;
   private static started = false;
-  private static isRestarting = false;
 
   static pollDelay = 3000;
 
@@ -34,15 +32,19 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
-    this.chain = chain;
-    this.statusCallback = statusCallback;
-
-    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
-
     if (broadcasterDebugger) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
+    BroadcasterDebug.log('Starting Waku...');
+
+    this.chain = chain;
+    this.statusCallback = statusCallback;
+
+    BroadcasterDebug.log('Setting broadcaster options...');
+    WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
+
+    BroadcasterDebug.log('Initializing BroadcasterFeeCache...');
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
         POI_REQUIRED_LISTS.map(list => list.key),
@@ -50,11 +52,11 @@ export class WakuBroadcasterClient {
 
     try {
       this.started = false;
+      BroadcasterDebug.log('Initializing Waku...');
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.pollStatus();
+      BroadcasterDebug.log('Waku initialized successfully.');
     } catch (cause) {
       if (!(cause instanceof Error)) {
         throw new Error('Unexpected non-error thrown', { cause });
@@ -62,35 +64,19 @@ export class WakuBroadcasterClient {
       throw new Error('Cannot connect to Broadcaster network.', { cause });
     }
   }
-  private static peerRetryCount = 0;
-  private static pollConnection = async () => {
-    const peerCount = WakuBroadcasterWakuCore.getMeshPeerCount();
-    if (peerCount < 1) {
-      if (this.peerRetryCount >= 2) {
-        this.peerRetryCount = 0;
-        await this.restart();
-      } else {
-        this.peerRetryCount += 1;
-      }
-    } else {
-      this.peerRetryCount = 0;
-    }
-    await delay(WakuBroadcasterClient.pollDelay);
-    this.pollConnection();
-  };
 
+  /**
+   * Allow for stopping the Waku broadcaster client.
+   */
   static async stop() {
     await WakuBroadcasterWakuCore.disconnect();
     this.started = false;
     this.updateStatus();
   }
 
-  static isStarted() {
-    return this.started;
-  }
-
   static async setChain(chain: Chain): Promise<void> {
     if (!WakuBroadcasterClient.started) {
+      BroadcasterDebug.log('Waku not started in setChain()');
       return;
     }
 
@@ -104,14 +90,6 @@ export class WakuBroadcasterClient {
 
   static getContentTopics(): string[] {
     return WakuObservers.getCurrentContentTopics();
-  }
-
-  static getMeshPeerCount(): number {
-    return WakuBroadcasterWakuCore.getMeshPeerCount();
-  }
-
-  static getPubSubPeerCount(): number {
-    return WakuBroadcasterWakuCore.getPubSubPeerCount();
   }
 
   static async getLightPushPeerCount(): Promise<number> {
@@ -224,6 +202,12 @@ export class WakuBroadcasterClient {
     );
   }
 
+  /**
+   * Sets the allowlist and blocklist for pre-broadcast checks.
+   *
+   * @param allowlist
+   * @param blocklist
+   */
   static setAddressFilters(
     allowlist: Optional<string[]>,
     blocklist: Optional<string[]>,
@@ -232,19 +216,19 @@ export class WakuBroadcasterClient {
     AddressFilter.setBlocklist(blocklist);
   }
 
-  static async tryReconnect(): Promise<void> {
-    // Reset fees, which will reset status to "Searching".
-    BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
-    WakuBroadcasterClient.updateStatus();
-
-    await WakuBroadcasterClient.restart();
-  }
-
+  /**
+   * Checks if a token is supported by the broadcaster using the fee topic message recieved.
+   *
+   * @param chain
+   * @param tokenAddress
+   * @param useRelayAdapt
+   * @returns boolean
+   */
   static supportsToken(
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
-  ) {
+  ): boolean {
     return BroadcasterFeeCache.supportsToken(
       chain,
       tokenAddress,
@@ -252,52 +236,26 @@ export class WakuBroadcasterClient {
     );
   }
 
-  private static async restart(): Promise<void> {
-    if (this.isRestarting || !this.started) {
-      return;
-    }
-    this.isRestarting = true;
-    try {
-      BroadcasterDebug.log('Restarting Waku...');
-      await WakuBroadcasterWakuCore.reinitWaku(this.chain);
-      this.isRestarting = false;
-    } catch (cause) {
-      this.isRestarting = false;
-      if (!(cause instanceof Error)) {
-        return;
-      }
-      BroadcasterDebug.error(
-        new Error('Error reinitializing Waku Broadcaster Client', { cause }),
-      );
-    }
-  }
-
   /**
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
-  private static async pollStatus(): Promise<void> {
-    if (!this.isRestarting) {
+  static async pollStatus(): Promise<void> {
+    // Poll until the client is stopped
+    while (WakuBroadcasterClient.started) {
+      // Callback the connection status on each poll
       this.updateStatus();
-    } else {
-      this.updateStatus();
-    }
-    await delay(WakuBroadcasterClient.pollDelay);
 
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.pollStatus();
+      // TODO: if disconnected or error status, ensure subscriptions can ping, otherwise resubscribe
+
+      // Delay before next poll
+      await delay(WakuBroadcasterClient.pollDelay);
+    }
   }
 
   private static updateStatus() {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
-    if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.restart();
-    }
   }
 
   // Waku Transport functions
