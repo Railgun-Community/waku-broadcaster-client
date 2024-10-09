@@ -34,6 +34,7 @@ export class WakuBroadcasterClient {
     statusCallback: BroadcasterConnectionStatusCallback,
     broadcasterDebugger?: BroadcasterDebugger,
   ) {
+    BroadcasterDebug.log('CLIENT START');
     this.chain = chain;
     this.statusCallback = statusCallback;
 
@@ -52,7 +53,6 @@ export class WakuBroadcasterClient {
       this.started = false;
       await WakuBroadcasterWakuCore.initWaku(chain);
       this.started = true;
-
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.pollStatus();
     } catch (cause) {
@@ -114,12 +114,12 @@ export class WakuBroadcasterClient {
     return WakuBroadcasterWakuCore.getPubSubPeerCount();
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getLightPushPeerCount();
+  static async getLightPushPeerCount(): number {
+    return WakuBroadcasterWakuCore.getLightPushPeerCount();
   }
 
-  static async getFilterPeerCount(): Promise<number> {
-    return await WakuBroadcasterWakuCore.getFilterPeerCount();
+  static getFilterPeerCount(): number {
+    return WakuBroadcasterWakuCore.getFilterPeerCount();
   }
   /**
    * The function `findBestBroadcaster` finds the broadcaster with the lowest fees for a given chain and token.

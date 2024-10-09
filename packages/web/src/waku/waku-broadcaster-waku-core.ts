@@ -129,14 +129,13 @@ export class WakuBroadcasterWakuCore {
     return peers.length;
   }
 
-  static async getLightPushPeerCount(): Promise<number> {
+  static getLightPushPeerCount(): number {
     const peers = WakuBroadcasterWakuCore.waku?.lightPush.connectedPeers ?? [];
     return peers.length;
   }
 
-  static async getFilterPeerCount(): Promise<number> {
-    const peers =
-      (await WakuBroadcasterWakuCore.waku?.filter.connectedPeers) ?? [];
+  static getFilterPeerCount(): number {
+    const peers = WakuBroadcasterWakuCore.waku?.filter.connectedPeers ?? [];
     return peers.length;
   }
 

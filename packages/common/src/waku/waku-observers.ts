@@ -15,6 +15,7 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
+// import { SubscriptionManager } from './waku-subscriptions-manager.js'; // @@ TODO: Refactor V2 to make subscriptions handling easier
 
 type SubscriptionParams = {
   topic: string;
@@ -31,7 +32,6 @@ export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
   private static currentSubscriptions: ActiveSubscription[] | undefined = [];
-
   static setObserversForChain = async (
     waku: Optional<LightNode>,
     chain: Chain,
@@ -62,15 +62,21 @@ export class WakuObservers {
   };
 
   static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
-    BroadcasterDebug.log(
-      `WAKU Health Status: ${waku?.health.getHealthStatus()}`,
-    );
-    if (isDefined(WakuObservers.currentSubscriptions)) {
-      if (WakuObservers.currentSubscriptions.length === 0) {
-        BroadcasterDebug.log('No subscriptions to ping');
-        throw new Error('No subscriptions to ping');
-      }
+    const subscriptionsHealthStauts = waku?.health.getHealthStatus();
+    BroadcasterDebug.log(`WAKU Health Status: ${subscriptionsHealthStauts}`);
+
+    if (
+      isDefined(WakuObservers.currentSubscriptions) &&
+      WakuObservers.currentSubscriptions.length === 0
+    ) {
+      const noSubscriptionsError = new Error('No subscriptions found');
+      BroadcasterDebug.error(noSubscriptionsError);
     }
+
+    BroadcasterDebug.log(
+      `Active subscriptions: ${this.currentSubscriptions?.length}`,
+    );
+
     await delay(15 * 1000);
     WakuObservers.checkSubscriptionsHealth(waku);
   };
