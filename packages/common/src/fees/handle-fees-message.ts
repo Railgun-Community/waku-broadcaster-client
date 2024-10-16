@@ -8,7 +8,6 @@ import {
   BroadcasterFeeMessageData,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
-import { IMessage } from '@waku/interfaces';
 import { contentTopics } from '../waku/waku-topics.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
@@ -16,6 +15,7 @@ import { BroadcasterFeeCache } from './broadcaster-fee-cache.js';
 import { invalidBroadcasterVersion } from '../utils/broadcaster-util.js';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
+import { IMessage } from '@waku/sdk';
 
 const isExpiredTimestamp = (
   timestamp: Optional<Date>,
@@ -66,6 +66,8 @@ export const handleBroadcasterFeesMessage = async (
       BroadcasterDebug.log('Skipping Broadcaster fees message: WRONG TOPIC');
       return;
     }
+
+    // Parse the payload
     const payload = bytesToUtf8(message.payload);
     const { data, signature } = JSON.parse(payload) as {
       data: string;
@@ -74,6 +76,7 @@ export const handleBroadcasterFeesMessage = async (
     const utf8String = hexToUTF8String(data);
     const feeMessageData = JSON.parse(utf8String) as BroadcasterFeeMessageData;
     const feeExpirationTime = new Date(feeMessageData.feeExpiration);
+
     if (isExpiredTimestamp(message.timestamp, feeExpirationTime)) {
       BroadcasterDebug.log('Skipping fee message. Timestamp Expired.');
       return;
@@ -96,13 +99,15 @@ export const handleBroadcasterFeesMessage = async (
 
     const { railgunAddress } = feeMessageData;
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
-    //TODO: rename this to verifyBroadcasterSignature
     const verified = await verifyBroadcasterSignature(
       signature,
       data,
       viewingPublicKey,
     );
     if (!verified) {
+      BroadcasterDebug.log(
+        'Skipping Broadcaster fees message: INVALID SIGNATURE',
+      );
       return;
     }
 
