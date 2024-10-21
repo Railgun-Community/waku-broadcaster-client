@@ -17,7 +17,7 @@ import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import type { LightNode } from '@waku/interfaces';
+import type { RelayNode } from '@waku/interfaces';
 import { contentTopics } from './waku/waku-topics.js';
 
 export class WakuBroadcasterClient {
@@ -302,7 +302,7 @@ export class WakuBroadcasterClient {
 
   // Waku Transport functions
   static async addTransportSubscription(
-    waku: Optional<LightNode>,
+    waku: Optional<RelayNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -318,7 +318,11 @@ export class WakuBroadcasterClient {
     WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
   }
 
-  static getWakuCore(): Optional<LightNode> {
+  static getWakuCore(): Optional<RelayNode> {
     return WakuBroadcasterWakuCore.waku;
+  }
+
+  static setRestartCallback(callback: () => void): void {
+    WakuBroadcasterWakuCore.setWakuRestartCallback(callback);
   }
 }

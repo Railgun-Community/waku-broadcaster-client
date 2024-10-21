@@ -96,7 +96,6 @@ export const handleBroadcasterFeesMessage = async (
 
     const { railgunAddress } = feeMessageData;
     const { viewingPublicKey } = getRailgunWalletAddressData(railgunAddress);
-    //TODO: rename this to verifyBroadcasterSignature
     const verified = await verifyBroadcasterSignature(
       signature,
       data,
