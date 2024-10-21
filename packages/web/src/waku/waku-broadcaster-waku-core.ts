@@ -1,11 +1,15 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
-import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
-import { createLightNode } from '@waku/sdk';
+import {
+  createLightNode,
+  createEncoder,
+  Protocols,
+  IMessage,
+  LightNode,
+} from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
@@ -14,8 +18,15 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARDS,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
-import { wakuDnsDiscovery } from '@waku/discovery';
-import type { Libp2pOptions } from 'libp2p';
+import { multiaddr } from '@multiformats/multiaddr';
+import { createFromPrivKey } from '@libp2p/peer-id-factory';
+import {
+  unmarshalPrivateKey,
+  generateKeyPairFromSeed,
+} from '@libp2p/crypto/keys';
+
+import { fromString } from 'uint8arrays';
+import { getRandomBytes } from '@railgun-community/wallet';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -27,6 +38,7 @@ export class WakuBroadcasterWakuCore {
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
 
   static initWaku = async (chain: Chain): Promise<void> => {
+    console.log('STARTING HOOKED WEB');
     try {
       await WakuBroadcasterWakuCore.connect();
       if (!WakuBroadcasterWakuCore.waku) {
@@ -89,14 +101,15 @@ export class WakuBroadcasterWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-
       const waku = await createLightNode({
-        bootstrapPeers,
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
       });
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
+      Promise.all(
+        bootstrapPeers.map(m => multiaddr(m)).map(m => waku.libp2p.dial(m)),
+      );
 
       BroadcasterDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
@@ -132,7 +145,8 @@ export class WakuBroadcasterWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = WakuBroadcasterWakuCore.waku?.lightPush.connectedPeers ?? [];
+    const peers =
+      WakuBroadcasterWakuCore.waku?.lightPush.protocol.connectedPeers ?? [];
     return peers.length;
   }
 
@@ -146,7 +160,7 @@ export class WakuBroadcasterWakuCore {
     try {
       const protocols = [Protocols.LightPush, Protocols.Filter];
       await promiseTimeout(
-        waitForRemotePeer(waku, protocols),
+        waku.waitForPeers(protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
       );
     } catch (err) {

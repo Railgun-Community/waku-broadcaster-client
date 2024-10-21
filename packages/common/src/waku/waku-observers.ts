@@ -1,12 +1,17 @@
 import { Chain, compareChains, delay } from '@railgun-community/shared-models';
-import { createDecoder } from '@waku/core';
-import { contentTopics } from './waku-topics.js';
 import {
+  createDecoder,
   LightNode,
   IMessage,
   IDecoder,
+  type ProtocolUseOptions,
+  type SubscribeOptions,
   type Unsubscribe,
-} from '@waku/interfaces';
+  type SubscribeResult,
+  Protocols,
+  wakuFilter,
+} from '@waku/sdk';
+import { contentTopics } from './waku-topics.js';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
@@ -15,6 +20,7 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
+import { unsubscribe } from 'diagnostics_channel';
 
 type SubscriptionParams = {
   topic: string;
@@ -23,7 +29,7 @@ type SubscriptionParams = {
 };
 
 type ActiveSubscription = {
-  unsubscribe: Unsubscribe;
+  unsubscribe: SubscribeResult | Unsubscribe;
   params: SubscriptionParams;
 };
 
@@ -50,7 +56,9 @@ export class WakuObservers {
     );
     WakuObservers.currentChain = chain;
     await WakuObservers.removeAllObservers(waku);
+
     BroadcasterDebug.log('Removed all observers');
+    console.log('STARTING ADD CHAIN OBSERVERS');
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
@@ -64,12 +72,12 @@ export class WakuObservers {
   static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
     BroadcasterDebug.log(
       // @ts-ignore
-      `WAKU Health Status: ${waku?.health.health.overallStatus}`,
+      `WAKU Health Status: ${waku?.health.getHealthStatus()}`,
     );
-    if (isDefined(WakuObservers.currentSubscriptions)) {
-      if (WakuObservers.currentSubscriptions.length === 0) {
+    if (isDefined(this.currentSubscriptions)) {
+      if (this.currentSubscriptions.length === 0) {
         BroadcasterDebug.log('No subscriptions to ping');
-        throw new Error('No subscriptions to ping');
+        // throw new Error('No subscriptions to ping');
       }
     }
     await delay(15 * 1000);
@@ -81,8 +89,14 @@ export class WakuObservers {
       return;
     }
     if (isDefined(this.currentSubscriptions)) {
-      for (const { unsubscribe } of this.currentSubscriptions) {
-        await unsubscribe();
+      console.log('REMOVING ALL OBSERVERS', this.currentSubscriptions);
+      for (const { unsubscribe, params } of this.currentSubscriptions) {
+        // await unsubscribe.subscription?.unsubscribe([params.topic]);
+        if (unsubscribe instanceof Function) {
+          await unsubscribe();
+        } else {
+          await unsubscribe.subscription?.unsubscribe([params.topic]);
+        }
       }
       this.currentSubscriptions = [];
       this.currentContentTopics = [];
@@ -123,9 +137,17 @@ export class WakuObservers {
       return;
     }
 
-    await WakuObservers.addSubscriptions(chain, waku).catch(err => {
+    const subscriptionResult = await WakuObservers.addSubscriptions(
+      chain,
+      waku,
+    ).catch(err => {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
+      return undefined;
     });
+    // if (!isDefined(subscriptionResult)) {
+    //   WakuObservers.addChainObservers(waku, chain);
+    //   return;
+    // }
     if (!WakuObservers.hasStartedPinging) {
       WakuObservers.hasStartedPinging = true;
       WakuObservers.checkSubscriptionsHealth(waku);
@@ -157,9 +179,18 @@ export class WakuObservers {
       decoder,
       callback,
     };
-    const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
+    const unsubscribe = await waku.filter.subscribe(
       decoder,
       callback,
+      {
+        forceUseAllPeers: true,
+        maxAttempts: 10,
+      },
+      {
+        keepAlive: 10,
+        pingsBeforePeerRenewed: 10,
+        enableLightPushFilterCheck: true,
+      },
     );
     WakuObservers.currentSubscriptions?.push({
       unsubscribe,
@@ -176,18 +207,36 @@ export class WakuObservers {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
+    console.log('ADDING SUBSCRIBERS FOR ', chain);
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
     const topics = subscriptionParams.map(params => params.topic);
     const newTopics = topics.filter(
       topic => !WakuObservers.currentContentTopics.includes(topic),
     );
-    WakuObservers.currentContentTopics.push(...newTopics);
+    this.currentContentTopics.push(...newTopics);
     for (const params of subscriptionParams) {
       const { decoder, callback } = params;
-      const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
-        decoder,
-        callback,
-      );
+      const unsubscribe = await waku.filter
+        .subscribe(
+          decoder,
+          callback,
+          // {},
+          // {
+          //   keepAlive: 30_000,
+          // },
+        )
+        .catch(err => {
+          console.log('Error subscribing', err);
+          return undefined;
+        });
+      if (isDefined(unsubscribe?.error)) {
+        await delay(1000);
+        this.addSubscriptions(chain, waku);
+        return;
+      }
+      if (!unsubscribe) {
+        return;
+      }
       WakuObservers.currentSubscriptions?.push({
         unsubscribe,
         params,
