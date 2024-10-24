@@ -23,7 +23,7 @@ await WakuBroadcasterClient.start(...)
 // Get broadcaster with lowest fee for a given ERC20 token.
 const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(...)
 
-// Create Relayed transaction and send through selected Broadcaster.
+// Create transaction and send through selected Broadcaster.
 const broadcasterTransaction = await BroadcasterTransaction.create(...)
 await BroadcasterTransaction.send(...)
 ```
