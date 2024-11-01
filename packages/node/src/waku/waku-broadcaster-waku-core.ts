@@ -1,25 +1,24 @@
-import { Chain, promiseTimeout } from '@railgun-community/shared-models';
+import { Chain, delay, promiseTimeout } from '@railgun-community/shared-models';
 import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
+import { Protocols, IMessage, RelayNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
 import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
-import { createLightNode } from '@waku/sdk';
+import { createRelayNode } from '@waku/sdk/relay';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
-  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
 
-  static waku: Optional<LightNode>;
-
+  static waku: Optional<RelayNode>;
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
@@ -45,7 +44,7 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
-  static reinitWaku = async (chain: Chain) => {
+  static reinitWaku = async (chain: Chain, resetCache = true) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
       WakuBroadcasterWakuCore.waku.isStarted()
@@ -53,24 +52,33 @@ export class WakuBroadcasterWakuCore {
       await WakuBroadcasterWakuCore.disconnect();
     }
 
+    // Resets connection status to "Connecting" for this network.
+    if (resetCache) {
+      BroadcasterFeeCache.resetCache(chain);
+    }
+
     await WakuBroadcasterWakuCore.initWaku(chain);
   };
 
-  static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
-    if (isDefined(broadcasterOptions.pubSubTopic)) {
-      WakuBroadcasterWakuCore.pubSubTopic = broadcasterOptions.pubSubTopic;
+  static setBroadcasterOptions(BroadcasterOptions: BroadcasterOptions) {
+    if (isDefined(BroadcasterOptions.pubSubTopic)) {
+      WakuBroadcasterWakuCore.pubSubTopic = BroadcasterOptions.pubSubTopic;
     }
-    if (broadcasterOptions.additionalDirectPeers) {
+    if (BroadcasterOptions.additionalDirectPeers) {
       WakuBroadcasterWakuCore.additionalDirectPeers =
-        broadcasterOptions.additionalDirectPeers;
+        BroadcasterOptions.additionalDirectPeers;
     }
-    if (isDefined(broadcasterOptions.peerDiscoveryTimeout)) {
+    if (isDefined(BroadcasterOptions.peerDiscoveryTimeout)) {
       WakuBroadcasterWakuCore.peerDiscoveryTimeout =
-        broadcasterOptions.peerDiscoveryTimeout;
+        BroadcasterOptions.peerDiscoveryTimeout;
     }
   }
 
-  static disconnect = async () => {
+  static disconnect = async (removeObservers: boolean = false) => {
+    if (removeObservers) {
+      BroadcasterDebug.log('Disconnecting... Removing Observers.');
+      await WakuObservers.removeAllObservers();
+    }
     await WakuBroadcasterWakuCore.waku?.stop();
     WakuBroadcasterWakuCore.waku = undefined;
   };
@@ -79,18 +87,15 @@ export class WakuBroadcasterWakuCore {
     try {
       WakuBroadcasterWakuCore.hasError = false;
 
-      BroadcasterDebug.log(`Creating waku broadcast client`);
+      BroadcasterDebug.log(`Creating waku client`);
 
       const peers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
-        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
-      const waku: LightNode = await createLightNode({
+      const waitTimeoutBeforeBootstrap = 1250; // 250 ms - default is 1000ms
+      const waku: RelayNode = await createRelayNode({
         pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
-        pingKeepAlive: 60,
-        relayKeepAlive: 60,
         libp2p: {
           transports: [tcp()],
           peerDiscovery: [
@@ -108,8 +113,8 @@ export class WakuBroadcasterWakuCore {
       BroadcasterDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!isDefined(waku.lightPush)) {
-        throw new Error('No Waku LightPush instantiated.');
+      if (!isDefined(waku.relay)) {
+        throw new Error('No Waku instantiated.');
       }
 
       BroadcasterDebug.log('Waku peers:');
@@ -130,7 +135,9 @@ export class WakuBroadcasterWakuCore {
   };
 
   static getMeshPeerCount(): number {
-    return this.getPubSubPeerCount();
+    return (
+      this.waku?.relay.getMeshPeers(WAKU_RAILGUN_PUB_SUB_TOPIC).length ?? 0
+    );
   }
 
   static getPubSubPeerCount(): number {
@@ -139,18 +146,16 @@ export class WakuBroadcasterWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = (await this.waku?.lightPush.allPeers()) ?? [];
-    return peers.length;
+    return 0;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = (await this.waku?.filter.allPeers()) ?? [];
-    return peers.length;
+    return 0;
   }
 
-  private static async waitForRemotePeer(waku: LightNode) {
+  private static async waitForRemotePeer(waku: RelayNode) {
     try {
-      const protocols = [Protocols.LightPush, Protocols.Filter];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waitForRemotePeer(waku, protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
@@ -167,12 +172,14 @@ export class WakuBroadcasterWakuCore {
   static async broadcastMessage(
     data: object,
     contentTopic: string,
+    retry: number = 0,
   ): Promise<void> {
-    const dataString = JSON.stringify(data);
-    const payload = utf8ToBytes(dataString);
-    const message: IMessage = { payload };
     try {
-      const results = await WakuBroadcasterWakuCore.waku?.lightPush.send(
+      const dataString = JSON.stringify(data);
+      const payload = utf8ToBytes(dataString);
+      const message: IMessage = { payload };
+      // @ts-ignore - waku.relay may not be defined
+      await WakuBroadcasterWakuCore.waku.relay.send(
         createEncoder({
           contentTopic,
           pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
@@ -180,10 +187,10 @@ export class WakuBroadcasterWakuCore {
         message,
       );
     } catch (err) {
+      BroadcasterDebug.error(err);
       if (!(err instanceof Error)) {
         throw err;
       }
-      BroadcasterDebug.error(err);
     }
   }
 }
