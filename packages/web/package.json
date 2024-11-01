@@ -40,13 +40,12 @@
     "patch-package": "^8.0.0"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "7.4.4",
-    "@railgun-community/wallet": "10.2.5",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.10"
+    "@railgun-community/shared-models": "7.5.0",
+    "@railgun-community/wallet": "10.3.0"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "7.4.4",
-    "@railgun-community/wallet": "10.2.5",
+    "@railgun-community/shared-models": "7.5.0",
+    "@railgun-community/wallet": "10.3.0",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
@@ -62,7 +61,7 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.27.5",
-    "ethers": "github:Railgun-Community/ethers.js#v6.7.10",
+    "ethers": "6.13.1",
     "leveldown": "^6.1.1",
     "madge": "^6.1.0",
     "mocha": "^10.2.0",
