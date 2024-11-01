@@ -10,12 +10,12 @@ const chain = MOCK_CHAIN_ETHEREUM;
 
 describe('waku-topics', () => {
   it('Should get correct content topics for mock chain', () => {
-    expect(contentTopics.fees(chain)).to.equal('/railgun/v2/0-1-fees/json');
+    expect(contentTopics.fees(chain)).to.equal('/railgun/v2/0/1/fees/json');
     expect(contentTopics.transact(chain)).to.equal(
-      '/railgun/v2/0-1-transact/json',
+      '/railgun/v2/0/1/transact/json',
     );
     expect(contentTopics.transactResponse(chain)).to.equal(
-      '/railgun/v2/0-1-transact-response/json',
+      '/railgun/v2/0/1/transact-response/json',
     );
   });
 });

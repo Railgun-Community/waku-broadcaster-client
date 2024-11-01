@@ -233,8 +233,6 @@ export class WakuBroadcasterClient {
   }
 
   static async tryReconnect(): Promise<void> {
-    // Reset fees, which will reset status to "Searching".
-    BroadcasterFeeCache.resetCache(WakuBroadcasterClient.chain);
     WakuBroadcasterClient.updateStatus();
 
     await WakuBroadcasterClient.restart();

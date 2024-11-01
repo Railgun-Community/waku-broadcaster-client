@@ -12,8 +12,6 @@ import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
   WAKU_RAILGUN_DEFAULT_PEERS_WEB,
-  WAKU_RAILGUN_DEFAULT_SHARD,
-  WAKU_RAILGUN_DEFAULT_SHARDS,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 
@@ -25,7 +23,6 @@ export class WakuBroadcasterWakuCore {
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
-  private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -53,7 +50,6 @@ export class WakuBroadcasterWakuCore {
       isDefined(WakuBroadcasterWakuCore.waku) &&
       WakuBroadcasterWakuCore.waku.isStarted()
     ) {
-      // Reset fees, which will reset status to "Searching".
       await WakuBroadcasterWakuCore.disconnect();
     }
 
@@ -85,20 +81,21 @@ export class WakuBroadcasterWakuCore {
 
       BroadcasterDebug.log(`Creating waku broadcast client`);
 
-      const bootstrapPeers: string[] = [
+      const peers: string[] = [
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+        ...WAKU_RAILGUN_DEFAULT_PEERS_WEB,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 1250; // 1250 ms - default is 1000ms
+      const waitTimeoutBeforeBootstrap = 250; // 250 ms - default is 1000ms
       const waku: LightNode = await createLightNode({
-        // bootstrapPeers, this works also, while removing peerDiscovery from libp2p, peerDiscovery might be needed for native build?
-        networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
+        pubsubTopics: [WakuBroadcasterWakuCore.pubSubTopic],
+        pingKeepAlive: 60,
+        relayKeepAlive: 60,
         libp2p: {
-          // @ts-ignore
-          transports: [tcp({})],
+          transports: [tcp()],
           peerDiscovery: [
             bootstrap({
-              list: bootstrapPeers,
+              list: peers,
               timeout: waitTimeoutBeforeBootstrap,
             }),
           ],
@@ -142,12 +139,12 @@ export class WakuBroadcasterWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = this.waku?.lightPush.connectedPeers ?? [];
+    const peers = (await this.waku?.lightPush.allPeers()) ?? [];
     return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = this.waku?.filter.connectedPeers ?? [];
+    const peers = (await this.waku?.filter.allPeers()) ?? [];
     return peers.length;
   }
 
@@ -175,11 +172,13 @@ export class WakuBroadcasterWakuCore {
     const payload = utf8ToBytes(dataString);
     const message: IMessage = { payload };
     try {
-      const encoder = createEncoder({
-        contentTopic,
-        pubsubTopicShardInfo: this.defaultShard,
-      });
-      await WakuBroadcasterWakuCore.waku?.lightPush.send(encoder, message);
+      const results = await WakuBroadcasterWakuCore.waku?.lightPush.send(
+        createEncoder({
+          contentTopic,
+          pubsubTopic: WakuBroadcasterWakuCore.pubSubTopic,
+        }),
+        message,
+      );
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

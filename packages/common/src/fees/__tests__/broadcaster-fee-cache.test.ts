@@ -104,7 +104,7 @@ describe('broadcaster-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '7.22',
+      '6.22',
       ['test_list'],
     );
 
@@ -120,7 +120,7 @@ describe('broadcaster-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '7.22',
+      '6.22',
       ['test_list_INVALID'],
     );
 
@@ -136,7 +136,7 @@ describe('broadcaster-fee-cache', () => {
       feeExpiration,
       tokenFeeMap,
       identifier,
-      '7.2.2.99', // version
+      '6.2.2.99', // version
       ['test_list'],
     );
 
@@ -162,7 +162,7 @@ describe('broadcaster-fee-cache', () => {
       feeExpiration,
       tokenFeeMap2,
       identifier,
-      '7.2.2.99', // version
+      '6.2.2.99', // version
       ['test_list'],
     );
     BroadcasterFeeCache.addTokenFees(
@@ -171,7 +171,7 @@ describe('broadcaster-fee-cache', () => {
       feeExpiration,
       tokenFeeMap3,
       'def',
-      '7.2.2.99', // version
+      '6.2.2.99', // version
       ['test_list'],
     );
 
