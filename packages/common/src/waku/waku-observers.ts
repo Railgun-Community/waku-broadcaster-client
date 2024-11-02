@@ -182,14 +182,9 @@ export class WakuObservers {
     const unsubscribe = await waku.filter.subscribe(
       decoder,
       callback,
+      {},
       {
-        forceUseAllPeers: true,
-        maxAttempts: 10,
-      },
-      {
-        keepAlive: 10,
-        pingsBeforePeerRenewed: 10,
-        enableLightPushFilterCheck: true,
+        keepAlive: 30_000,
       },
     );
     WakuObservers.currentSubscriptions?.push({
@@ -220,10 +215,10 @@ export class WakuObservers {
         .subscribe(
           decoder,
           callback,
-          // {},
-          // {
-          //   keepAlive: 30_000,
-          // },
+          {},
+          {
+            keepAlive: 30_000,
+          },
         )
         .catch(err => {
           console.log('Error subscribing', err);
