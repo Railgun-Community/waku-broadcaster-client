@@ -144,14 +144,14 @@ export class WakuObservers {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
       return undefined;
     });
-    // if (!isDefined(subscriptionResult)) {
-    //   WakuObservers.addChainObservers(waku, chain);
-    //   return;
-    // }
-    if (!WakuObservers.hasStartedPinging) {
-      WakuObservers.hasStartedPinging = true;
-      WakuObservers.checkSubscriptionsHealth(waku);
+    if (!isDefined(subscriptionResult)) {
+      WakuObservers.addChainObservers(waku, chain);
+      return;
     }
+    // if (!WakuObservers.hasStartedPinging) {
+    //   WakuObservers.hasStartedPinging = true;
+    //   WakuObservers.checkSubscriptionsHealth(waku);
+    // }
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
     BroadcasterDebug.log('Waku content topics:');
