@@ -19,15 +19,6 @@ import {
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { multiaddr } from '@multiformats/multiaddr';
-import { createFromPrivKey } from '@libp2p/peer-id-factory';
-import {
-  unmarshalPrivateKey,
-  generateKeyPairFromSeed,
-} from '@libp2p/crypto/keys';
-
-import { fromString } from 'uint8arrays';
-import { getRandomBytes } from '@railgun-community/wallet';
-
 export class WakuBroadcasterWakuCore {
   static hasError = false;
   static restartCallback: () => void;
