@@ -25,6 +25,7 @@ import {
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
+  static restartCallback: () => void;
 
   static waku: Optional<LightNode>;
 
@@ -54,6 +55,10 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
+  static setWakuRestartCallback = (callback: () => void) => {
+    WakuBroadcasterWakuCore.restartCallback = callback;
+  };
+
   static reinitWaku = async (chain: Chain) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
@@ -64,6 +69,9 @@ export class WakuBroadcasterWakuCore {
     }
 
     await WakuBroadcasterWakuCore.initWaku(chain);
+    if (WakuBroadcasterWakuCore.restartCallback) {
+      WakuBroadcasterWakuCore.restartCallback();
+    }
   };
 
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {

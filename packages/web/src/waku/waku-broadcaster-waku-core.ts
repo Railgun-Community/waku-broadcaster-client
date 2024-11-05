@@ -30,6 +30,7 @@ import { getRandomBytes } from '@railgun-community/wallet';
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
+  static restartCallback: () => void;
 
   static waku: Optional<LightNode>;
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
@@ -38,7 +39,6 @@ export class WakuBroadcasterWakuCore {
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
 
   static initWaku = async (chain: Chain): Promise<void> => {
-    console.log('STARTING HOOKED WEB');
     try {
       await WakuBroadcasterWakuCore.connect();
       if (!WakuBroadcasterWakuCore.waku) {
@@ -59,6 +59,10 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
+  static setWakuRestartCallback = (callback: () => void) => {
+    WakuBroadcasterWakuCore.restartCallback = callback;
+  };
+
   static reinitWaku = async (chain: Chain) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
@@ -70,6 +74,9 @@ export class WakuBroadcasterWakuCore {
 
     BroadcasterFeeCache.resetCache(chain);
     await WakuBroadcasterWakuCore.initWaku(chain);
+    if (WakuBroadcasterWakuCore.restartCallback) {
+      WakuBroadcasterWakuCore.restartCallback();
+    }
   };
 
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
