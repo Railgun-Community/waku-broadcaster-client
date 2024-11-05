@@ -144,10 +144,10 @@ export class WakuObservers {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
       return undefined;
     });
-    if (!isDefined(subscriptionResult)) {
-      WakuObservers.addChainObservers(waku, chain);
-      return;
-    }
+    // if (!isDefined(subscriptionResult)) {
+    //   WakuObservers.addChainObservers(waku, chain);
+    //   return;
+    // }
     // if (!WakuObservers.hasStartedPinging) {
     //   WakuObservers.hasStartedPinging = true;
     //   WakuObservers.checkSubscriptionsHealth(waku);

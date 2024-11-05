@@ -19,6 +19,11 @@ export class BroadcasterStatus {
     if (!WakuBroadcasterWakuCore.waku) {
       return BroadcasterConnectionStatus.Disconnected;
     }
+    if (this.hasSubscriptionsStalled()) {
+      BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt =
+        Date.now() + 5000;
+      return BroadcasterConnectionStatus.Disconnected;
+    }
     if (!this.hasBroadcasterFeesForNetwork(chain)) {
       return BroadcasterConnectionStatus.Searching;
     }
@@ -33,6 +38,16 @@ export class BroadcasterStatus {
     }
 
     return BroadcasterConnectionStatus.Connected;
+  }
+  static hasSubscriptionsStalled() {
+    const now = Date.now();
+    const limit = 20000;
+    const lastSubscribed =
+      BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt;
+    if (isDefined(lastSubscribed)) {
+      return now - lastSubscribed > limit;
+    }
+    return false;
   }
 
   private static hasBroadcasterFeesForNetwork(chain: Chain) {
