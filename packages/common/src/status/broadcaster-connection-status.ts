@@ -41,7 +41,7 @@ export class BroadcasterStatus {
   }
   static hasSubscriptionsStalled() {
     const now = Date.now();
-    const limit = 20000;
+    const limit = 30_000; // 30 seconds
     const lastSubscribed =
       BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt;
     if (isDefined(lastSubscribed)) {
