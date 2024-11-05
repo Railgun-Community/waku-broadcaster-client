@@ -224,11 +224,6 @@ export class WakuObservers {
           console.log('Error subscribing', err);
           return undefined;
         });
-      if (isDefined(unsubscribe?.error)) {
-        await delay(1000);
-        this.addSubscriptions(chain, waku);
-        return;
-      }
       if (!unsubscribe) {
         return;
       }
