@@ -3,7 +3,6 @@ import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
-import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
 import { multiaddr } from '@multiformats/multiaddr';
 import {
@@ -12,12 +11,10 @@ import {
   LightNode,
   IMessage,
   Protocols,
-  type CreateWakuNodeOptions,
 } from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
-  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_DEFAULT_SHARDS,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
@@ -33,6 +30,7 @@ export class WakuBroadcasterWakuCore {
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
+  public static restartCount = 0;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -67,7 +65,9 @@ export class WakuBroadcasterWakuCore {
       // Reset fees, which will reset status to "Searching".
       await WakuBroadcasterWakuCore.disconnect();
     }
-
+    BroadcasterDebug.log(
+      `Reinit Waku, ${++WakuBroadcasterWakuCore.restartCount}`,
+    );
     await WakuBroadcasterWakuCore.initWaku(chain);
     if (WakuBroadcasterWakuCore.restartCallback) {
       WakuBroadcasterWakuCore.restartCallback();
@@ -166,8 +166,6 @@ export class WakuBroadcasterWakuCore {
         waku.waitForPeers(protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
       );
-      // WakuBroadcasterWakuCore.peerDiscoveryTimeout,
-      // );
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

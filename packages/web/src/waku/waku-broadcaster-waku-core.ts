@@ -28,6 +28,7 @@ export class WakuBroadcasterWakuCore {
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
+  public static restartCount = 0;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -64,6 +65,9 @@ export class WakuBroadcasterWakuCore {
     }
 
     BroadcasterFeeCache.resetCache(chain);
+    BroadcasterDebug.log(
+      `Reinit Waku, ${++WakuBroadcasterWakuCore.restartCount}`,
+    );
     await WakuBroadcasterWakuCore.initWaku(chain);
     if (WakuBroadcasterWakuCore.restartCallback) {
       WakuBroadcasterWakuCore.restartCallback();
