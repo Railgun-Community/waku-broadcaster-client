@@ -103,20 +103,10 @@ export class WakuBroadcasterWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 1250; // 1250 ms - default is 1000ms
-      const options: CreateWakuNodeOptions = {};
       const waku: LightNode = await createLightNode({
-        // bootstrapPeers, // this works also, while removing peerDiscovery from libp2p, peerDiscovery might be needed for native build?
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
         libp2p: {
-          // @ts-ignore
-          transports: [tcp({})],
-          // peerDiscovery: [
-          //   bootstrap({
-          //     list: bootstrapPeers,
-          //     timeout: waitTimeoutBeforeBootstrap,
-          //   }),
-          // ],
+          transports: [tcp() as unknown as any],
         },
       });
 
@@ -125,7 +115,6 @@ export class WakuBroadcasterWakuCore {
       Promise.all(
         bootstrapPeers.map(m => multiaddr(m)).map(m => waku.libp2p.dial(m)),
       );
-      // console.log('peerID', waku.peerId);
 
       BroadcasterDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);

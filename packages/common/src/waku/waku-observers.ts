@@ -58,7 +58,6 @@ export class WakuObservers {
     await WakuObservers.removeAllObservers(waku);
 
     BroadcasterDebug.log('Removed all observers');
-    console.log('STARTING ADD CHAIN OBSERVERS');
     await WakuObservers.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
@@ -89,9 +88,7 @@ export class WakuObservers {
       return;
     }
     if (isDefined(this.currentSubscriptions)) {
-      console.log('REMOVING ALL OBSERVERS', this.currentSubscriptions);
       for (const { unsubscribe, params } of this.currentSubscriptions) {
-        // await unsubscribe.subscription?.unsubscribe([params.topic]);
         if (unsubscribe instanceof Function) {
           await unsubscribe();
         } else {
@@ -144,14 +141,6 @@ export class WakuObservers {
       BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
       return undefined;
     });
-    // if (!isDefined(subscriptionResult)) {
-    //   WakuObservers.addChainObservers(waku, chain);
-    //   return;
-    // }
-    // if (!WakuObservers.hasStartedPinging) {
-    //   WakuObservers.hasStartedPinging = true;
-    //   WakuObservers.checkSubscriptionsHealth(waku);
-    // }
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
     BroadcasterDebug.log('Waku content topics:');
@@ -159,7 +148,6 @@ export class WakuObservers {
       BroadcasterDebug.log(observer);
     }
   };
-  static hasStartedPinging: boolean;
 
   static async addTransportSubscription(
     waku: Optional<LightNode>,
@@ -202,7 +190,6 @@ export class WakuObservers {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
-    console.log('ADDING SUBSCRIBERS FOR ', chain);
     const subscriptionParams = WakuObservers.getDecodersForChain(chain);
     const topics = subscriptionParams.map(params => params.topic);
     const newTopics = topics.filter(
@@ -221,7 +208,7 @@ export class WakuObservers {
           },
         )
         .catch(err => {
-          console.log('Error subscribing', err);
+          BroadcasterDebug.error(err);
           return undefined;
         });
       if (!unsubscribe) {
