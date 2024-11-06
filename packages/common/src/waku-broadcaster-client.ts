@@ -321,4 +321,8 @@ export class WakuBroadcasterClient {
   static getWakuCore(): Optional<LightNode> {
     return WakuBroadcasterWakuCore.waku;
   }
+
+  static setRestartCallback(callback: () => void): void {
+    WakuBroadcasterWakuCore.setWakuRestartCallback(callback);
+  }
 }

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@waku/sdk/dist/reliability_monitor/receiver.js b/node_modules/@waku/sdk/dist/reliability_monitor/receiver.js
+index 831df80..d688b8d 100644
+--- a/node_modules/@waku/sdk/dist/reliability_monitor/receiver.js
++++ b/node_modules/@waku/sdk/dist/reliability_monitor/receiver.js
+@@ -78,7 +78,7 @@ export class ReceiverReliabilityMonitor {
+             log.warn(`notifyMessage sent: attempting to schedule verification for pending peer:${peerIdStr}\tmessage:${hash}`);
+             return;
+         }
+-        const timeout = window.setTimeout((async () => {
++        const timeout = setTimeout((async () => {
+             const receivedAnyMessage = this.verifiedPeers.has(peerIdStr);
+             const receivedTestMessage = this.receivedMessagesFormPeer.has(`${peerIdStr}-${hash}`);
+             if (receivedAnyMessage || receivedTestMessage) {
