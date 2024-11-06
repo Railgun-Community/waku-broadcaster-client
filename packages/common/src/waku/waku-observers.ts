@@ -4,23 +4,15 @@ import {
   LightNode,
   IMessage,
   IDecoder,
-  type ProtocolUseOptions,
-  type SubscribeOptions,
   type Unsubscribe,
   type SubscribeResult,
-  Protocols,
-  wakuFilter,
 } from '@waku/sdk';
 import { contentTopics } from './waku-topics.js';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import {
-  WAKU_RAILGUN_DEFAULT_SHARD,
-  WAKU_RAILGUN_PUB_SUB_TOPIC,
-} from '../models/constants.js';
-import { unsubscribe } from 'diagnostics_channel';
+import { WAKU_RAILGUN_DEFAULT_SHARD } from '../models/constants.js';
 
 type SubscriptionParams = {
   topic: string;
