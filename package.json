@@ -1,6 +1,6 @@
 {
   "name": "waku-broadcaster-client",
-  "version": "8.1.0",
+  "version": "8.1.1",
   "license": "MIT",
   "scripts": {
     "postinstall": "./setup"
