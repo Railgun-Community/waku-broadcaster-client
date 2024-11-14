@@ -7,23 +7,33 @@ if ! [ -x "$(command -v jq)" ]; then
 fi
 
 # patch by default.
-# Use `./release minor` or `./release major`.
+# Use `./release minor` or `./release major` or `./release prepatch`.
 VERSION_TYPE=${1-patch}
 
 # Sync
+
+COMMIT_HASH=$(git rev-parse --short HEAD)
+
 git fetch;
 git pull; # In case there are new commits in main
 git checkout release --;
 git rebase main;
 
 # Update version in root package.json
-npm version $VERSION_TYPE;
+if [ "$VERSION_TYPE" == "prepatch" ]; then
+  npm version $VERSION_TYPE --preid=$COMMIT_HASH;
+else 
+  npm version $VERSION_TYPE;
+fi
+
 # Propagate version to packages
 VERSION=$(cat package.json | jq -r '.version');
 for PACKAGE in common node web; do
   FILE=packages/$PACKAGE/package.json
   jq --arg new_version "$VERSION" '.version = $new_version' $FILE > $FILE.tmp && mv $FILE.tmp $FILE
 done
+
+echo $VERSION;
 # Amend the version commit
 git add .
 git commit --amend --no-edit;
