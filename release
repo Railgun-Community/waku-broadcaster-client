@@ -33,7 +33,6 @@ for PACKAGE in common node web; do
   jq --arg new_version "$VERSION" '.version = $new_version' $FILE > $FILE.tmp && mv $FILE.tmp $FILE
 done
 
-echo $VERSION;
 # Amend the version commit
 git add .
 git commit --amend --no-edit;
