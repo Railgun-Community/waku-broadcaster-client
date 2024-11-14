@@ -8,17 +8,15 @@ fi
 
 CURRENT_BRANCH=$(git branch --show-current)
 
-
 # prepatch by default, script is ran like ./release-dev <branch-name>
 VERSION_TYPE=prepatch
 
 # Sync
-
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
 git fetch;
 git pull; # In case there are new commits from desired branch
-git checkout release --;
+git checkout dev --;
 git rebase $CURRENT_BRANCH;
 
 # Update version in root package.json
@@ -39,8 +37,4 @@ git tag v$VERSION;
 
 # Push
 git push -f;
-git checkout $1;
-git rebase origin/release;
-git push --tags --no-verify;
-git push --no-verify;
 echo "The release will be made from https://github.com/Railgun-Community/waku-broadcaster-client/actions";
