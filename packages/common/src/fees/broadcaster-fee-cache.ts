@@ -30,11 +30,12 @@ export type BroadcasterFeeCacheState = {
 
 export class BroadcasterFeeCache {
   private static cache: BroadcasterFeeCacheState = { forNetwork: {} };
-
+  static lastSubscribedFeeMessageReceivedAt: Optional<number>;
   private static poiActiveListKeys: Optional<string[]>;
 
   static init(poiActiveListKeys: string[]) {
     this.poiActiveListKeys = poiActiveListKeys;
+    this.lastSubscribedFeeMessageReceivedAt = Date.now();
   }
 
   static addTokenFees(
@@ -105,6 +106,7 @@ export class BroadcasterFeeCache {
       ].forIdentifier[identifier ?? DEFAULT_BROADCASTER_IDENTIFIER] =
         tokenFeeMap[tokenAddress];
     });
+    BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt = Date.now();
   }
 
   static resetCache(chain: Chain) {

@@ -1,20 +1,18 @@
 import { Chain, compareChains, delay } from '@railgun-community/shared-models';
 import { createDecoder } from '@waku/core';
-import { contentTopics } from './waku-topics.js';
 import {
-  LightNode,
   IMessage,
   IDecoder,
+  type RelayNode,
   type Unsubscribe,
+  type SubscribeResult,
 } from '@waku/interfaces';
+import { contentTopics } from './waku-topics.js';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import {
-  WAKU_RAILGUN_DEFAULT_SHARD,
-  WAKU_RAILGUN_PUB_SUB_TOPIC,
-} from '../models/constants.js';
+import { WAKU_RAILGUN_DEFAULT_SHARD } from '../models/constants.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -23,7 +21,7 @@ type SubscriptionParams = {
 };
 
 type ActiveSubscription = {
-  unsubscribe: Unsubscribe;
+  unsubscribe: SubscribeResult | Unsubscribe;
   params: SubscriptionParams;
 };
 
@@ -33,7 +31,7 @@ export class WakuObservers {
   private static currentSubscriptions: ActiveSubscription[] | undefined = [];
 
   static setObserversForChain = async (
-    waku: Optional<LightNode>,
+    waku: Optional<RelayNode>,
     chain: Chain,
   ) => {
     if (!waku) {
@@ -49,40 +47,45 @@ export class WakuObservers {
       `Add Waku observers for chain: ${chain.type}:${chain.id}`,
     );
     WakuObservers.currentChain = chain;
-    await WakuObservers.removeAllObservers(waku);
+    await this.removeAllObservers(waku);
+
     BroadcasterDebug.log('Removed all observers');
-    await WakuObservers.addChainObservers(waku, chain);
+    await this.addChainObservers(waku, chain);
     BroadcasterDebug.log(
       `Waku listening for events on chain: ${chain.type}:${chain.id}`,
     );
   };
 
   static resetCurrentChain = () => {
-    WakuObservers.currentChain = undefined;
+    this.currentChain = undefined;
   };
 
-  static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
+  static checkSubscriptionsHealth = async (waku: Optional<RelayNode>) => {
     BroadcasterDebug.log(
       // @ts-ignore
-      `WAKU Health Status: ${waku?.health.health.overallStatus}`,
+      `WAKU Health Status: ${waku?.health.getHealthStatus()}`,
     );
-    if (isDefined(WakuObservers.currentSubscriptions)) {
-      if (WakuObservers.currentSubscriptions.length === 0) {
+    if (isDefined(this.currentSubscriptions)) {
+      if (this.currentSubscriptions.length === 0) {
         BroadcasterDebug.log('No subscriptions to ping');
-        throw new Error('No subscriptions to ping');
+        // throw new Error('No subscriptions to ping');
       }
     }
     await delay(15 * 1000);
-    WakuObservers.checkSubscriptionsHealth(waku);
+    this.checkSubscriptionsHealth(waku);
   };
 
-  private static removeAllObservers = async (waku: Optional<LightNode>) => {
-    if (!isDefined(waku?.lightPush)) {
+  private static removeAllObservers = async (waku: Optional<RelayNode>) => {
+    if (!isDefined(waku?.relay)) {
       return;
     }
     if (isDefined(this.currentSubscriptions)) {
-      for (const { unsubscribe } of this.currentSubscriptions) {
-        await unsubscribe();
+      for (const { unsubscribe, params } of this.currentSubscriptions) {
+        if (unsubscribe instanceof Function) {
+          await unsubscribe();
+        } else {
+          await unsubscribe.subscription?.unsubscribe([params.topic]);
+        }
       }
       this.currentSubscriptions = [];
       this.currentContentTopics = [];
@@ -118,18 +121,17 @@ export class WakuObservers {
     return [feesSubscriptionParams, transactResponseSubscriptionParams];
   };
 
-  private static addChainObservers = async (waku: LightNode, chain: Chain) => {
-    if (!isDefined(waku.filter)) {
+  private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
+    if (!isDefined(waku.relay)) {
       return;
     }
 
-    await WakuObservers.addSubscriptions(chain, waku).catch(err => {
-      BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
-    });
-    if (!WakuObservers.hasStartedPinging) {
-      WakuObservers.hasStartedPinging = true;
-      WakuObservers.checkSubscriptionsHealth(waku);
-    }
+    const subscriptionResult = await this.addSubscriptions(chain, waku).catch(
+      err => {
+        BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
+        return undefined;
+      },
+    );
     // Log current list of observers
     const currentContentTopics = WakuObservers.getCurrentContentTopics();
     BroadcasterDebug.log('Waku content topics:');
@@ -137,10 +139,9 @@ export class WakuObservers {
       BroadcasterDebug.log(observer);
     }
   };
-  static hasStartedPinging: boolean;
 
   static async addTransportSubscription(
-    waku: Optional<LightNode>,
+    waku: Optional<RelayNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -157,11 +158,11 @@ export class WakuObservers {
       decoder,
       callback,
     };
-    const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
+    const unsubscribe = await waku.relay.subscribeWithUnsubscribe(
       decoder,
       callback,
     );
-    WakuObservers.currentSubscriptions?.push({
+    this.currentSubscriptions?.push({
       unsubscribe,
       params,
     });
@@ -170,25 +171,25 @@ export class WakuObservers {
 
   private static async addSubscriptions(
     chain: Optional<Chain>,
-    waku: Optional<LightNode>,
+    waku: Optional<RelayNode>,
   ) {
     if (!isDefined(chain) || !isDefined(waku)) {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
       return;
     }
-    const subscriptionParams = WakuObservers.getDecodersForChain(chain);
+    const subscriptionParams = this.getDecodersForChain(chain);
     const topics = subscriptionParams.map(params => params.topic);
     const newTopics = topics.filter(
-      topic => !WakuObservers.currentContentTopics.includes(topic),
+      topic => !this.currentContentTopics.includes(topic),
     );
-    WakuObservers.currentContentTopics.push(...newTopics);
+    this.currentContentTopics.push(...newTopics);
     for (const params of subscriptionParams) {
       const { decoder, callback } = params;
-      const unsubscribe = await waku.filter.subscribeWithUnsubscribe(
+      const unsubscribe = await waku.relay.subscribeWithUnsubscribe(
         decoder,
         callback,
       );
-      WakuObservers.currentSubscriptions?.push({
+      this.currentSubscriptions?.push({
         unsubscribe,
         params,
       });

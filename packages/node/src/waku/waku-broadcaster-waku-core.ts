@@ -1,17 +1,15 @@
 import { Chain, promiseTimeout } from '@railgun-community/shared-models';
-import { waitForRemotePeer, createEncoder } from '@waku/core';
-import { Protocols, IMessage, LightNode } from '@waku/interfaces';
 import { WakuObservers } from './waku-observers.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { utf8ToBytes } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
-import { bootstrap } from '@libp2p/bootstrap';
 import { tcp } from '@libp2p/tcp';
-import { createLightNode } from '@waku/sdk';
+import { Protocols, type IMessage, type RelayNode } from '@waku/interfaces';
+import { createEncoder } from '@waku/core';
+import { createRelayNode } from '@waku/relay';
 import { BroadcasterOptions } from '../models/index.js';
 import {
   WAKU_RAILGUN_DEFAULT_PEERS_NODE,
-  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
   WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_DEFAULT_SHARDS,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
@@ -19,13 +17,15 @@ import {
 
 export class WakuBroadcasterWakuCore {
   static hasError = false;
+  static restartCallback: () => void;
 
-  static waku: Optional<LightNode>;
+  static waku: Optional<RelayNode>;
 
   private static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   private static additionalDirectPeers: string[] = [];
   private static peerDiscoveryTimeout = 60000;
   private static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
+  public static restartCount = 0;
 
   static initWaku = async (chain: Chain): Promise<void> => {
     try {
@@ -48,6 +48,10 @@ export class WakuBroadcasterWakuCore {
     }
   };
 
+  static setWakuRestartCallback = (callback: () => void) => {
+    WakuBroadcasterWakuCore.restartCallback = callback;
+  };
+
   static reinitWaku = async (chain: Chain) => {
     if (
       isDefined(WakuBroadcasterWakuCore.waku) &&
@@ -56,8 +60,13 @@ export class WakuBroadcasterWakuCore {
       // Reset fees, which will reset status to "Searching".
       await WakuBroadcasterWakuCore.disconnect();
     }
-
+    BroadcasterDebug.log(
+      `Reinit Waku, ${++WakuBroadcasterWakuCore.restartCount}`,
+    );
     await WakuBroadcasterWakuCore.initWaku(chain);
+    if (WakuBroadcasterWakuCore.restartCallback) {
+      WakuBroadcasterWakuCore.restartCallback();
+    }
   };
 
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
@@ -89,19 +98,11 @@ export class WakuBroadcasterWakuCore {
         ...WAKU_RAILGUN_DEFAULT_PEERS_NODE,
         ...this.additionalDirectPeers,
       ];
-      const waitTimeoutBeforeBootstrap = 1250; // 1250 ms - default is 1000ms
-      const waku: LightNode = await createLightNode({
-        // bootstrapPeers, this works also, while removing peerDiscovery from libp2p, peerDiscovery might be needed for native build?
+      const waku: RelayNode = await createRelayNode({
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
+        bootstrapPeers,
         libp2p: {
-          // @ts-ignore
-          transports: [tcp({})],
-          peerDiscovery: [
-            bootstrap({
-              list: bootstrapPeers,
-              timeout: waitTimeoutBeforeBootstrap,
-            }),
-          ],
+          transports: [tcp() as unknown as any],
         },
       });
 
@@ -111,8 +112,8 @@ export class WakuBroadcasterWakuCore {
       BroadcasterDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
 
-      if (!isDefined(waku.lightPush)) {
-        throw new Error('No Waku LightPush instantiated.');
+      if (!isDefined(waku.relay)) {
+        throw new Error('No Waku relay instantiated.');
       }
 
       BroadcasterDebug.log('Waku peers:');
@@ -142,20 +143,25 @@ export class WakuBroadcasterWakuCore {
   }
 
   static async getLightPushPeerCount(): Promise<number> {
-    const peers = this.waku?.lightPush.connectedPeers ?? [];
-    return peers.length;
+    return 0;
+    // const peers = this.waku?.relay.protocol.connectedPeers ?? [];
+    // return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
-    const peers = this.waku?.filter.connectedPeers ?? [];
-    return peers.length;
+    return 0;
+    // const peers = this.waku?.filter.connectedPeers ?? [];
+    // return peers.length;
   }
 
-  private static async waitForRemotePeer(waku: LightNode) {
+  private static async waitForRemotePeer(waku: RelayNode): Promise<void> {
     try {
-      const protocols = [Protocols.LightPush, Protocols.Filter];
+      const protocols = [
+        Protocols.Relay,
+        // Protocols.LightPush, Protocols.Filter
+      ];
       await promiseTimeout(
-        waitForRemotePeer(waku, protocols),
+        waku.waitForPeers(protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
       );
     } catch (err) {
@@ -179,7 +185,7 @@ export class WakuBroadcasterWakuCore {
         contentTopic,
         pubsubTopicShardInfo: this.defaultShard,
       });
-      await WakuBroadcasterWakuCore.waku?.lightPush.send(encoder, message);
+      await WakuBroadcasterWakuCore.waku?.relay.send(encoder, message);
     } catch (err) {
       if (!(err instanceof Error)) {
         throw err;

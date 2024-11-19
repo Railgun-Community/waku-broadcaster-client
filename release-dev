@@ -6,25 +6,21 @@ if ! [ -x "$(command -v jq)" ]; then
   exit 1
 fi
 
-# patch by default.
-# Use `./release minor` or `./release major` or `./release prepatch`.
-VERSION_TYPE=${1-patch}
+CURRENT_BRANCH=$(git branch --show-current)
+
+# prepatch by default, script is ran like ./release-dev <branch-name>
+VERSION_TYPE=prepatch
 
 # Sync
-
 COMMIT_HASH=$(git rev-parse --short HEAD)
 
 git fetch;
-git pull; # In case there are new commits in main
-git checkout release --;
-git rebase main;
+git pull; # In case there are new commits from desired branch
+git checkout dev --;
+git rebase $CURRENT_BRANCH;
 
 # Update version in root package.json
-if [ "$VERSION_TYPE" == "prepatch" ]; then
-  npm version $VERSION_TYPE --preid=$COMMIT_HASH;
-else 
-  npm version $VERSION_TYPE;
-fi
+npm version $VERSION_TYPE --preid=$COMMIT_HASH;
 
 # Propagate version to packages
 VERSION=$(cat package.json | jq -r '.version');
@@ -41,8 +37,8 @@ git tag v$VERSION;
 
 # Push
 git push -f;
-git checkout main;
-git rebase origin/release;
+git checkout $1;
+git rebase origin/dev;
 git push --tags --no-verify;
 git push --no-verify;
 echo "The release will be made from https://github.com/Railgun-Community/waku-broadcaster-client/actions";
