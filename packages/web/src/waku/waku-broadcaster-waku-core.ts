@@ -14,7 +14,6 @@ import {
   WAKU_RAILGUN_DEFAULT_SHARDS,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
-import { multiaddr } from '@multiformats/multiaddr';
 import { createRelayNode } from '@waku/relay';
 export class WakuBroadcasterWakuCore {
   static hasError = false;
@@ -102,13 +101,11 @@ export class WakuBroadcasterWakuCore {
       ];
       const waku = await createRelayNode({
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
+        bootstrapPeers,
       });
 
       BroadcasterDebug.log('Start Waku.');
       await waku.start();
-      Promise.all(
-        bootstrapPeers.map(m => multiaddr(m)).map(m => waku.libp2p.dial(m)),
-      );
 
       BroadcasterDebug.log('Waiting for remote peer.');
       await this.waitForRemotePeer(waku);
@@ -153,10 +150,7 @@ export class WakuBroadcasterWakuCore {
 
   private static async waitForRemotePeer(waku: RelayNode) {
     try {
-      const protocols = [
-        Protocols.Relay,
-        // Protocols.LightPush, Protocols.Filter
-      ];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waku.waitForPeers(protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
