@@ -102,7 +102,7 @@ export class WakuBroadcasterWakuCore {
         networkConfig: WAKU_RAILGUN_DEFAULT_SHARDS,
         bootstrapPeers,
         libp2p: {
-          transports: [tcp() as unknown as any],
+          transports: [tcp()],
         },
       });
 
@@ -144,22 +144,15 @@ export class WakuBroadcasterWakuCore {
 
   static async getLightPushPeerCount(): Promise<number> {
     return 0;
-    // const peers = this.waku?.relay.protocol.connectedPeers ?? [];
-    // return peers.length;
   }
 
   static async getFilterPeerCount(): Promise<number> {
     return 0;
-    // const peers = this.waku?.filter.connectedPeers ?? [];
-    // return peers.length;
   }
 
   private static async waitForRemotePeer(waku: RelayNode): Promise<void> {
     try {
-      const protocols = [
-        Protocols.Relay,
-        // Protocols.LightPush, Protocols.Filter
-      ];
+      const protocols = [Protocols.Relay];
       await promiseTimeout(
         waku.waitForPeers(protocols),
         WakuBroadcasterWakuCore.peerDiscoveryTimeout,
