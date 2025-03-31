@@ -14,6 +14,10 @@
     "test-coverage": "npm run compile-test && c8 mocha",
     "test": "npm run compile-test && NODE_ENV=test mocha"
   },
+  "resolutions": {
+    "@railgun-community/wallet": "/Users/mattgrote/code/railgun/wallet",
+    "@railgun-community/shared-models": "/Users/mattgrote/code/railgun/shared-models"
+  },
   "dependencies": {
     "@libp2p/bootstrap": "^10",
     "@waku/interfaces": "0.0.28",

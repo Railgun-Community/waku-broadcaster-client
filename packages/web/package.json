@@ -22,6 +22,10 @@
     "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'",
     "postinstall": "patch-package"
   },
+  "resolutions": {
+    "@railgun-community/wallet": "/Users/mattgrote/code/railgun/wallet",
+    "@railgun-community/shared-models": "/Users/mattgrote/code/railgun/shared-models"
+  },
   "dependencies": {
     "@waku/core": "0.0.33",
     "@waku/relay": "0.0.16",
