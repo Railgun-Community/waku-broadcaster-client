@@ -32,12 +32,12 @@
     "@multiformats/multiaddr": "12.3.1"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "^7.5.0",
-    "@railgun-community/wallet": "^10.3.3"
+    "@railgun-community/shared-models": "git+https://github.com/Railgun-Community/shared-models.git#mattgle/ink-integration",
+    "@railgun-community/wallet": "git+https://github.com/Railgun-Community/wallet.git#mattgle/ink-integration"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "^7.5.0",
-    "@railgun-community/wallet": "^10.3.3",
+    "@railgun-community/shared-models": "git+https://github.com/Railgun-Community/shared-models.git#mattgle/ink-integration",
+    "@railgun-community/wallet": "git+https://github.com/Railgun-Community/wallet.git#mattgle/ink-integration",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
