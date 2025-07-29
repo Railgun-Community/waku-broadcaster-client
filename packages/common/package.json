@@ -22,7 +22,7 @@
     "libp2p": "^1.8.1"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "^7.5.0",
+    "@railgun-community/shared-models": "8.0.0",
     "@railgun-community/wallet": "^10.3.3",
     "ethers": "6.13.1"
   },
