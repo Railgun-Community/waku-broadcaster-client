@@ -26,7 +26,7 @@ export class WakuBroadcasterClient {
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 3000;
+  static pollDelay = 10_000;
 
   static async start(
     chain: Chain,
@@ -45,7 +45,7 @@ export class WakuBroadcasterClient {
 
     BroadcasterFeeCache.init(
       broadcasterOptions.poiActiveListKeys ??
-        POI_REQUIRED_LISTS.map(list => list.key),
+      POI_REQUIRED_LISTS.map(list => list.key),
     );
 
     try {
