@@ -1,18 +1,18 @@
 import { Chain, compareChains, delay } from '@railgun-community/shared-models';
-import { createDecoder } from '@waku/core';
 import {
-  IMessage,
-  IDecoder,
-  type RelayNode,
-  type Unsubscribe,
-  type SubscribeResult,
-} from '@waku/interfaces';
+  createDecoder,
+  type IMessage,
+  type IDecoder,
+  type LightNode,
+  type IDecodedMessage,
+} from '@waku/sdk';
 import { contentTopics } from './waku-topics.js';
 import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
 import { WAKU_RAILGUN_DEFAULT_SHARD } from '../models/constants.js';
+import { bytesToHex } from '../utils/conversion.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -21,7 +21,6 @@ type SubscriptionParams = {
 };
 
 type ActiveSubscription = {
-  unsubscribe: SubscribeResult | Unsubscribe;
   params: SubscriptionParams;
 };
 
@@ -29,9 +28,44 @@ export class WakuObservers {
   private static currentChain: Optional<Chain>;
   private static currentContentTopics: string[] = [];
   private static currentSubscriptions: ActiveSubscription[] | undefined = [];
+  private static messageCache: Set<string> = new Set();
+  private static observedMessages: IDecodedMessage[] = [];
+  private static MAX_CACHE_SIZE = 5000;
+
+  private static getMessageId(message: IMessage): string {
+    const timestamp = message.timestamp ? message.timestamp.getTime() : 0;
+    const payload = message.payload ? bytesToHex(message.payload) : '';
+    return `${timestamp}-${payload}`;
+  }
+
+  private static wrapCallbackWithCache(
+    callback: (message: IMessage) => void,
+  ): (message: IMessage) => void {
+    return (message: IMessage) => {
+      if (!message.payload) {
+        return;
+      }
+      const messageId = this.getMessageId(message);
+      if (this.messageCache.has(messageId)) {
+        return;
+      }
+      this.messageCache.add(messageId);
+      if (this.messageCache.size > this.MAX_CACHE_SIZE) {
+        const first = this.messageCache.values().next().value;
+        if (first) {
+          this.messageCache.delete(first);
+        }
+      }
+      this.observedMessages.push(message as IDecodedMessage);
+      if (this.observedMessages.length > this.MAX_CACHE_SIZE) {
+        this.observedMessages.shift();
+      }
+      callback(message);
+    };
+  }
 
   static setObserversForChain = async (
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     chain: Chain,
   ) => {
     if (!waku) {
@@ -60,7 +94,7 @@ export class WakuObservers {
     this.currentChain = undefined;
   };
 
-  static checkSubscriptionsHealth = async (waku: Optional<RelayNode>) => {
+  static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
     BroadcasterDebug.log(
       // @ts-ignore
       `WAKU Health Status: ${waku?.health.getHealthStatus()}`,
@@ -75,26 +109,22 @@ export class WakuObservers {
     this.checkSubscriptionsHealth(waku);
   };
 
-  private static removeAllObservers = async (waku: Optional<RelayNode>) => {
-    if (!isDefined(waku?.relay)) {
-      return;
+  static async unsubscribe(waku: Optional<LightNode>) {
+    if (isDefined(waku) && isDefined(waku?.filter) && isDefined(this.currentSubscriptions)) {
+      waku.filter.unsubscribeAll()
     }
-    if (isDefined(this.currentSubscriptions)) {
-      for (const { unsubscribe, params } of this.currentSubscriptions) {
-        if (unsubscribe instanceof Function) {
-          await unsubscribe();
-        } else {
-          await unsubscribe.subscription?.unsubscribe([params.topic]);
-        }
-      }
-      this.currentSubscriptions = [];
-      this.currentContentTopics = [];
-    }
+    this.currentSubscriptions = [];
+    this.currentContentTopics = [];
+  }
+
+  private static removeAllObservers = async (waku: Optional<LightNode>) => {
+    await this.unsubscribe(waku);
   };
 
   private static getDecodersForChain = (chain: Chain) => {
     const contentTopicFees = contentTopics.fees(chain);
     const contentTopicTransactResponse = contentTopics.transactResponse(chain);
+
     const feesDecoder = createDecoder(
       contentTopicFees,
       WAKU_RAILGUN_DEFAULT_SHARD,
@@ -103,30 +133,34 @@ export class WakuObservers {
       contentTopicTransactResponse,
       WAKU_RAILGUN_DEFAULT_SHARD,
     );
-    const feesCallback = (message: IMessage) =>
-      handleBroadcasterFeesMessage(chain, message, contentTopicFees);
-    const transactResponseCallback =
-      BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage;
 
-    const feesSubscriptionParams = {
-      topic: contentTopicFees,
-      decoder: feesDecoder,
-      callback: feesCallback,
-    };
-    const transactResponseSubscriptionParams = {
-      topic: contentTopicTransactResponse,
-      decoder: transactResponseDecoder,
-      callback: transactResponseCallback,
-    };
-    return [feesSubscriptionParams, transactResponseSubscriptionParams];
+    const feesCallback = this.wrapCallbackWithCache((message: IMessage) =>
+      handleBroadcasterFeesMessage(chain, message, contentTopicFees));
+    const transactResponseCallback = this.wrapCallbackWithCache((message: IMessage) =>
+      BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage(
+        message,
+      ));
+
+    return [
+      {
+        topic: contentTopicFees,
+        decoder: feesDecoder,
+        callback: feesCallback,
+      },
+      {
+        topic: contentTopicTransactResponse,
+        decoder: transactResponseDecoder,
+        callback: transactResponseCallback,
+      },
+    ];
   };
 
-  private static addChainObservers = async (waku: RelayNode, chain: Chain) => {
-    if (!isDefined(waku.relay)) {
+  private static addChainObservers = async (waku: LightNode, chain: Chain) => {
+    if (!isDefined(waku.filter)) {
       return;
     }
 
-    const subscriptionResult = await this.addSubscriptions(chain, waku).catch(
+    await this.addSubscriptions(chain, waku).catch(
       err => {
         BroadcasterDebug.log(`Error adding Observers. ${err.message}`);
         return undefined;
@@ -141,7 +175,7 @@ export class WakuObservers {
   };
 
   static async addTransportSubscription(
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -153,17 +187,17 @@ export class WakuObservers {
     }
     const transportTopic = contentTopics.encrypted(topic);
     const decoder = createDecoder(transportTopic, WAKU_RAILGUN_DEFAULT_SHARD);
+    const wrappedCallback = this.wrapCallbackWithCache(callback);
     const params: SubscriptionParams = {
       topic: transportTopic,
       decoder,
-      callback,
+      callback: wrappedCallback,
     };
-    const unsubscribe = await waku.relay.subscribeWithUnsubscribe(
+    await waku.filter.subscribe(
       decoder,
-      callback,
+      wrappedCallback,
     );
     this.currentSubscriptions?.push({
-      unsubscribe,
       params,
     });
     WakuObservers.currentContentTopics.push(transportTopic);
@@ -171,7 +205,7 @@ export class WakuObservers {
 
   private static async addSubscriptions(
     chain: Optional<Chain>,
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
   ) {
     if (!isDefined(chain) || !isDefined(waku)) {
       BroadcasterDebug.log('AddSubscription: No Waku or Chain defined.');
@@ -185,12 +219,11 @@ export class WakuObservers {
     this.currentContentTopics.push(...newTopics);
     for (const params of subscriptionParams) {
       const { decoder, callback } = params;
-      const unsubscribe = await waku.relay.subscribeWithUnsubscribe(
+      await waku.filter.subscribe(
         decoder,
         callback,
       );
       this.currentSubscriptions?.push({
-        unsubscribe,
         params,
       });
     }
@@ -198,5 +231,28 @@ export class WakuObservers {
 
   static getCurrentContentTopics(): string[] {
     return WakuObservers.currentContentTopics;
+  }
+
+  static getLastMessage(topic: string): IDecodedMessage | undefined {
+    let latestMessage: IDecodedMessage | undefined;
+    for (const msg of this.observedMessages) {
+      if (msg.contentTopic === topic) {
+        if (!latestMessage) {
+          latestMessage = msg;
+          continue;
+        }
+        const msgTime = msg.timestamp ? msg.timestamp.getTime() : 0;
+        const latestTime = latestMessage.timestamp ? latestMessage.timestamp.getTime() : 0;
+        if (msgTime > latestTime) {
+          latestMessage = msg;
+        }
+      }
+    }
+    return latestMessage;
+  }
+
+  static getCallbackForTopic(topic: string): Optional<(message: any) => void> {
+    const subscription = this.currentSubscriptions?.find(sub => sub.params.topic === topic);
+    return subscription?.params.callback;
   }
 }

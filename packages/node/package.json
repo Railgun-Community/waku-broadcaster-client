@@ -24,20 +24,21 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@libp2p/tcp": "9.1.5",
-    "@waku/relay": "0.0.16",
-    "@waku/core": "0.0.33",
-    "@waku/interfaces": "0.0.28",
-    "patch-package": "^8.0.0",
-    "@multiformats/multiaddr": "12.3.1"
+    "@libp2p/tcp": "^10.0.0",
+    "@waku/discovery": "^0.0.13",
+    "@waku/sdk": "^0.0.36",
+    "patch-package": "^8.0.0"
+  },
+  "resolutions": {
+    "protons-runtime": "5.6.0"
   },
   "peerDependencies": {
     "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.0"
+    "@railgun-community/wallet": "^10.8.1"
   },
   "devDependencies": {
     "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.0",
+    "@railgun-community/wallet": "^10.8.1",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",

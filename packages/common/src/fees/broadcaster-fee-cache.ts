@@ -30,6 +30,7 @@ export type BroadcasterFeeCacheState = {
 
 export class BroadcasterFeeCache {
   private static cache: BroadcasterFeeCacheState = { forNetwork: {} };
+  private static authorizedFees: MapType<CachedTokenFee> = {};
   static lastSubscribedFeeMessageReceivedAt: Optional<number>;
   private static poiActiveListKeys: Optional<string[]>;
 
@@ -159,5 +160,13 @@ export class BroadcasterFeeCache {
         !cachedFeeUnavailableOrExpired(cachedFee, chain, useRelayAdapt),
     );
     return availableUnexpiredFee != null;
+  }
+
+  static addAuthorizedFees(tokenFeeMap: MapType<CachedTokenFee>) {
+    this.authorizedFees = { ...this.authorizedFees, ...tokenFeeMap };
+  }
+
+  static getAuthorizedFee(tokenAddress: string): Optional<CachedTokenFee> {
+    return this.authorizedFees[tokenAddress];
   }
 }

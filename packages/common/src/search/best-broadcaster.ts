@@ -7,6 +7,7 @@ import {
   shortenAddress,
 } from '../utils/broadcaster-util.js';
 import { isDefined } from '../utils/is-defined.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
 
 const SelectedBroadcasterAscendingFee = (
   a: SelectedBroadcaster,
@@ -15,7 +16,7 @@ const SelectedBroadcasterAscendingFee = (
   const feeAmount =
     BigInt(a.tokenFee.feePerUnitGas) - BigInt(b.tokenFee.feePerUnitGas);
   if (feeAmount === BigInt(0)) {
-    return 0;
+    return b.tokenFee.reliability - a.tokenFee.reliability;
   }
   return feeAmount > BigInt(0) ? 1 : -1;
 };
@@ -24,6 +25,7 @@ export class BroadcasterSearch {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    ignoreMissingAuthorizedFee = false,
   ): Optional<SelectedBroadcaster[]> {
     const tokenAddressLowercase = tokenAddress.toLowerCase();
     const broadcasterTokenFees =
@@ -40,8 +42,7 @@ export class BroadcasterSearch {
         address => !broadcasterAddresses.includes(address),
       );
       BroadcasterDebug.log(
-        `Filtered RAILGUN broadcaster addresses ${
-          removedAddresses.length
+        `Filtered RAILGUN broadcaster addresses ${removedAddresses.length
         }: ${removedAddresses
           .map(address => shortenAddress(address))
           .join(', ')}`,
@@ -49,6 +50,37 @@ export class BroadcasterSearch {
     }
 
     const selectedBroadcasters: SelectedBroadcaster[] = [];
+
+    const authorizedFee =
+      BroadcasterFeeCache.getAuthorizedFee(tokenAddressLowercase);
+    let minFee: bigint | undefined;
+    let maxFee: bigint | undefined;
+
+    if (BroadcasterConfig.trustedFeeSigner) {
+      if (authorizedFee) {
+        const authorizedFeeAmount = BigInt(authorizedFee.feePerUnitGas);
+        const varianceLower =
+          (authorizedFeeAmount *
+            BigInt(
+              Math.round(
+                BroadcasterConfig.authorizedFeeVariancePercentageLower * 100,
+              ),
+            )) /
+          100n;
+        const varianceUpper =
+          (authorizedFeeAmount *
+            BigInt(
+              Math.round(
+                BroadcasterConfig.authorizedFeeVariancePercentageUpper * 100,
+              ),
+            )) /
+          100n;
+        minFee = authorizedFeeAmount - varianceLower;
+        maxFee = authorizedFeeAmount + varianceUpper;
+      } else if (!ignoreMissingAuthorizedFee) {
+        return [];
+      }
+    }
 
     broadcasterAddresses.forEach((broadcasterAddress: string) => {
       const identifiers: string[] = Object.keys(
@@ -62,6 +94,14 @@ export class BroadcasterSearch {
         ) {
           return;
         }
+
+        if (isDefined(minFee) && isDefined(maxFee)) {
+          const incomingFeeAmount = BigInt(nextCachedFee.feePerUnitGas);
+          if (incomingFeeAmount < minFee || incomingFeeAmount > maxFee) {
+            return;
+          }
+        }
+
         const selectedBroadcaster: SelectedBroadcaster = {
           railgunAddress: broadcasterAddress,
           tokenFee: nextCachedFee,
@@ -71,6 +111,7 @@ export class BroadcasterSearch {
       });
     });
 
+    // selectedBroadcasters.sort(SelectedBroadcasterAscendingFee);
     selectedBroadcasters.sort(
       (a, b) => b.tokenFee.reliability - a.tokenFee.reliability,
     );
@@ -80,6 +121,7 @@ export class BroadcasterSearch {
   static findAllBroadcastersForChain(
     chain: Chain,
     useRelayAdapt: boolean,
+    ignoreMissingAuthorizedFee = false,
   ): Optional<SelectedBroadcaster[]> {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
@@ -93,12 +135,14 @@ export class BroadcasterSearch {
         chain,
         tokenAddress,
         useRelayAdapt,
+        ignoreMissingAuthorizedFee,
       );
       if (!broadcastersForToken) {
         return;
       }
       selectedBroadcasters.push(...broadcastersForToken);
     });
+    selectedBroadcasters.sort(SelectedBroadcasterAscendingFee);
     return selectedBroadcasters;
   }
 

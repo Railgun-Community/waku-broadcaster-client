@@ -8,7 +8,7 @@ import {
   BroadcasterFeeMessageData,
 } from '@railgun-community/shared-models';
 import crypto from 'crypto';
-import { IMessage } from '@waku/interfaces';
+import { type IMessage } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
@@ -16,6 +16,7 @@ import { BroadcasterFeeCache } from './broadcaster-fee-cache.js';
 import { invalidBroadcasterVersion } from '../utils/broadcaster-util.js';
 import { bytesToUtf8, hexToUTF8String } from '../utils/conversion.js';
 import { isDefined } from '../utils/is-defined.js';
+import { handleAuthorizedFees } from './handle-authorized-fees-message.js';
 
 const isExpiredTimestamp = (
   timestamp: Optional<Date>,
@@ -26,30 +27,28 @@ const isExpiredTimestamp = (
   }
   let messageTimestamp = timestamp;
   if (messageTimestamp.getFullYear() === 1970) {
-    // Waku timestamp bug.
+    // Waku timestamp bug. -- should be no longer an issue. 
     messageTimestamp = new Date(messageTimestamp.getTime() * 1000);
   }
   // Expired if message originated > 45 seconds ago.
   // check if fee expires within 45 seconds; if it doesn't ignore it.
   const nowTime = Date.now();
   const expirationMsec = nowTime - 45 * 1000;
-  // const expirationFeeMsec = nowTime + 45 * 1000;
+  const expirationFeeMsec = nowTime + 45 * 1000;
   const timestampExpired = messageTimestamp.getTime() < expirationMsec;
   if (timestampExpired) {
     BroadcasterDebug.log(
-      `Broadcaster Fee STALE: Difference was ${
-        (Date.now() - messageTimestamp.getTime()) / 1000
+      `Broadcaster Fee STALE: Difference was ${(Date.now() - messageTimestamp.getTime()) / 1000
       }s`,
     );
   } else {
     BroadcasterDebug.log(
-      `Broadcaster Fee receipt SUCCESS in ${
-        (Date.now() - messageTimestamp.getTime()) / 1000
+      `Broadcaster Fee receipt SUCCESS in ${(Date.now() - messageTimestamp.getTime()) / 1000
       }s`,
     );
   }
-  // const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
-  return timestampExpired; //  || feeExpired;
+  const feeExpired = expirationFeeTimestamp.getTime() < expirationFeeMsec;
+  return timestampExpired && feeExpired;
 };
 
 export const handleBroadcasterFeesMessage = async (
@@ -110,10 +109,6 @@ export const handleBroadcasterFeesMessage = async (
     if (!(cause instanceof Error)) {
       throw new Error('Unexpected non-error thrown', { cause });
     }
-
-    BroadcasterDebug.error(
-      new Error('Error handling Broadcaster fees', { cause }),
-    );
   }
 };
 
@@ -123,9 +118,54 @@ const updateFeesForBroadcaster = (
 ) => {
   const tokenFeeMap: MapType<CachedTokenFee> = {};
   const tokenAddresses = Object.keys(feeMessageData.fees);
+
+  const isTrustedSigner =
+    BroadcasterConfig.trustedFeeSigner &&
+    feeMessageData.railgunAddress.toLowerCase() ===
+    BroadcasterConfig.trustedFeeSigner.toLowerCase();
+
+  if (isTrustedSigner) {
+    handleAuthorizedFees(feeMessageData);
+  }
+
   tokenAddresses.forEach(tokenAddress => {
     const feePerUnitGas = feeMessageData.fees[tokenAddress];
     if (feePerUnitGas) {
+      if (!isTrustedSigner && BroadcasterConfig.trustedFeeSigner) {
+        const authorizedFee = BroadcasterFeeCache.getAuthorizedFee(
+          tokenAddress.toLowerCase(),
+        );
+        if (authorizedFee) {
+          const authorizedFeeAmount = BigInt(authorizedFee.feePerUnitGas);
+          const varianceLower =
+            (authorizedFeeAmount *
+              BigInt(
+                Math.round(
+                  BroadcasterConfig.authorizedFeeVariancePercentageLower * 100,
+                ),
+              )) /
+            100n;
+          const varianceUpper =
+            (authorizedFeeAmount *
+              BigInt(
+                Math.round(
+                  BroadcasterConfig.authorizedFeeVariancePercentageUpper * 100,
+                ),
+              )) /
+            100n;
+          const minFee = authorizedFeeAmount - varianceLower;
+          const maxFee = authorizedFeeAmount + varianceUpper;
+
+          const feeAmount = BigInt(feePerUnitGas);
+          if (feeAmount < minFee || feeAmount > maxFee) {
+            return;
+          }
+        } else {
+          // No authorized fee, and we require one.
+          return;
+        }
+      }
+
       const cachedFee: CachedTokenFee = {
         feePerUnitGas,
         expiration: feeMessageData.feeExpiration,
@@ -138,13 +178,15 @@ const updateFeesForBroadcaster = (
     }
   });
 
-  BroadcasterFeeCache.addTokenFees(
-    chain,
-    feeMessageData.railgunAddress,
-    feeMessageData.feeExpiration,
-    tokenFeeMap,
-    feeMessageData.identifier,
-    feeMessageData.version,
-    feeMessageData.requiredPOIListKeys ?? [],
-  );
+  if (Object.keys(tokenFeeMap).length > 0) {
+    BroadcasterFeeCache.addTokenFees(
+      chain,
+      feeMessageData.railgunAddress,
+      feeMessageData.feeExpiration,
+      tokenFeeMap,
+      feeMessageData.identifier,
+      feeMessageData.version,
+      feeMessageData.requiredPOIListKeys ?? [],
+    );
+  }
 };
