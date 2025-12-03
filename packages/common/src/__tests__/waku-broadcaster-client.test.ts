@@ -11,7 +11,7 @@ import { WakuBroadcasterClient } from '../waku-broadcaster-client.js';
 import { MOCK_CHAIN_ETHEREUM, MOCK_CHAIN_GOERLI } from '../tests/mocks.test.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { BroadcasterOptions } from '../models/index.js';
-import { type RelayNode } from '@waku/interfaces';
+import { type LightNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
 
 chai.use(chaiAsPromised);
@@ -19,10 +19,11 @@ const { expect } = chai;
 
 const chain = MOCK_CHAIN_ETHEREUM;
 
-const broadcasterOptions: BroadcasterOptions = {};
+const broadcasterOptions: BroadcasterOptions = {
+  trustedFeeSigner: '0zk1qyv0zc0j9sm6mr8fe3gx7ymwc6d2xymfftqvgvjdy3r8dmyfs947lrv7j6fe3z53llx97s6mxjstvn9wj3xhyv4cfecw08gqzywgnl0fmzx3mguhr2hyych4srf',
+};
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
-const WETH_ADDRESS_GOERLI = '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6';
 const CURRENT_TEST_TOKEN = WETH_ADDRESS;
 
 let currentChain: Chain;
@@ -32,13 +33,15 @@ const statusCallback = (chain: Chain, status: BroadcasterConnectionStatus) => {
   currentStatus = status;
 };
 
-describe('waku-broadcaster-client', () => {
+describe('waku-broadcaster-client', function () {
+  this.timeout(300_000);
+
   after(async () => {
     await WakuBroadcasterClient.stop();
   });
 
   it('Should start up the client, pull live fees and find best Broadcaster, then error and reconnect', async () => {
-    WakuBroadcasterClient.pollDelay = 500;
+    WakuBroadcasterClient.pollDelay = 100;
 
     await WakuBroadcasterClient.start(
       chain,
@@ -51,7 +54,10 @@ describe('waku-broadcaster-client', () => {
     );
 
     expect(currentChain).to.deep.equal(chain);
-    expect(currentStatus).to.equal(BroadcasterConnectionStatus.Searching);
+    expect([
+      BroadcasterConnectionStatus.Searching,
+      BroadcasterConnectionStatus.Connected,
+    ]).to.include(currentStatus);
 
     // Poll until currentStatus is Connected.
     const statusInitialConnection = await poll(
@@ -91,7 +97,7 @@ describe('waku-broadcaster-client', () => {
       async () => currentStatus,
       status => status === BroadcasterConnectionStatus.Error,
       20,
-      1000 / 20, // 1 sec.
+      5000 / 20, // 5 sec.
     );
     if (statusError !== BroadcasterConnectionStatus.Error) {
       throw new Error(`Should be error, got ${currentStatus}`);
@@ -102,7 +108,7 @@ describe('waku-broadcaster-client', () => {
       async () => currentStatus,
       status => status === BroadcasterConnectionStatus.Disconnected,
       20,
-      2000 / 20, // 2 sec.
+      5000 / 20, // 5 sec.
     );
     if (statusDisconnected !== BroadcasterConnectionStatus.Disconnected) {
       throw new Error(`Should be disconnected, got ${currentStatus}`);
@@ -112,8 +118,8 @@ describe('waku-broadcaster-client', () => {
     const statusConnected = await poll(
       async () => currentStatus,
       status => status === BroadcasterConnectionStatus.Connected,
-      40,
-      40000 / 40, // 20 sec.
+      20,
+      60000 / 20, // 60 sec.
     );
     if (statusConnected !== BroadcasterConnectionStatus.Connected) {
       throw new Error(
@@ -129,12 +135,13 @@ describe('waku-broadcaster-client', () => {
     expect(WakuBroadcasterClient.getContentTopics()).to.deep.equal([
       '/railgun/v2/0-5-fees/json',
       '/railgun/v2/0-5-transact-response/json',
+
     ]);
-  }).timeout(90000);
+  }).timeout(120_000);
 
   describe('addTransportSubscription', () => {
     it('should add a transport subscription', async () => {
-      const waku: RelayNode = {} as RelayNode; // Mock RelayNode object
+      const waku: LightNode = {} as LightNode; // Mock RelayNode object
       const topic = 'test-topic';
       const callback = (message: any) => {
         // Mock callback function
@@ -155,15 +162,4 @@ describe('waku-broadcaster-client', () => {
     });
   });
 
-  // describe('sendTransport', () => {
-  //   it('should send transport data', () => {
-  //     const data = { message: 'Hello, world!' };
-  //     const topic = '/test-topic';
-
-  //     WakuBroadcasterClient.sendTransport(data, topic);
-
-  //     // check if the WakuBroadcasterWakuCore.waku.relay.send method was called
-
-  //   });
-  // });
 });

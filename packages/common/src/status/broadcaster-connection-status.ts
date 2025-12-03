@@ -7,6 +7,7 @@ import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { AddressFilter } from '../filters/address-filter.js';
 import { cachedFeeExpired } from '../utils/broadcaster-util.js';
 import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { isDefined } from '../utils/is-defined.js';
 
 export class BroadcasterStatus {
@@ -19,11 +20,13 @@ export class BroadcasterStatus {
     if (!WakuBroadcasterWakuCore.waku) {
       return BroadcasterConnectionStatus.Disconnected;
     }
+
     if (this.hasSubscriptionsStalled()) {
       BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt =
         Date.now() + 5000;
       return BroadcasterConnectionStatus.Disconnected;
     }
+
     if (!this.hasBroadcasterFeesForNetwork(chain)) {
       return BroadcasterConnectionStatus.Searching;
     }
@@ -39,9 +42,10 @@ export class BroadcasterStatus {
 
     return BroadcasterConnectionStatus.Connected;
   }
+
   static hasSubscriptionsStalled() {
     const now = Date.now();
-    const limit = 30_000; // 30 seconds
+    const limit = BroadcasterConfig.feeExpirationTimeout;
     const lastSubscribed =
       BroadcasterFeeCache.lastSubscribedFeeMessageReceivedAt;
     if (isDefined(lastSubscribed)) {
@@ -101,7 +105,7 @@ export class BroadcasterStatus {
         identifiers.every(identifier => {
           const tokenFee: CachedTokenFee =
             tokenBroadcasterMap.forBroadcaster[railgunAddress].forIdentifier[
-              identifier
+            identifier
             ];
           if (cachedFeeExpired(tokenFee.expiration)) {
             return true; // continue

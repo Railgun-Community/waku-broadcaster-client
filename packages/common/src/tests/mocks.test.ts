@@ -33,12 +33,12 @@ export const MOCK_FALLBACK_PROVIDER_JSON_CONFIG: FallbackProviderJsonConfig = {
   chainId: 1,
   providers: [
     {
-      provider: 'https://eth.llamarpc.com',
+      provider: 'https://rpc.flashbots.net',
       priority: 3,
       weight: 3,
     },
     {
-      provider: 'https://rpc.ankr.com/eth',
+      provider: 'https://eth.meowrpc.com',
       priority: 3,
       weight: 2,
     },

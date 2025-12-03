@@ -15,20 +15,15 @@
     "test": "npm run compile-test && NODE_ENV=test mocha"
   },
   "dependencies": {
-    "@libp2p/bootstrap": "^10",
-    "@waku/interfaces": "0.0.28",
-    "@waku/core": "0.0.33",
-    "@waku/relay": "0.0.16",
-    "libp2p": "^1.8.1"
+    "@waku/sdk": "^0.0.36"
   },
   "peerDependencies": {
     "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.0",
-    "ethers": "6.13.1"
+    "@railgun-community/wallet": "^10.8.1"
   },
   "devDependencies": {
     "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.0",
+    "@railgun-community/wallet": "^10.8.1",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",

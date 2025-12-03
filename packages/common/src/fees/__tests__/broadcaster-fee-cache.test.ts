@@ -178,6 +178,7 @@ describe('broadcaster-fee-cache', () => {
     const broadcasters = BroadcasterSearch.findAllBroadcastersForChain(
       mockChain,
       false,
+      true,
     );
 
     const expected = [

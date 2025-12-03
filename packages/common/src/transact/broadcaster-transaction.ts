@@ -223,10 +223,16 @@ export class BroadcasterTransaction {
         BroadcasterDebug.log(
           `Broadcast Waku message: ${this.messageData.method} via ${this.contentTopic}`,
         );
-        await WakuBroadcasterWakuCore.broadcastMessage(
-          this.messageData,
-          this.contentTopic,
-        );
+        try {
+          await WakuBroadcasterWakuCore.broadcastMessage(
+            this.messageData,
+            this.contentTopic,
+          );
+        } catch (err) {
+          if (err instanceof Error) {
+            BroadcasterDebug.log(`Broadcast error: ${err.message}`);
+          }
+        }
         break;
       case BroadcastRetryState.Wait:
         // 21-60 seconds.
@@ -239,6 +245,9 @@ export class BroadcasterTransaction {
 
     // 15 iterations (1.5 sec total, iterate every 100ms).
     const pollIterations = SECONDS_PER_RETRY / POLL_DELAY_SECONDS;
+
+    const responseTopic = contentTopics.transactResponse(this.chain);
+    await WakuBroadcasterWakuCore.retrieveHistoricalForTopic(responseTopic);
 
     const response: Optional<WakuTransactResponse> = await poll(
       async () => this.getTransactionResponse(),

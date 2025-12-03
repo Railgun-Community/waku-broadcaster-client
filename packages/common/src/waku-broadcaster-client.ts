@@ -4,6 +4,7 @@ import {
   POI_REQUIRED_LISTS,
   BroadcasterConnectionStatus,
   SelectedBroadcaster,
+  isDefined,
 } from '@railgun-community/shared-models';
 import { BroadcasterFeeCache } from './fees/broadcaster-fee-cache.js';
 import { AddressFilter } from './filters/address-filter.js';
@@ -12,12 +13,13 @@ import {
   BroadcasterDebugger,
   BroadcasterOptions,
 } from './models/export-models.js';
+import { BroadcasterConfig } from './models/broadcaster-config.js';
 import { BroadcasterSearch } from './search/best-broadcaster.js';
 import { BroadcasterStatus } from './status/broadcaster-connection-status.js';
 import { BroadcasterDebug } from './utils/broadcaster-debug.js';
 import { WakuObservers } from './waku/waku-observers.js';
 import { WakuBroadcasterWakuCore } from './waku/waku-broadcaster-waku-core.js';
-import type { RelayNode } from '@waku/interfaces';
+import type { LightNode } from '@waku/sdk';
 import { contentTopics } from './waku/waku-topics.js';
 
 export class WakuBroadcasterClient {
@@ -26,7 +28,7 @@ export class WakuBroadcasterClient {
   private static started = false;
   private static isRestarting = false;
 
-  static pollDelay = 10_000;
+  static pollDelay = 3_000;
 
   static async start(
     chain: Chain,
@@ -39,7 +41,19 @@ export class WakuBroadcasterClient {
 
     WakuBroadcasterWakuCore.setBroadcasterOptions(broadcasterOptions);
 
-    if (broadcasterDebugger) {
+    if (isDefined(broadcasterOptions.broadcasterVersionRange)) {
+      BroadcasterConfig.MINIMUM_BROADCASTER_VERSION =
+        broadcasterOptions.broadcasterVersionRange.minVersion;
+      BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION =
+        broadcasterOptions.broadcasterVersionRange.maxVersion;
+    }
+
+    if (isDefined(broadcasterOptions.useDNSDiscovery)) {
+      BroadcasterConfig.useDNSDiscovery = broadcasterOptions.useDNSDiscovery
+      BroadcasterConfig.customDNS = broadcasterOptions.useCustomDNS
+    }
+
+    if (isDefined(broadcasterDebugger)) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
 
@@ -62,22 +76,6 @@ export class WakuBroadcasterClient {
       throw new Error('Cannot connect to Broadcaster network.', { cause });
     }
   }
-  private static peerRetryCount = 0;
-  private static pollConnection = async () => {
-    const peerCount = WakuBroadcasterWakuCore.getMeshPeerCount();
-    if (peerCount < 1) {
-      if (this.peerRetryCount >= 2) {
-        this.peerRetryCount = 0;
-        await this.restart();
-      } else {
-        this.peerRetryCount += 1;
-      }
-    } else {
-      this.peerRetryCount = 0;
-    }
-    await delay(WakuBroadcasterClient.pollDelay);
-    this.pollConnection();
-  };
 
   static async stop() {
     await WakuBroadcasterWakuCore.disconnect();
@@ -276,11 +274,8 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
-    if (!this.isRestarting) {
-      this.updateStatus();
-    } else {
-      this.updateStatus();
-    }
+
+    this.updateStatus();
     await delay(WakuBroadcasterClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -302,7 +297,7 @@ export class WakuBroadcasterClient {
 
   // Waku Transport functions
   static async addTransportSubscription(
-    waku: Optional<RelayNode>,
+    waku: Optional<LightNode>,
     topic: string,
     callback: (message: any) => void,
   ): Promise<void> {
@@ -313,12 +308,19 @@ export class WakuBroadcasterClient {
     );
   }
 
-  static sendTransport(data: object, topic: string): void {
+  static async sendTransport(data: object, topic: string): Promise<void> {
     const customTopic = contentTopics.encrypted(topic);
-    WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
+    try {
+
+      await WakuBroadcasterWakuCore.broadcastMessage(data, customTopic);
+    } catch (e) {
+      BroadcasterDebug.log(
+        `SendTransport error: ${e.message}`
+      )
+    }
   }
 
-  static getWakuCore(): Optional<RelayNode> {
+  static getWakuCore(): Optional<LightNode> {
     return WakuBroadcasterWakuCore.waku;
   }
 

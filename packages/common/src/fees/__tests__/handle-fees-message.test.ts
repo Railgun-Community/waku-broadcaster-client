@@ -4,7 +4,7 @@ import {
   fullWalletForID,
 } from '@railgun-community/wallet';
 import { BroadcasterFeeMessageData } from '@railgun-community/shared-models';
-import { IMessage } from '@waku/interfaces';
+import { type IMessage } from '@waku/sdk';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonStub } from 'sinon';
@@ -58,7 +58,9 @@ const createPayload = async (
   return utf8ToBytes(JSON.stringify(payload));
 };
 
-describe('handle-fees-message', () => {
+describe('handle-fees-message', function () {
+  this.timeout(60000);
+
   before(async () => {
     await initTestEngine();
 
@@ -138,21 +140,24 @@ describe('handle-fees-message', () => {
   });
 
   it('Should not cache fees with invalid timestamp', async () => {
+    const originalFeeExpiration = validFeeMessageData.feeExpiration
+    validFeeMessageData.feeExpiration = invalidTimestamp.getMilliseconds()
     const message: IMessage = {
       payload: await createPayload(validFeeMessageData, walletA),
       timestamp: invalidTimestamp,
     };
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    validFeeMessageData.feeExpiration = originalFeeExpiration
     expect(broadcasterFeeCacheStub.notCalled).to.be.true;
   });
 
-  it('Should not cache fees with invalid version', async () => {
+  it('Should not cache fees with version below minimum', async () => {
     const message: IMessage = {
       payload: await createPayload(
         {
           ...validFeeMessageData,
-          version: '2.0',
+          version: '7.9.9',
         },
         walletA,
       ),
@@ -161,6 +166,54 @@ describe('handle-fees-message', () => {
 
     await handleBroadcasterFeesMessage(chain, message, contentTopic);
     expect(broadcasterFeeCacheStub.notCalled).to.be.true;
+  });
+
+  it('Should not cache fees with version above maximum', async () => {
+    const message: IMessage = {
+      payload: await createPayload(
+        {
+          ...validFeeMessageData,
+          version: '9.0.0',
+        },
+        walletA,
+      ),
+      timestamp: validTimestamp,
+    };
+
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
+  });
+
+  it('Should cache fees with minimum version', async () => {
+    const message: IMessage = {
+      payload: await createPayload(
+        {
+          ...validFeeMessageData,
+          version: '8.0.0',
+        },
+        walletA,
+      ),
+      timestamp: validTimestamp,
+    };
+
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
+  });
+
+  it('Should cache fees with maximum version', async () => {
+    const message: IMessage = {
+      payload: await createPayload(
+        {
+          ...validFeeMessageData,
+          version: '8.999.0',
+        },
+        walletA,
+      ),
+      timestamp: validTimestamp,
+    };
+
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+    expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
   });
 
   it('Should cache fees with valid fields and signature', async () => {

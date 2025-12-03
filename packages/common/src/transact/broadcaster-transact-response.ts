@@ -1,5 +1,5 @@
 import { decryptAESGCM256 } from '@railgun-community/wallet';
-import { IMessage } from '@waku/interfaces';
+import { type IMessage } from '@waku/sdk';
 import { bytesToUtf8 } from '../utils/conversion.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
