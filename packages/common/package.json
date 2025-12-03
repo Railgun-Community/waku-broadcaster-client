@@ -1,6 +1,6 @@
 {
   "name": "@railgun-community/waku-broadcaster-client-common",
-  "version": "9.0.0",
+  "version": "9.0.1",
   "license": "MIT",
   "scripts": {
     "postinstall": "node copy-src.js",
