@@ -19,7 +19,7 @@ export const handleAuthorizedFees = (
     tokenAddresses.forEach(tokenAddress => {
       const feePerUnitGas = feeMessageData.fees[tokenAddress];
       if (feePerUnitGas) {
-        const existingFee = BroadcasterFeeCache.getAuthorizedFee(tokenAddress);
+        const existingFee = BroadcasterFeeCache.getAuthorizedFee(tokenAddress.toLowerCase());
         if (
           existingFee &&
           existingFee.expiration >= feeMessageData.feeExpiration

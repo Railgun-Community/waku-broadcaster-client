@@ -163,10 +163,15 @@ export class BroadcasterFeeCache {
   }
 
   static addAuthorizedFees(tokenFeeMap: MapType<CachedTokenFee>) {
-    this.authorizedFees = { ...this.authorizedFees, ...tokenFeeMap };
+    const newFees = Object.entries(tokenFeeMap)
+    const authorizedFees: MapType<CachedTokenFee> = {}
+    for (const [tokenAddress, feeMap] of newFees) {
+      authorizedFees[tokenAddress.toLowerCase()] = feeMap
+    }
+    this.authorizedFees = authorizedFees
   }
 
   static getAuthorizedFee(tokenAddress: string): Optional<CachedTokenFee> {
-    return this.authorizedFees[tokenAddress];
+    return this.authorizedFees[tokenAddress.toLowerCase()];
   }
 }

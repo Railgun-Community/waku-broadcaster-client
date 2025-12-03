@@ -55,7 +55,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
   }
 
   static async pollHistoricalTopics() {
-    console.log("Polling historical")
+    BroadcasterDebug.log("Polling historical messages")
     const topics = WakuObservers.getCurrentContentTopics();
     for (const topic of topics) {
       await this.retrieveHistoricalForTopic(topic);
