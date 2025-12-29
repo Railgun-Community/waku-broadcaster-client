@@ -11,6 +11,7 @@ import {
   BroadcasterEncryptedMethodParams,
   BroadcasterRawParamsTransact,
   TXIDVersion,
+  EIP7702Authorization,
 } from '@railgun-community/shared-models';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
@@ -101,6 +102,7 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
+    authorization?: EIP7702Authorization,
   ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
@@ -112,6 +114,7 @@ export class BroadcasterTransaction {
       overallBatchMinGasPrice,
       useRelayAdapt,
       preTransactionPOIsPerTxidLeafPerList,
+      authorization,
     );
     return new BroadcasterTransaction(
       encryptedDataResponse,
@@ -131,6 +134,7 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
+    authorization?: EIP7702Authorization,
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
@@ -139,7 +143,9 @@ export class BroadcasterTransaction {
     const { viewingPublicKey: broadcasterViewingKey } =
       getRailgunWalletAddressData(broadcasterRailgunAddress);
 
-    const transactData: BroadcasterRawParamsTransact = {
+    const transactData: BroadcasterRawParamsTransact & {
+      authorization?: EIP7702Authorization;
+    } = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
@@ -153,6 +159,7 @@ export class BroadcasterTransaction {
       minVersion: BroadcasterConfig.MINIMUM_BROADCASTER_VERSION,
       maxVersion: BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
+      authorization,
     };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(

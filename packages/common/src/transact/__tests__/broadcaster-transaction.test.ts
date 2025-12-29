@@ -111,4 +111,59 @@ describe('broadcaster-transaction', () => {
 
     expect(response).to.equal(MOCK_TX_HASH);
   }).timeout(10000);
+
+  it('Should generate and relay a Broadcaster transaction with EIP-7702 authorization', async () => {
+    const broadcasterRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
+    const broadcasterFeesID = 'abc';
+    const nullifiers = ['0x012345'];
+    const overallBatchMinGasPrice = BigInt('0x0100');
+    const useRelayAdapt = true;
+    const authorization = {
+      chainId: '1',
+      address: '0x1234567890123456789012345678901234567890',
+      nonce: 1,
+      yParity: 0,
+      r: '0x1234',
+      s: '0x5678',
+    };
+
+    const broadcasterTransaction = await BroadcasterTransaction.create(
+      TXIDVersion.V2_PoseidonMerkle,
+      '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
+      '0x1234abcdef', // data
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
+      chain,
+      nullifiers,
+      overallBatchMinGasPrice,
+      useRelayAdapt,
+      {}, // preTransactionPOIsPerTxidLeafPerList
+      authorization,
+    );
+
+    const mockDelayedResponse = async () => {
+      await delay(2000);
+      const { sharedKey } = BroadcasterTransactResponse;
+      if (!sharedKey) {
+        throw new Error('No shared key');
+      }
+      const response = { txHash: MOCK_TX_HASH };
+      const encryptedResponse = encryptResponseData(response, sharedKey);
+      const payload = utf8ToBytes(
+        JSON.stringify({ result: encryptedResponse }),
+      );
+      await BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage(
+        {
+          payload,
+        },
+      );
+    };
+
+    const [response] = await Promise.all([
+      broadcasterTransaction.send(),
+      mockDelayedResponse(),
+    ]);
+
+    expect(response).to.equal(MOCK_TX_HASH);
+  }).timeout(10000);
 });
