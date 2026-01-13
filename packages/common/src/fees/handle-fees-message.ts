@@ -119,10 +119,18 @@ const updateFeesForBroadcaster = (
   const tokenFeeMap: MapType<CachedTokenFee> = {};
   const tokenAddresses = Object.keys(feeMessageData.fees);
 
-  const isTrustedSigner =
-    BroadcasterConfig.trustedFeeSigner &&
-    feeMessageData.railgunAddress.toLowerCase() ===
-    BroadcasterConfig.trustedFeeSigner.toLowerCase();
+  let isTrustedSigner = false;
+  if (BroadcasterConfig.trustedFeeSigner) {
+    if (typeof BroadcasterConfig.trustedFeeSigner === 'string') {
+      isTrustedSigner =
+        feeMessageData.railgunAddress.toLowerCase() ===
+        BroadcasterConfig.trustedFeeSigner.toLowerCase();
+    } else {
+      isTrustedSigner = BroadcasterConfig.trustedFeeSigner.map(s =>
+        s.toLowerCase(),
+      ).includes(feeMessageData.railgunAddress.toLowerCase());
+    }
+  }
 
   if (isTrustedSigner) {
     handleAuthorizedFees(feeMessageData);

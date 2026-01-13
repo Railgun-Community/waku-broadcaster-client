@@ -5,7 +5,7 @@ import {
 import type { CustomDNSConfig } from './broadcaster-config.js';
 
 export type BroadcasterOptions = {
-  trustedFeeSigner: string;
+  trustedFeeSigner: string | string[];
   poiActiveListKeys?: string[];
   pubSubTopic?: string;
   additionalDirectPeers?: string[];
