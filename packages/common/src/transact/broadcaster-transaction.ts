@@ -3,6 +3,7 @@ import {
   encryptDataWithSharedKey,
   getCompletedTxidFromNullifiers,
 } from '@railgun-community/wallet';
+import { Authorization } from 'ethers';
 import {
   Chain,
   EncryptDataWithSharedKeyResponse,
@@ -11,7 +12,6 @@ import {
   BroadcasterEncryptedMethodParams,
   BroadcasterRawParamsTransact,
   TXIDVersion,
-  EIP7702Authorization,
 } from '@railgun-community/shared-models';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
@@ -102,7 +102,7 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
-    authorization?: EIP7702Authorization,
+    authorization?: Authorization,
   ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
@@ -134,7 +134,7 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
-    authorization?: EIP7702Authorization,
+    authorization?: Authorization,
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
@@ -144,7 +144,7 @@ export class BroadcasterTransaction {
       getRailgunWalletAddressData(broadcasterRailgunAddress);
 
     const transactData: BroadcasterRawParamsTransact & {
-      authorization?: EIP7702Authorization;
+      authorization?: Authorization;
     } = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
@@ -159,7 +159,18 @@ export class BroadcasterTransaction {
       minVersion: BroadcasterConfig.MINIMUM_BROADCASTER_VERSION,
       maxVersion: BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
-      authorization,
+      authorization: authorization
+        ? ({
+            chainId: authorization.chainId.toString(),
+            nonce: authorization.nonce.toString(),
+            address: authorization.address,
+            signature: {
+              r: authorization.signature.r,
+              s: authorization.signature.s,
+              yParity: authorization.signature.yParity,
+            },
+          } as any)
+        : undefined,
     };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
