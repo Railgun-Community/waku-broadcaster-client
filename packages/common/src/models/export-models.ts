@@ -11,6 +11,7 @@ export type BroadcasterOptions = {
   additionalDirectPeers?: string[];
   peerDiscoveryTimeout?: number;
   feeExpirationTimeout?: number;
+  historicalLookBackTime?: number;
   useDNSDiscovery?: boolean;
   useCustomDNS?: CustomDNSConfig,
   broadcasterVersionRange?: {
