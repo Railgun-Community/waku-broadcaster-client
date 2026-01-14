@@ -20,7 +20,7 @@ const { expect } = chai;
 const chain = MOCK_CHAIN_ETHEREUM;
 
 const broadcasterOptions: BroadcasterOptions = {
-  trustedFeeSigner: '0zk1qyv0zc0j9sm6mr8fe3gx7ymwc6d2xymfftqvgvjdy3r8dmyfs947lrv7j6fe3z53llx97s6mxjstvn9wj3xhyv4cfecw08gqzywgnl0fmzx3mguhr2hyych4srf',
+  trustedFeeSigner: '',
 };
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';

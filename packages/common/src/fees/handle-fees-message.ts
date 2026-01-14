@@ -133,7 +133,7 @@ const updateFeesForBroadcaster = (
   }
 
   if (isTrustedSigner) {
-    handleAuthorizedFees(feeMessageData);
+    handleAuthorizedFees(feeMessageData, feeMessageData.railgunAddress);
   }
 
   tokenAddresses.forEach(tokenAddress => {
