@@ -8,6 +8,7 @@ import { cachedFeeExpired } from '../utils/broadcaster-util.js';
 
 export const handleAuthorizedFees = (
   feeMessageData: BroadcasterFeeMessageData,
+  signerAddress: string,
 ) => {
   try {
     if (cachedFeeExpired(feeMessageData.feeExpiration)) {
@@ -19,14 +20,6 @@ export const handleAuthorizedFees = (
     tokenAddresses.forEach(tokenAddress => {
       const feePerUnitGas = feeMessageData.fees[tokenAddress];
       if (feePerUnitGas) {
-        const existingFee = BroadcasterFeeCache.getAuthorizedFee(tokenAddress.toLowerCase());
-        if (
-          existingFee &&
-          existingFee.expiration >= feeMessageData.feeExpiration
-        ) {
-          return;
-        }
-
         const cachedFee: CachedTokenFee = {
           feePerUnitGas,
           expiration: feeMessageData.feeExpiration,
@@ -40,7 +33,7 @@ export const handleAuthorizedFees = (
     });
 
     if (Object.keys(tokenFeeMap).length > 0) {
-      BroadcasterFeeCache.addAuthorizedFees(tokenFeeMap);
+      BroadcasterFeeCache.addAuthorizedFees(signerAddress, tokenFeeMap);
       BroadcasterDebug.log('Updated Authorized Fees');
     }
   } catch (err) {

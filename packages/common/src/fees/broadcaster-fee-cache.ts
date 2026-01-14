@@ -30,7 +30,10 @@ export type BroadcasterFeeCacheState = {
 
 export class BroadcasterFeeCache {
   private static cache: BroadcasterFeeCacheState = { forNetwork: {} };
-  private static authorizedFees: MapType<CachedTokenFee> = {};
+  // signerAddress -> tokenAddress -> fee
+  private static authorizedFees: MapType<MapType<CachedTokenFee>> = {};
+  // tokenAddress -> fee (average)
+  private static averageAuthorizedFees: MapType<CachedTokenFee> = {};
   static lastSubscribedFeeMessageReceivedAt: Optional<number>;
   private static poiActiveListKeys: Optional<string[]>;
 
@@ -162,16 +165,89 @@ export class BroadcasterFeeCache {
     return availableUnexpiredFee != null;
   }
 
-  static addAuthorizedFees(tokenFeeMap: MapType<CachedTokenFee>) {
-    const newFees = Object.entries(tokenFeeMap)
-    const authorizedFees: MapType<CachedTokenFee> = {}
+  static addAuthorizedFees(
+    signerAddress: string,
+    tokenFeeMap: MapType<CachedTokenFee>,
+  ) {
+    const newFees = Object.entries(tokenFeeMap);
+    const signerAddressLC = signerAddress.toLowerCase();
+    this.authorizedFees[signerAddressLC] ??= {};
+
+    const updatedTokens: string[] = [];
+
     for (const [tokenAddress, feeMap] of newFees) {
-      authorizedFees[tokenAddress.toLowerCase()] = feeMap
+      const tokenAddressLC = tokenAddress.toLowerCase();
+      const existing = this.authorizedFees[signerAddressLC][tokenAddressLC];
+      if (existing && existing.expiration >= feeMap.expiration) {
+        continue;
+      }
+      this.authorizedFees[signerAddressLC][tokenAddressLC] = feeMap;
+      updatedTokens.push(tokenAddressLC);
     }
-    this.authorizedFees = authorizedFees
+    this.updateAverageAuthorizedFees(updatedTokens);
+  }
+
+  private static updateAverageAuthorizedFees(tokenAddresses: string[]) {
+    const trustedSigners = BroadcasterConfig.trustedFeeSigner;
+    const isTrustedSignerConfigured =
+      trustedSigners != null &&
+      (typeof trustedSigners === 'string' || trustedSigners.length > 0);
+
+    tokenAddresses.forEach(tokenAddressLC => {
+      const authorizedFeesForToken: CachedTokenFee[] = [];
+
+      Object.keys(this.authorizedFees).forEach(signerAddress => {
+        if (isTrustedSignerConfigured) {
+          if (typeof trustedSigners === 'string') {
+            if (signerAddress !== trustedSigners.toLowerCase()) {
+              return;
+            }
+          } else if (Array.isArray(trustedSigners)) {
+            if (
+              !trustedSigners
+                .map(s => s.toLowerCase())
+                .includes(signerAddress.toLowerCase())
+            ) {
+              return;
+            }
+          }
+        }
+
+        const fee = this.authorizedFees[signerAddress][tokenAddressLC];
+        if (fee) {
+          if (cachedFeeExpired(fee.expiration)) {
+            delete this.authorizedFees[signerAddress][tokenAddressLC];
+            return;
+          }
+          authorizedFeesForToken.push(fee);
+        }
+      });
+
+      if (authorizedFeesForToken.length === 0) {
+        delete this.averageAuthorizedFees[tokenAddressLC];
+        return;
+      }
+
+      if (authorizedFeesForToken.length === 1) {
+        this.averageAuthorizedFees[tokenAddressLC] = authorizedFeesForToken[0];
+        return;
+      }
+
+      let totalFee = 0n;
+      authorizedFeesForToken.forEach(fee => {
+        totalFee += BigInt(fee.feePerUnitGas);
+      });
+      const averageFee = totalFee / BigInt(authorizedFeesForToken.length);
+
+      const baseFee = authorizedFeesForToken[0];
+      this.averageAuthorizedFees[tokenAddressLC] = {
+        ...baseFee,
+        feePerUnitGas: '0x' + averageFee.toString(16),
+      };
+    });
   }
 
   static getAuthorizedFee(tokenAddress: string): Optional<CachedTokenFee> {
-    return this.authorizedFees[tokenAddress.toLowerCase()];
+    return this.averageAuthorizedFees[tokenAddress.toLowerCase()];
   }
 }

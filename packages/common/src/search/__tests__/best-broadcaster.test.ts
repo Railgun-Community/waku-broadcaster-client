@@ -22,6 +22,7 @@ describe('best-broadcaster', () => {
   beforeEach(() => {
     (BroadcasterFeeCache as any).cache = { forNetwork: {} };
     (BroadcasterFeeCache as any).authorizedFees = {};
+    (BroadcasterFeeCache as any).averageAuthorizedFees = {};
     AddressFilter.setAllowlist(undefined);
     AddressFilter.setBlocklist(undefined);
   });
@@ -32,7 +33,7 @@ describe('best-broadcaster', () => {
     // Upper 30% -> 130
 
     // Add authorized fee
-    BroadcasterFeeCache.addAuthorizedFees({
+    BroadcasterFeeCache.addAuthorizedFees(trustedSigner, {
       [tokenAddress]: {
         feePerUnitGas: authorizedFeeAmount.toString(),
         expiration: Date.now() + 100000,
@@ -183,7 +184,7 @@ describe('best-broadcaster', () => {
     const maxFee = 130n; // 30% upper
 
     // Add authorized fee
-    BroadcasterFeeCache.addAuthorizedFees({
+    BroadcasterFeeCache.addAuthorizedFees(trustedSigner, {
       [tokenAddress]: {
         feePerUnitGas: authorizedFeeAmount.toString(),
         expiration: Date.now() + 100000,
@@ -253,7 +254,7 @@ describe('best-broadcaster', () => {
     const maxFee = 130n; // 30% upper
 
     // Add authorized fee
-    BroadcasterFeeCache.addAuthorizedFees({
+    BroadcasterFeeCache.addAuthorizedFees(trustedSigner, {
       [tokenAddress]: {
         feePerUnitGas: authorizedFeeAmount.toString(),
         expiration: Date.now() + 100000,

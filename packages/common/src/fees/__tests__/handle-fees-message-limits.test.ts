@@ -105,6 +105,7 @@ describe('handle-fees-message limits', function () {
     BroadcasterConfig.trustedFeeSigner = '';
     // Reset authorized fees
     (BroadcasterFeeCache as any).authorizedFees = {};
+    (BroadcasterFeeCache as any).averageAuthorizedFees = {};
   });
 
   it('Should accept fees from trusted signer and update authorized fees', async () => {
@@ -117,6 +118,9 @@ describe('handle-fees-message limits', function () {
 
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
     expect(broadcasterAuthorizedFeeCacheStub.calledOnce).to.be.true;
+    expect(broadcasterAuthorizedFeeCacheStub.firstCall.args[0]).to.equal(
+      validFeeMessageData.railgunAddress,
+    );
   });
 
   it('Should ignore fees from untrusted signer if no authorized fees set', async () => {
@@ -141,7 +145,10 @@ describe('handle-fees-message limits', function () {
       relayAdapt,
       reliability: 1,
     };
-    (BroadcasterFeeCache as any).authorizedFees = { '0x1234': authorizedFee };
+    const trustedSigner = walletTrusted.getAddress();
+    (BroadcasterFeeCache as any).authorizedFees = { [trustedSigner.toLowerCase()]: { '0x1234': authorizedFee } };
+    (BroadcasterFeeCache as any).averageAuthorizedFees = { '0x1234': authorizedFee };
+    BroadcasterConfig.trustedFeeSigner = trustedSigner;
 
     // Untrusted fee: 104 (within 5% of 100)
     const untrustedData = {
@@ -161,7 +168,7 @@ describe('handle-fees-message limits', function () {
     expect(broadcasterAuthorizedFeeCacheStub.notCalled).to.be.true;
   });
 
-  it('Should ignore fees from untrusted signer if outside variance', async () => {
+  it('Should reject fees from untrusted signer if too low', async () => {
     // First set authorized fees
     const authorizedFee = {
       feePerUnitGas: '100',
@@ -171,9 +178,43 @@ describe('handle-fees-message limits', function () {
       relayAdapt,
       reliability: 1,
     };
-    (BroadcasterFeeCache as any).authorizedFees = { '0x1234': authorizedFee };
+    const trustedSigner = walletTrusted.getAddress();
+    (BroadcasterFeeCache as any).authorizedFees = { [trustedSigner.toLowerCase()]: { '0x1234': authorizedFee } };
+    (BroadcasterFeeCache as any).averageAuthorizedFees = { '0x1234': authorizedFee };
+    BroadcasterConfig.trustedFeeSigner = trustedSigner;
 
-    // Untrusted fee: 131 (outside 30% of 100)
+    // Untrusted fee: 89 (lower than 90)
+    const untrustedData = {
+      ...validFeeMessageData,
+      railgunAddress: walletUntrusted.getAddress(),
+      fees: { '0x1234': '89' }
+    };
+    const message: IMessage = {
+      payload: await createPayload(untrustedData, walletUntrusted),
+      timestamp: validTimestamp,
+    };
+
+    await handleBroadcasterFeesMessage(chain, message, contentTopic);
+
+    expect(broadcasterFeeCacheStub.notCalled).to.be.true;
+  });
+
+  it('Should reject fees from untrusted signer if too high', async () => {
+    // First set authorized fees
+    const authorizedFee = {
+      feePerUnitGas: '100',
+      expiration: validExpiration,
+      feesID,
+      availableWallets,
+      relayAdapt,
+      reliability: 1,
+    };
+    const trustedSigner = walletTrusted.getAddress();
+    (BroadcasterFeeCache as any).authorizedFees = { [trustedSigner.toLowerCase()]: { '0x1234': authorizedFee } };
+    (BroadcasterFeeCache as any).averageAuthorizedFees = { '0x1234': authorizedFee };
+    BroadcasterConfig.trustedFeeSigner = trustedSigner;
+
+    // Untrusted fee: 131 (higher than 130 - 30% variance)
     const untrustedData = {
       ...validFeeMessageData,
       railgunAddress: walletUntrusted.getAddress(),

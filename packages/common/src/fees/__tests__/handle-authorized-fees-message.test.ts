@@ -53,7 +53,7 @@ describe('handle-authorized-fees', function () {
   });
 
   it('Should handle valid authorized fees message', async () => {
-    handleAuthorizedFees(validFeeMessageData);
+    handleAuthorizedFees(validFeeMessageData, validFeeMessageData.railgunAddress);
 
     const expectedFees = {
       '0x1234': {
@@ -67,6 +67,11 @@ describe('handle-authorized-fees', function () {
     };
 
     expect(broadcasterFeeCacheStub.calledOnce).to.be.true;
-    expect(broadcasterFeeCacheStub.firstCall.args[0]).to.deep.equal(expectedFees);
+    expect(broadcasterFeeCacheStub.firstCall.args[0]).to.equal(
+      validFeeMessageData.railgunAddress,
+    );
+    expect(broadcasterFeeCacheStub.firstCall.args[1]).to.deep.equal(
+      expectedFees,
+    );
   });
 });

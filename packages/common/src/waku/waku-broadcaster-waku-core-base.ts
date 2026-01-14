@@ -103,6 +103,9 @@ export abstract class WakuBroadcasterWakuCoreBase {
       BroadcasterConfig.feeExpirationTimeout =
         broadcasterOptions.feeExpirationTimeout;
     }
+    if (isDefined(broadcasterOptions.historicalLookBackTime)) {
+      BroadcasterConfig.historicalLookBackTime = broadcasterOptions.historicalLookBackTime
+    }
   }
 
   static async disconnect() {
@@ -171,7 +174,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
     try {
       const startTime = new Date()
       // TODO: make a variable
-      startTime.setTime(Date.now() - (5 * 60 * 1000))
+      startTime.setTime(Date.now() - (BroadcasterConfig.historicalLookBackTime))
       const endTime = new Date(Date.now())
       const options: QueryRequestParams = {
         includeData: true,

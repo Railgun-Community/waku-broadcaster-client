@@ -5,9 +5,10 @@ export type CustomDNSConfig = {
 export class BroadcasterConfig {
   static IS_DEV = false;
 
-  static trustedFeeSigner: string;
+  static trustedFeeSigner: string | string[];
 
   static feeExpirationTimeout = 120_000; // 2 minutes
+  static historicalLookBackTime = 1 * 60 * 1000; // 1 minute
 
   static authorizedFeeVariancePercentageLower = 0.10; // 10% lower variance
   static authorizedFeeVariancePercentageUpper = 0.30; // 30% upper variance
