@@ -18,4 +18,6 @@ export class BroadcasterConfig {
 
   static useDNSDiscovery = false
   static customDNS: CustomDNSConfig | undefined = undefined
+
+  static additionalDirectPeers: string[] = []
 }

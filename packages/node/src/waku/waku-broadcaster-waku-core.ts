@@ -28,8 +28,15 @@ export class WakuBroadcasterWakuCore extends WakuBroadcasterWakuCoreBase {
           wakuDnsDiscovery(enrTreePeers),
         ]
       }
+      // handle static peers being set.
+      let directPeers: string[] = []
+      if (BroadcasterConfig.additionalDirectPeers.length) {
+        directPeers = BroadcasterConfig.additionalDirectPeers
+      }
+
       this.waku = await createLightNode({
-        defaultBootstrap: true,
+        defaultBootstrap: directPeers.length === 0,
+        bootstrapPeers: directPeers, // gets ignored if defaultBootstrap = true
         libp2p: libp2pOptions
       });
 

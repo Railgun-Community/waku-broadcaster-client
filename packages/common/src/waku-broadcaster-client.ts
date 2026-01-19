@@ -53,6 +53,10 @@ export class WakuBroadcasterClient {
       BroadcasterConfig.customDNS = broadcasterOptions.useCustomDNS
     }
 
+    if (isDefined(broadcasterOptions.additionalDirectPeers)) {
+      BroadcasterConfig.additionalDirectPeers = broadcasterOptions.additionalDirectPeers
+    }
+
     if (isDefined(broadcasterDebugger)) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
     }
