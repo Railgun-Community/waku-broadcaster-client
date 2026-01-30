@@ -3,14 +3,12 @@ import {
   encryptDataWithSharedKey,
   getCompletedTxidFromNullifiers,
 } from '@railgun-community/wallet';
-import { Authorization } from 'ethers';
 import {
   Chain,
   EncryptDataWithSharedKeyResponse,
   poll,
   PreTransactionPOIsPerTxidLeafPerList,
   BroadcasterEncryptedMethodParams,
-  BroadcasterRawParamsTransact,
   TXIDVersion,
 } from '@railgun-community/shared-models';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
@@ -102,7 +100,8 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
-    authorization?: Authorization,
+    authorization?: any,
+    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
   ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
@@ -115,6 +114,7 @@ export class BroadcasterTransaction {
       useRelayAdapt,
       preTransactionPOIsPerTxidLeafPerList,
       authorization,
+      type4FeeOverrides,
     );
     return new BroadcasterTransaction(
       encryptedDataResponse,
@@ -134,7 +134,8 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
-    authorization?: Authorization,
+    authorization?: any,
+    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
@@ -143,35 +144,62 @@ export class BroadcasterTransaction {
     const { viewingPublicKey: broadcasterViewingKey } =
       getRailgunWalletAddressData(broadcasterRailgunAddress);
 
-    const transactData: BroadcasterRawParamsTransact & {
-      authorization?: Authorization;
-    } = {
+    const baseTransactData = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
       broadcasterViewingKey: bytesToHex(broadcasterViewingKey),
       chainID: chain.id,
       chainType: chain.type,
-      minGasPrice: overallBatchMinGasPrice.toString(),
       feesID: broadcasterFeesID,
       useRelayAdapt,
       devLog: BroadcasterConfig.IS_DEV,
       minVersion: BroadcasterConfig.MINIMUM_BROADCASTER_VERSION,
       maxVersion: BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
-      authorization: authorization
-        ? ({
-            chainId: authorization.chainId.toString(),
-            nonce: authorization.nonce.toString(),
-            address: authorization.address,
-            signature: {
-              r: authorization.signature.r,
-              s: authorization.signature.s,
-              yParity: authorization.signature.yParity,
-            },
-          } as any)
-        : undefined,
     };
+
+    const transactData: any = authorization
+      ? (() => {
+          if (!type4FeeOverrides) {
+            throw new Error(
+              'EIP-7702 transact requires explicit type4FeeOverrides (maxFeePerGas/maxPriorityFeePerGas).',
+            );
+          }
+
+          const signature = (authorization as any).signature ?? authorization;
+          if (
+            !signature?.r ||
+            !signature?.s ||
+            signature?.yParity === undefined
+          ) {
+            throw new Error(
+              'EIP-7702 authorization must include signature fields r/s/yParity.',
+            );
+          }
+          return {
+            ...baseTransactData,
+            transactType: 'eip7702',
+            maxFeePerGas: type4FeeOverrides.maxFeePerGas.toString(),
+            maxPriorityFeePerGas:
+              type4FeeOverrides.maxPriorityFeePerGas.toString(),
+            authorization: {
+              chainId: authorization.chainId.toString(),
+              nonce: authorization.nonce.toString(),
+              address: authorization.address,
+              signature: {
+                r: signature.r,
+                s: signature.s,
+                yParity: signature.yParity,
+              },
+            } as any,
+          };
+        })()
+      : {
+          ...baseTransactData,
+          transactType: 'legacy',
+          minGasPrice: overallBatchMinGasPrice.toString(),
+        };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
       transactData,

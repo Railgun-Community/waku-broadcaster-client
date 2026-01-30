@@ -139,6 +139,10 @@ describe('broadcaster-transaction', () => {
       useRelayAdapt,
       {}, // preTransactionPOIsPerTxidLeafPerList
       authorization,
+      {
+        maxFeePerGas: overallBatchMinGasPrice,
+        maxPriorityFeePerGas: 0n,
+      },
     );
 
     const mockDelayedResponse = async () => {
