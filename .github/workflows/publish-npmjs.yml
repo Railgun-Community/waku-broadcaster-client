@@ -28,11 +28,11 @@ jobs:
         run: yarn build
         working-directory: ./packages/node
       - name: Publish "node" package
-        run: yarn publish
+        run: npm publish
         working-directory: ./packages/node
       - name: Build "web" package
         run: yarn build
         working-directory: ./packages/web
       - name: Publish "web" package
-        run: yarn publish
+        run: npm publish
         working-directory: ./packages/web
