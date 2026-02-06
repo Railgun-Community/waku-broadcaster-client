@@ -23,6 +23,14 @@
     "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'",
     "postinstall": "patch-package"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Railgun-Community/waku-broadcaster-client.git"
+  },
+  "homepage": "https://github.com/Railgun-Community/waku-broadcaster-client#readme",
+  "bugs": {
+    "url": "https://github.com/Railgun-Community/waku-broadcaster-client/issues"
+  },
   "dependencies": {
     "@libp2p/tcp": "^10.0.0",
     "@waku/discovery": "^0.0.13",
