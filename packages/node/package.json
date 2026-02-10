@@ -41,12 +41,12 @@
     "protons-runtime": "5.6.0"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.1"
+    "@railgun-community/shared-models": "^8.0.1",
+    "@railgun-community/wallet": "^10.8.3"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "^8.0.0",
-    "@railgun-community/wallet": "^10.8.1",
+    "@railgun-community/shared-models": "^8.0.1",
+    "@railgun-community/wallet": "^10.8.3",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
@@ -62,7 +62,7 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-flowtype": "^8.0.3",
     "eslint-plugin-import": "^2.27.5",
-    "ethers": "6.13.1",
+    "ethers": "6.14.3",
     "leveldown": "^6.1.1",
     "madge": "^6.1.0",
     "mocha": "^10.2.0",

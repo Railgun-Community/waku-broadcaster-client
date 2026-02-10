@@ -11,6 +11,7 @@ import {
   BroadcasterEncryptedMethodParams,
   BroadcasterRawParamsTransact,
   TXIDVersion,
+  BroadcasterTransactRequestType,
 } from '@railgun-community/shared-models';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
@@ -140,6 +141,7 @@ export class BroadcasterTransaction {
       getRailgunWalletAddressData(broadcasterRailgunAddress);
 
     const transactData: BroadcasterRawParamsTransact = {
+      transactType: BroadcasterTransactRequestType.COMMON,
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
