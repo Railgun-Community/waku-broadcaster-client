@@ -80,9 +80,9 @@ describe('waku-healthcheck', () => {
     expect(snapshot.restartCount).to.equal(2);
     expect(snapshot.routing).to.deep.equal({
       clusterId: 5,
-      shard: 5,
-      shardId: 5,
-      pubsubTopic: '/waku/2/rs/5/5',
+      shard: 1,
+      shardId: 1,
+      pubsubTopic: '/waku/2/rs/5/1',
     });
     expect(snapshot.configuredPeers).to.deep.equal({
       useDNSDiscovery: true,
