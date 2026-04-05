@@ -1,54 +1,63 @@
 import { tcp } from '@libp2p/tcp';
-import { createLightNode, Protocols, type CreateLibp2pOptions } from '@waku/sdk';
+import {
+  createLightNode,
+  type CreateLibp2pOptions,
+} from '@waku/sdk';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
-import { WakuBroadcasterWakuCoreBase } from './waku-broadcaster-waku-core-base.js';
-import { enrTree, wakuDnsDiscovery } from '@waku/discovery';
-import { BroadcasterConfig } from '../models/broadcaster-config.js';
-import { isDefined } from '@railgun-community/shared-models';
+import { enrTree, wakuDnsDiscovery, wakuPeerExchangeDiscovery } from '@waku/discovery';
+import { WakuBroadcasterPeerDiscoveryCoreBase } from './waku-broadcaster-peer-discovery-core-base.js';
+import { WAKU_RAILGUN_DEFAULT_PEERS_NODE } from '../models/constants.js';
 
-export class WakuBroadcasterWakuCore extends WakuBroadcasterWakuCoreBase {
-  protected static async connect(): Promise<void> {
-    try {
-      this.hasError = false;
+export class WakuBroadcasterWakuCore extends WakuBroadcasterPeerDiscoveryCoreBase {
+  protected static createWakuNode = createLightNode;
+  protected static createDnsPeerDiscovery = wakuDnsDiscovery;
+  protected static createPeerExchangeDiscovery = wakuPeerExchangeDiscovery;
 
-      BroadcasterDebug.log(`Creating waku broadcast client`);
-      const libp2pOptions: CreateLibp2pOptions = {
-        transports: [tcp()],
-        hideWebSocketInfo: true,
-      }
-      if (BroadcasterConfig.useDNSDiscovery) {
-        const enrTreePeers = []
-        if (isDefined(BroadcasterConfig.customDNS)) {
-          enrTreePeers.push(...BroadcasterConfig.customDNS.enrTreePeers)
-          if (!BroadcasterConfig.customDNS.onlyCustom) {
-            enrTreePeers.push(...[enrTree["SANDBOX"], enrTree["TEST"]])
-          }
-        }
-        libp2pOptions.peerDiscovery = [
-          wakuDnsDiscovery(enrTreePeers),
-        ]
-      }
-      // handle static peers being set.
-      let directPeers: string[] = []
-      if (BroadcasterConfig.additionalDirectPeers.length) {
-        directPeers = BroadcasterConfig.additionalDirectPeers
-      }
+  protected static getEnrTrees() {
+    return enrTree;
+  }
 
-      this.waku = await createLightNode({
-        defaultBootstrap: directPeers.length === 0,
-        bootstrapPeers: directPeers, // gets ignored if defaultBootstrap = true
-        libp2p: libp2pOptions
-      });
+  protected static getDefaultPeers(): string[] {
+    return WAKU_RAILGUN_DEFAULT_PEERS_NODE;
+  }
 
-      await this.waku.start();
+  protected static getBaseLibp2pOptions(): CreateLibp2pOptions {
+    return {
+      ...super.getBaseLibp2pOptions(),
+      transports: [tcp()],
+    };
+  }
 
-      BroadcasterDebug.log('Waiting for remote peer.');
-      await this.waku.waitForPeers([Protocols.Filter, Protocols.LightPush, Protocols.Store], this.peerDiscoveryTimeout)
-
-      BroadcasterDebug.log('Waku initialized and connected to peers');
-    } catch (err: any) {
-      BroadcasterDebug.log(`Error initializing Waku: ${err.message}`);
-      this.hasError = true;
+  protected static applyConnectionLimitGuard() {
+    const connectionManager = (this.waku as any)?.connectionManager;
+    const dialer = connectionManager?.dialer;
+    const libp2p = (this.waku as any)?.libp2p;
+    if (!dialer || !libp2p || dialer.__wakuConnectionLimitGuardApplied) {
+      return;
     }
+
+    const originalShouldSkipPeer = dialer.shouldSkipPeer?.bind(dialer);
+    if (typeof originalShouldSkipPeer !== 'function') {
+      return;
+    }
+
+    dialer.shouldSkipPeer = async (peerId: any) => {
+      const shouldSkip = await originalShouldSkipPeer(peerId);
+      if (shouldSkip) {
+        return true;
+      }
+
+      const connectionCount = libp2p.getConnections().length;
+      if (connectionCount >= this.maxConnections) {
+        BroadcasterDebug.log(
+          `Skipping peer ${this.formatDiscoveryPeerId(peerId)} - max connections ${this.maxConnections} reached`,
+        );
+        return true;
+      }
+
+      return false;
+    };
+
+    dialer.__wakuConnectionLimitGuardApplied = true;
   }
 }

@@ -4,6 +4,7 @@ import {
   poll,
   BroadcasterConnectionStatus,
   SelectedBroadcaster,
+  POI_REQUIRED_LISTS,
 } from '@railgun-community/shared-models';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -13,14 +14,33 @@ import { WakuBroadcasterWakuCore } from '../waku/waku-broadcaster-waku-core.js';
 import { BroadcasterOptions } from '../models/index.js';
 import { type LightNode } from '@waku/sdk';
 import { contentTopics } from '../waku/waku-topics.js';
+import sinon from 'sinon';
+import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
+import { WakuObservers } from '../waku/waku-observers.js';
+import {
+  WAKU_RAILGUN_DEFAULT_ENR_TREE_URL,
+  WAKU_RAILGUN_DEFAULT_PEERS_NODE,
+  WAKU_RAILGUN_DEFAULT_PEERS_WEB,
+} from '../models/constants.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
 const chain = MOCK_CHAIN_ETHEREUM;
-
+const TEST_DNS_DISCOVERY_URL = WAKU_RAILGUN_DEFAULT_ENR_TREE_URL;
+const TEST_PUBSUB_TOPIC = '/waku/2/rs/5/1';
+const TEST_DEFAULT_PEERS = process.cwd().includes('/packages/web')
+  ? WAKU_RAILGUN_DEFAULT_PEERS_WEB
+  : WAKU_RAILGUN_DEFAULT_PEERS_NODE;
 const broadcasterOptions: BroadcasterOptions = {
   trustedFeeSigner: '',
+  dnsDiscoveryUrls: [TEST_DNS_DISCOVERY_URL],
+  additionalDirectPeers: TEST_DEFAULT_PEERS,
+  storePeers: TEST_DEFAULT_PEERS,
+  pubSubTopic: TEST_PUBSUB_TOPIC,
+  poiActiveListKeys: POI_REQUIRED_LISTS.map(list => list.key),
+  peerDiscoveryTimeout: 120_000,
 };
 
 const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
@@ -35,6 +55,24 @@ const statusCallback = (chain: Chain, status: BroadcasterConnectionStatus) => {
 
 describe('waku-broadcaster-client', function () {
   this.timeout(300_000);
+
+  beforeEach(async () => {
+    BroadcasterConfig.trustedFeeSigner = '';
+    BroadcasterFeeCache.init(POI_REQUIRED_LISTS.map(list => list.key));
+    BroadcasterFeeCache.resetCache(chain);
+    WakuBroadcasterWakuCore.hasError = false;
+    WakuBroadcasterWakuCore.waku = undefined;
+    // @ts-ignore
+    WakuObservers.currentSubscriptions = [];
+    // @ts-ignore
+    WakuObservers.currentContentTopics = [];
+  });
+
+  afterEach(() => {
+    sinon.restore();
+    WakuBroadcasterWakuCore.hasError = false;
+    WakuBroadcasterWakuCore.waku = undefined;
+  });
 
   after(async () => {
     await WakuBroadcasterClient.stop();
@@ -141,13 +179,18 @@ describe('waku-broadcaster-client', function () {
 
   describe('addTransportSubscription', () => {
     it('should add a transport subscription', async () => {
-      const waku: LightNode = {} as LightNode; // Mock RelayNode object
+      const waku: LightNode = {
+        filter: {
+          subscribe: sinon.stub().resolves(),
+        },
+      } as unknown as LightNode;
       const topic = 'test-topic';
       const callback = (message: any) => {
         // Mock callback function
       };
 
       const formattedTopic = contentTopics.encrypted(topic);
+      WakuBroadcasterWakuCore.waku = waku;
       // input waku is a placeholder, not used in the function here, it is used in waku-transport.
       // need to keep same function abi as waku-transport
       await WakuBroadcasterClient.addTransportSubscription(
@@ -159,6 +202,55 @@ describe('waku-broadcaster-client', function () {
       expect(WakuBroadcasterClient.getContentTopics()).to.include(
         formattedTopic,
       );
+    });
+  });
+
+  describe('broadcastMessage', () => {
+    it('should not throw when LightPush is partially accepted', async () => {
+      WakuBroadcasterWakuCore.waku = {
+        stop: sinon.stub().resolves(),
+        lightPush: {
+          send: sinon.stub().resolves({
+            recipients: ['peer-accepted'],
+            failures: [
+              {
+                peerId: 'peer-rejected',
+                error: 'Remote peer rejected',
+              },
+            ],
+          }),
+        },
+      } as unknown as LightNode;
+
+      await expect(
+        WakuBroadcasterWakuCore.broadcastMessage(
+          { test: true },
+          '/railgun/v2/test/json',
+        ),
+      ).to.not.be.rejected;
+    });
+
+    it('should throw when every LightPush peer rejects', async () => {
+      WakuBroadcasterWakuCore.waku = {
+        stop: sinon.stub().resolves(),
+        lightPush: {
+          send: sinon.stub().resolves({
+            failures: [
+              {
+                peerId: 'peer-rejected',
+                error: 'Remote peer rejected',
+              },
+            ],
+          }),
+        },
+      } as unknown as LightNode;
+
+      await expect(
+        WakuBroadcasterWakuCore.broadcastMessage(
+          { test: true },
+          '/railgun/v2/test/json',
+        ),
+      ).to.be.rejectedWith('Failed to send message');
     });
   });
 

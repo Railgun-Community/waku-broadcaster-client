@@ -48,14 +48,17 @@ export class WakuBroadcasterClient {
         broadcasterOptions.broadcasterVersionRange.maxVersion;
     }
 
-    if (isDefined(broadcasterOptions.useDNSDiscovery)) {
-      BroadcasterConfig.useDNSDiscovery = broadcasterOptions.useDNSDiscovery
-      BroadcasterConfig.customDNS = broadcasterOptions.useCustomDNS
-    }
-
-    if (isDefined(broadcasterOptions.additionalDirectPeers)) {
-      BroadcasterConfig.additionalDirectPeers = broadcasterOptions.additionalDirectPeers
-    }
+    BroadcasterConfig.configurePeerConnections({
+      useDNSDiscovery: broadcasterOptions.useDNSDiscovery,
+      useCustomDNS: broadcasterOptions.useCustomDNS,
+      dnsDiscoveryUrls: broadcasterOptions.dnsDiscoveryUrls,
+      additionalDirectPeers: broadcasterOptions.additionalDirectPeers,
+      additionalPeers: broadcasterOptions.additionalPeers,
+      storePeers: broadcasterOptions.storePeers,
+    });
+    BroadcasterConfig.setHealthcheckLoggingEnabled(
+      broadcasterOptions.enableHealthcheckLogs ?? false,
+    );
 
     if (isDefined(broadcasterDebugger)) {
       BroadcasterDebug.setDebugger(broadcasterDebugger);
@@ -89,6 +92,10 @@ export class WakuBroadcasterClient {
 
   static isStarted() {
     return this.started;
+  }
+
+  static setHealthcheckLoggingEnabled(enabled: boolean) {
+    BroadcasterConfig.setHealthcheckLoggingEnabled(enabled);
   }
 
   static async setChain(chain: Chain): Promise<void> {
@@ -278,15 +285,17 @@ export class WakuBroadcasterClient {
    * Start keep-alive poller which checks Broadcaster status every few seconds.
    */
   private static async pollStatus(): Promise<void> {
-
-    this.updateStatus();
+    const status = this.updateStatus();
+    if (BroadcasterConfig.enableHealthcheckLogs) {
+      await this.logHealthcheck(status);
+    }
     await delay(WakuBroadcasterClient.pollDelay);
 
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.pollStatus();
   }
 
-  private static updateStatus() {
+  private static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
 
     this.statusCallback(this.chain, status);
@@ -297,6 +306,54 @@ export class WakuBroadcasterClient {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.restart();
     }
+
+    return status;
+  }
+
+  private static formatHealthcheckLog(healthSnapshot: any): string {
+    const discovery = healthSnapshot.discovery ?? {};
+    const peerStore = discovery.peerStore ?? {};
+    const connectedPeerDetails = discovery.connectedPeerDetails ?? [];
+
+    const lines = [
+      'Waku healthcheck:',
+      `  status: ${healthSnapshot.status}`,
+      `  chain: ${healthSnapshot.chain}`,
+      `  started: ${healthSnapshot.started}, restarting: ${healthSnapshot.isRestarting}, wakuStarted: ${healthSnapshot.isStarted}, error: ${healthSnapshot.hasError}`,
+      `  routing: cluster=${healthSnapshot.routing.clusterId}, shard=${healthSnapshot.routing.shardId}, topic=${healthSnapshot.routing.pubsubTopic}`,
+      `  configured peers: dns=${healthSnapshot.configuredPeers.dnsDiscoveryUrls.length}, bootstrap=${healthSnapshot.configuredPeers.bootstrapPeers.length}, store=${healthSnapshot.configuredPeers.storePeers.length}`,
+      `  connections: ${healthSnapshot.connections.count} / peers=${healthSnapshot.connections.peers.join(', ') || 'none'}`,
+      `  peer store: total=${peerStore.count ?? 0}, bootstrap=${peerStore.bootstrapCount ?? 0}, peer-exchange=${peerStore.peerExchangeCount ?? 0}`,
+      `  connected peer-exchange support: ${peerStore.connectedPeersSupportingPeerExchange?.join(', ') || 'none'}`,
+      `  content topics: ${healthSnapshot.contentTopics.join(', ') || 'none'}`,
+    ];
+
+    if (connectedPeerDetails.length) {
+      lines.push('  connected peer details:');
+      for (const peer of connectedPeerDetails) {
+        lines.push(
+          `    - ${peer.peerId} | px=${peer.supportsPeerExchange} | tags=${peer.tags.join(', ') || 'none'} | protocols=${peer.protocols.join(', ') || 'none'}`,
+        );
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  private static async logHealthcheck(status: BroadcasterConnectionStatus) {
+    const chain = this.chain
+      ? `${this.chain.type}:${this.chain.id}`
+      : 'undefined';
+    const healthSnapshot = {
+      pollDelay: this.pollDelay,
+      started: this.started,
+      isRestarting: this.isRestarting,
+      chain,
+      status,
+      ...await WakuBroadcasterWakuCore.getHealthSnapshot(),
+    };
+
+    BroadcasterDebug.log(this.formatHealthcheckLog(healthSnapshot));
   }
 
   // Waku Transport functions

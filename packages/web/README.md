@@ -31,7 +31,7 @@ const broadcasterOptions = {
   peerDiscoveryTimeout: 10000, // 10 seconds
   additionalDirectPeers: [], // Optional: Direct peers to connect to
   poiActiveListKeys: [], // Optional: POI keys
-  useDNSDiscovery: false, // Optional: Use DNS discovery
+  useDNSDiscovery: true, // Optional: DNS discovery is always on
   useCustomDNS: { // Optional: Custom DNS config
     onlyCustom: false,
     enrTreePeers: []
@@ -182,4 +182,3 @@ This package relies on:
 ## License
 
 MIT
-

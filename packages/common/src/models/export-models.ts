@@ -7,7 +7,13 @@ import type { CustomDNSConfig } from './broadcaster-config.js';
 export type BroadcasterOptions = {
   trustedFeeSigner: string | string[];
   poiActiveListKeys?: string[];
+  enableHealthcheckLogs?: boolean;
   pubSubTopic?: string;
+  clusterId?: number;
+  shardId?: number;
+  dnsDiscoveryUrls?: string[];
+  additionalPeers?: string[];
+  storePeers?: string[];
   additionalDirectPeers?: string[];
   peerDiscoveryTimeout?: number;
   feeExpirationTimeout?: number;
