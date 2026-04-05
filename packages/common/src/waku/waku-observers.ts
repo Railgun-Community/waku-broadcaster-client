@@ -11,8 +11,8 @@ import { handleBroadcasterFeesMessage } from '../fees/handle-fees-message.js';
 import { BroadcasterTransactResponse } from '../transact/broadcaster-transact-response.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import { isDefined } from '../utils/is-defined.js';
-import { WAKU_RAILGUN_DEFAULT_SHARD } from '../models/constants.js';
 import { bytesToHex } from '../utils/conversion.js';
+import { BroadcasterConfig } from '../models/broadcaster-config.js';
 
 type SubscriptionParams = {
   topic: string;
@@ -31,6 +31,11 @@ export class WakuObservers {
   private static messageCache: Set<string> = new Set();
   private static observedMessages: IDecodedMessage[] = [];
   private static MAX_CACHE_SIZE = 5000;
+
+  private static resetMessageHistory() {
+    this.messageCache = new Set();
+    this.observedMessages = [];
+  }
 
   private static getMessageId(message: IMessage): string {
     const timestamp = message.timestamp ? message.timestamp.getTime() : 0;
@@ -92,6 +97,7 @@ export class WakuObservers {
 
   static resetCurrentChain = () => {
     this.currentChain = undefined;
+    this.resetMessageHistory();
   };
 
   static checkSubscriptionsHealth = async (waku: Optional<LightNode>) => {
@@ -115,6 +121,7 @@ export class WakuObservers {
     }
     this.currentSubscriptions = [];
     this.currentContentTopics = [];
+    this.resetMessageHistory();
   }
 
   private static removeAllObservers = async (waku: Optional<LightNode>) => {
@@ -127,11 +134,11 @@ export class WakuObservers {
 
     const feesDecoder = createDecoder(
       contentTopicFees,
-      WAKU_RAILGUN_DEFAULT_SHARD,
+      BroadcasterConfig.getWakuRoutingInfo(),
     );
     const transactResponseDecoder = createDecoder(
       contentTopicTransactResponse,
-      WAKU_RAILGUN_DEFAULT_SHARD,
+      BroadcasterConfig.getWakuRoutingInfo(),
     );
 
     const feesCallback = this.wrapCallbackWithCache((message: IMessage) =>
@@ -186,7 +193,10 @@ export class WakuObservers {
       return;
     }
     const transportTopic = contentTopics.encrypted(topic);
-    const decoder = createDecoder(transportTopic, WAKU_RAILGUN_DEFAULT_SHARD);
+    const decoder = createDecoder(
+      transportTopic,
+      BroadcasterConfig.getWakuRoutingInfo(),
+    );
     const wrappedCallback = this.wrapCallbackWithCache(callback);
     const params: SubscriptionParams = {
       topic: transportTopic,

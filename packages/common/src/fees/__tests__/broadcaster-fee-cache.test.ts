@@ -15,6 +15,8 @@ import {
 } from '../broadcaster-fee-cache.js';
 
 import { BroadcasterSearch } from '../../search/best-broadcaster.js';
+import { BroadcasterConfig } from '../../models/broadcaster-config.js';
+import { AddressFilter } from '../../filters/address-filter.js';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -59,6 +61,19 @@ const identifier = 'abc';
 const feeExpiration = Date.now() + 10000000;
 
 describe('broadcaster-fee-cache', () => {
+  beforeEach(() => {
+    BroadcasterConfig.trustedFeeSigner = '';
+    BroadcasterFeeCache.init(['test_list']);
+    BroadcasterFeeCache.resetCache(chain);
+    BroadcasterFeeCache.resetCache(MOCK_CHAIN_GOERLI);
+    AddressFilter.setAllowlist(undefined);
+    AddressFilter.setBlocklist(undefined);
+    // @ts-ignore
+    BroadcasterFeeCache.authorizedFees = {};
+    // @ts-ignore
+    BroadcasterFeeCache.averageAuthorizedFees = {};
+  });
+
   it('Should return broadcaster-fee-cache initial state', () => {
     BroadcasterFeeCache.init(['test_list']);
     BroadcasterFeeCache.resetCache(chain);

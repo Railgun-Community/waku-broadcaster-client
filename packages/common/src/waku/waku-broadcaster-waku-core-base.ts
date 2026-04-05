@@ -12,11 +12,11 @@ import {
 } from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
-  WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
+import { getWakuHealthSnapshot } from './waku-healthcheck.js';
 
 export abstract class WakuBroadcasterWakuCoreBase {
   static hasError = false;
@@ -27,7 +27,6 @@ export abstract class WakuBroadcasterWakuCoreBase {
   protected static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   protected static additionalDirectPeers: string[] = [];
   protected static peerDiscoveryTimeout = 60000;
-  protected static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
   public static restartCount = 0;
 
   static async initWaku(chain: Chain): Promise<void> {
@@ -88,9 +87,13 @@ export abstract class WakuBroadcasterWakuCoreBase {
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
     BroadcasterConfig.trustedFeeSigner = broadcasterOptions.trustedFeeSigner;
 
-    if (isDefined(broadcasterOptions.pubSubTopic)) {
-      this.pubSubTopic = broadcasterOptions.pubSubTopic;
-    }
+    BroadcasterConfig.configureWakuNetwork({
+      clusterId: broadcasterOptions.clusterId,
+      shardId: broadcasterOptions.shardId,
+      pubSubTopic: broadcasterOptions.pubSubTopic,
+    });
+
+    this.pubSubTopic = BroadcasterConfig.pubSubTopic;
     if (broadcasterOptions.additionalDirectPeers) {
       this.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
@@ -136,7 +139,28 @@ export abstract class WakuBroadcasterWakuCoreBase {
     return this.waku.libp2p.getConnections().length;
   }
 
+  static async getHealthSnapshot() {
+    return getWakuHealthSnapshot({
+      hasError: this.hasError,
+      peerDiscoveryTimeout: this.peerDiscoveryTimeout,
+      restartCount: this.restartCount,
+      waku: this.waku,
+    });
+  }
 
+  private static getLightPushAcceptedCount(result: {
+    successes?: unknown[];
+    recipients?: unknown[];
+    failures?: unknown[];
+  }): number {
+    if (Array.isArray(result.successes)) {
+      return result.successes.length;
+    }
+    if (Array.isArray(result.recipients)) {
+      return result.recipients.length;
+    }
+    return 0;
+  }
 
   static async broadcastMessage(data: object, topic: string): Promise<void> {
     if (!this.waku) {
@@ -144,7 +168,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
     }
     const encoder = createEncoder({
       contentTopic: topic,
-      routingInfo: WAKU_RAILGUN_DEFAULT_SHARD
+      routingInfo: BroadcasterConfig.getWakuRoutingInfo(),
     });
 
     const payload = utf8ToBytes(JSON.stringify(data));
@@ -153,8 +177,15 @@ export abstract class WakuBroadcasterWakuCoreBase {
       payload,
     });
 
-    if (result.failures && result.failures.length > 0) {
-      throw new Error(`Failed to send message: ${result.failures.map(f => f.error).join(', ')}`);
+    const acceptedCount = this.getLightPushAcceptedCount(result);
+    const failures = result.failures ?? [];
+
+    if (failures.length > 0) {
+      if (acceptedCount > 0) {
+        return;
+      }
+
+      throw new Error('Failed to send message');
     }
   }
 
@@ -169,7 +200,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
       return;
     }
 
-    const decoder = createDecoder(topic, WAKU_RAILGUN_DEFAULT_SHARD);
+    const decoder = createDecoder(topic, BroadcasterConfig.getWakuRoutingInfo());
 
     try {
       const startTime = new Date()
@@ -178,7 +209,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
       const endTime = new Date(Date.now())
       const options: QueryRequestParams = {
         includeData: true,
-        pubsubTopic: this.pubSubTopic,
+        pubsubTopic: BroadcasterConfig.pubSubTopic,
         contentTopics: [topic],
         paginationForward: true,
       }
