@@ -294,7 +294,7 @@ export abstract class WakuBroadcasterPeerDiscoveryCoreBase extends WakuBroadcast
 
       BroadcasterDebug.log('Waiting for remote peer.');
       await waku.waitForPeers(
-        [Protocols.Filter, Protocols.LightPush, Protocols.Store],
+        [Protocols.Filter, Protocols.LightPush],
         this.peerDiscoveryTimeout,
       );
       BroadcasterDebug.log(this.getConnectedLogMessage());
