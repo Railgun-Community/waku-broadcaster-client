@@ -17,6 +17,9 @@ export const handleAuthorizedFees = (
 
     const tokenFeeMap: MapType<CachedTokenFee> = {};
     const tokenAddresses = Object.keys(feeMessageData.fees);
+    const relayAdapt = feeMessageData.relayAdapt ?? feeMessageData.relayAdapt7702;
+    const relayAdapt7702 =
+      feeMessageData.relayAdapt7702 ?? feeMessageData.relayAdapt;
     tokenAddresses.forEach(tokenAddress => {
       const feePerUnitGas = feeMessageData.fees[tokenAddress];
       if (feePerUnitGas) {
@@ -25,7 +28,8 @@ export const handleAuthorizedFees = (
           expiration: feeMessageData.feeExpiration,
           feesID: feeMessageData.feesID,
           availableWallets: feeMessageData.availableWallets,
-          relayAdapt: feeMessageData.relayAdapt,
+          relayAdapt,
+          relayAdapt7702,
           reliability: feeMessageData.reliability,
         };
         tokenFeeMap[tokenAddress] = cachedFee;

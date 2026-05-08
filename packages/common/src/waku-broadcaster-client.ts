@@ -143,6 +143,7 @@ export class WakuBroadcasterClient {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster> {
     if (!WakuBroadcasterClient.started) {
       return;
@@ -152,6 +153,7 @@ export class WakuBroadcasterClient {
       chain,
       tokenAddress,
       useRelayAdapt,
+      use7702Only,
     );
   }
 
@@ -165,12 +167,18 @@ export class WakuBroadcasterClient {
   static findAllBroadcastersForChain(
     chain: Chain,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster[]> {
     if (!WakuBroadcasterClient.started) {
       return [];
     }
 
-    return BroadcasterSearch.findAllBroadcastersForChain(chain, useRelayAdapt);
+    return BroadcasterSearch.findAllBroadcastersForChain(
+      chain,
+      useRelayAdapt,
+      false,
+      use7702Only,
+    );
   }
 
   /**
@@ -194,6 +202,7 @@ export class WakuBroadcasterClient {
     tokenAddress: string,
     useRelayAdapt: boolean,
     percentageThreshold: number = 5,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster> {
     if (!WakuBroadcasterClient.started) {
       return;
@@ -204,6 +213,7 @@ export class WakuBroadcasterClient {
       tokenAddress,
       useRelayAdapt,
       percentageThreshold,
+      use7702Only,
     );
   }
 
@@ -221,6 +231,7 @@ export class WakuBroadcasterClient {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster[]> {
     if (!WakuBroadcasterClient.started) {
       return;
@@ -230,6 +241,8 @@ export class WakuBroadcasterClient {
       chain,
       tokenAddress,
       useRelayAdapt,
+      false,
+      use7702Only,
     );
   }
 
@@ -253,11 +266,13 @@ export class WakuBroadcasterClient {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ) {
     return BroadcasterFeeCache.supportsToken(
       chain,
       tokenAddress,
       useRelayAdapt,
+      use7702Only,
     );
   }
 
@@ -297,11 +312,11 @@ export class WakuBroadcasterClient {
 
   private static updateStatus(): BroadcasterConnectionStatus {
     const status = BroadcasterStatus.getBroadcasterConnectionStatus(this.chain);
-
     this.statusCallback(this.chain, status);
     if (
-      status === BroadcasterConnectionStatus.Disconnected ||
-      status === BroadcasterConnectionStatus.Error
+      !this.isRestarting &&
+      (status === BroadcasterConnectionStatus.Disconnected ||
+        status === BroadcasterConnectionStatus.Error)
     ) {
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.restart();
@@ -350,7 +365,7 @@ export class WakuBroadcasterClient {
       isRestarting: this.isRestarting,
       chain,
       status,
-      ...await WakuBroadcasterWakuCore.getHealthSnapshot(),
+      // ...await WakuBroadcasterWakuCore.getHealthSnapshot(),
     };
 
     BroadcasterDebug.log(this.formatHealthcheckLog(healthSnapshot));

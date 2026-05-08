@@ -26,6 +26,7 @@ export class BroadcasterSearch {
     tokenAddress: string,
     useRelayAdapt: boolean,
     ignoreMissingAuthorizedFee = false,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster[]> {
     const tokenAddressLowercase = tokenAddress.toLowerCase();
     const broadcasterTokenFees =
@@ -90,7 +91,12 @@ export class BroadcasterSearch {
         const nextCachedFee =
           broadcasterTokenFees[broadcasterAddress].forIdentifier[identifier];
         if (
-          cachedFeeUnavailableOrExpired(nextCachedFee, chain, useRelayAdapt)
+          cachedFeeUnavailableOrExpired(
+            nextCachedFee,
+            chain,
+            useRelayAdapt,
+            use7702Only,
+          )
         ) {
           return;
         }
@@ -122,6 +128,7 @@ export class BroadcasterSearch {
     chain: Chain,
     useRelayAdapt: boolean,
     ignoreMissingAuthorizedFee = false,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster[]> {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
@@ -136,6 +143,7 @@ export class BroadcasterSearch {
         tokenAddress,
         useRelayAdapt,
         ignoreMissingAuthorizedFee,
+        use7702Only,
       );
       if (!broadcastersForToken) {
         return;
@@ -151,6 +159,7 @@ export class BroadcasterSearch {
     tokenAddress: string,
     useRelayAdapt: boolean,
     percentageThreshold: number,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster> {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
@@ -162,6 +171,8 @@ export class BroadcasterSearch {
       chain,
       tokenAddress,
       useRelayAdapt,
+      false,
+      use7702Only,
     );
     if (!isDefined(broadcastersForToken)) {
       return undefined;
@@ -188,6 +199,7 @@ export class BroadcasterSearch {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ): Optional<SelectedBroadcaster> {
     const broadcasterTokenFees =
       BroadcasterFeeCache.feesForChain(chain)?.forToken;
@@ -199,6 +211,8 @@ export class BroadcasterSearch {
       chain,
       tokenAddress,
       useRelayAdapt,
+      false,
+      use7702Only,
     );
     if (!isDefined(broadcastersForToken)) {
       return undefined;

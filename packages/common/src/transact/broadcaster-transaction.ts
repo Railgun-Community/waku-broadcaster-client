@@ -9,9 +9,10 @@ import {
   poll,
   PreTransactionPOIsPerTxidLeafPerList,
   BroadcasterEncryptedMethodParams,
-  BroadcasterRawParamsTransact,
   TXIDVersion,
   BroadcasterTransactRequestType,
+  BroadcasterRawParamsTransactCommon,
+  BroadcasterTransactRequestRaw,
 } from '@railgun-community/shared-models';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { bytesToHex } from '../utils/conversion.js';
@@ -23,7 +24,54 @@ import {
   WakuTransactResponse,
   BroadcasterTransactResponse,
 } from './broadcaster-transact-response.js';
-import { getAddress, isHexString } from 'ethers';
+import { authorizationify, getAddress, isHexString } from 'ethers';
+import type { Authorization, AuthorizationLike, BigNumberish } from 'ethers';
+
+type LegacyAuthorizationInput = {
+  address: string;
+  nonce: BigNumberish;
+  chainId: BigNumberish;
+  r: string;
+  s: string;
+  yParity: 0 | 1;
+};
+
+type AuthorizationInput = AuthorizationLike | LegacyAuthorizationInput;
+
+const normalizeAuthorizationLike = (
+  authorization: AuthorizationInput,
+): AuthorizationLike => {
+  if (
+    typeof authorization === 'object' &&
+    authorization != null &&
+    'signature' in authorization
+  ) {
+    return authorization as AuthorizationLike;
+  }
+
+  const legacy = authorization as LegacyAuthorizationInput;
+  return {
+    chainId: legacy.chainId,
+    nonce: legacy.nonce,
+    address: legacy.address,
+    signature: {
+      r: legacy.r,
+      s: legacy.s,
+      yParity: legacy.yParity,
+    },
+  };
+};
+
+const ensureBigIntJSONSerializable = () => {
+  // JSON.stringify throws on bigint by default.
+  // The Broadcaster transact payload may include bigint fields (e.g. EIP-7702 Authorization).
+  const proto = BigInt.prototype as any;
+  if (proto.toJSON == null) {
+    proto.toJSON = function () {
+      return this.toString();
+    };
+  }
+};
 
 //
 // Transact: Encryption Flow
@@ -102,6 +150,8 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
+    authorization?: AuthorizationInput,
+    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
   ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
@@ -113,6 +163,8 @@ export class BroadcasterTransaction {
       overallBatchMinGasPrice,
       useRelayAdapt,
       preTransactionPOIsPerTxidLeafPerList,
+      authorization,
+      type4FeeOverrides,
     );
     return new BroadcasterTransaction(
       encryptedDataResponse,
@@ -132,23 +184,25 @@ export class BroadcasterTransaction {
     overallBatchMinGasPrice: bigint,
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
+    authorization?: AuthorizationInput,
+    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
     }
 
+    ensureBigIntJSONSerializable();
+
     const { viewingPublicKey: broadcasterViewingKey } =
       getRailgunWalletAddressData(broadcasterRailgunAddress);
 
-    const transactData: BroadcasterRawParamsTransact = {
-      transactType: BroadcasterTransactRequestType.COMMON,
+    const baseTransactData: BroadcasterTransactRequestRaw = {
       txidVersion: txidVersionForInputs,
       to: getAddress(to),
       data,
       broadcasterViewingKey: bytesToHex(broadcasterViewingKey),
       chainID: chain.id,
       chainType: chain.type,
-      minGasPrice: overallBatchMinGasPrice.toString(),
       feesID: broadcasterFeesID,
       useRelayAdapt,
       devLog: BroadcasterConfig.IS_DEV,
@@ -156,6 +210,41 @@ export class BroadcasterTransaction {
       maxVersion: BroadcasterConfig.MAXIMUM_BROADCASTER_VERSION,
       preTransactionPOIsPerTxidLeafPerList,
     };
+
+    type BroadcasterRawParamsTransactERC7702Local = BroadcasterTransactRequestRaw & {
+      transactType: BroadcasterTransactRequestType.TX7702;
+      maxFeePerGas: string;
+      maxPriorityFeePerGas: string;
+      authorization: Authorization;
+    };
+
+    const transactData: BroadcasterRawParamsTransactCommon | BroadcasterRawParamsTransactERC7702Local =
+      authorization
+        ? (() => {
+            if (!type4FeeOverrides) {
+              throw new Error(
+                'EIP-7702 transact requires explicit type4FeeOverrides (maxFeePerGas/maxPriorityFeePerGas).',
+              );
+            }
+
+            const resolvedAuthorization = authorizationify(
+              normalizeAuthorizationLike(authorization),
+            );
+
+            return {
+              ...baseTransactData,
+              transactType: BroadcasterTransactRequestType.TX7702,
+              maxFeePerGas: type4FeeOverrides.maxFeePerGas.toString(),
+              maxPriorityFeePerGas:
+                type4FeeOverrides.maxPriorityFeePerGas.toString(),
+              authorization: resolvedAuthorization,
+            };
+          })()
+        : {
+            ...baseTransactData,
+            transactType: BroadcasterTransactRequestType.COMMON,
+            minGasPrice: overallBatchMinGasPrice.toString(),
+          };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
       transactData,
@@ -249,7 +338,7 @@ export class BroadcasterTransaction {
     const pollIterations = SECONDS_PER_RETRY / POLL_DELAY_SECONDS;
 
     const responseTopic = contentTopics.transactResponse(this.chain);
-    await WakuBroadcasterWakuCore.retrieveHistoricalForTopic(responseTopic);
+    // await WakuBroadcasterWakuCore.retrieveHistoricalForTopic(responseTopic);
 
     const response: Optional<WakuTransactResponse> = await poll(
       async () => this.getTransactionResponse(),

@@ -59,6 +59,26 @@
   resolved "https://registry.yarnpkg.com/@chainsafe/is-ip/-/is-ip-2.1.0.tgz#ba9ac32acd9027698e0b56b91c7af069d28d7931"
   integrity sha512-KIjt+6IfysQ4GCv66xihEitBjvhU/bixbbbFxdJ1sqCp4uJ0wuZiYBPhksZoy4lfaF0k9cwNzY5upEW/VWdw3w==
 
+"@chainsafe/libp2p-gossipsub@14.1.1":
+  version "14.1.1"
+  resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-gossipsub/-/libp2p-gossipsub-14.1.1.tgz#d75e7c4369908321d7aef3aa7e84adb1795d5b32"
+  integrity sha512-EUs2C+xHXXbw0pQQF2AN/ih4qB6BBWOGkDhvHz1VN52o2m/827IBEMT8RHdXMNZciQc90to1L57BKmhXkvztDw==
+  dependencies:
+    "@libp2p/crypto" "^5.0.0"
+    "@libp2p/interface" "^2.0.0"
+    "@libp2p/interface-internal" "^2.0.0"
+    "@libp2p/peer-id" "^5.0.0"
+    "@libp2p/pubsub" "^10.0.0"
+    "@multiformats/multiaddr" "^12.1.14"
+    denque "^2.1.0"
+    it-length-prefixed "^9.0.4"
+    it-pipe "^3.0.1"
+    it-pushable "^3.2.3"
+    multiformats "^13.0.1"
+    protons-runtime "^5.5.0"
+    uint8arraylist "^2.4.8"
+    uint8arrays "^5.0.1"
+
 "@chainsafe/libp2p-noise@16.1.3":
   version "16.1.3"
   resolved "https://registry.yarnpkg.com/@chainsafe/libp2p-noise/-/libp2p-noise-16.1.3.tgz#ef3733ed43ad2d2e54de2f88f796a8d409660983"
@@ -988,7 +1008,7 @@
     uint8arraylist "^2.4.8"
     uint8arrays "^5.1.0"
 
-"@libp2p/interface-internal@^2.3.17":
+"@libp2p/interface-internal@^2.0.0", "@libp2p/interface-internal@^2.3.17", "@libp2p/interface-internal@^2.3.19":
   version "2.3.19"
   resolved "https://registry.yarnpkg.com/@libp2p/interface-internal/-/interface-internal-2.3.19.tgz#14df8fbefcc24b5309b949b6e9333a2d3e647567"
   integrity sha512-v335EB0i5CaNF+0SqT01CTBp0VyjJizpy46KprcshFFjX16UQ8+/QzoTZqmot9WiAmAzwR0b87oKmlAE9cpxzQ==
@@ -1011,7 +1031,7 @@
     progress-events "^1.0.1"
     uint8arraylist "^2.4.8"
 
-"@libp2p/interface@^2.10.4", "@libp2p/interface@^2.11.0", "@libp2p/interface@^2.9.0":
+"@libp2p/interface@^2.0.0", "@libp2p/interface@^2.10.4", "@libp2p/interface@^2.11.0", "@libp2p/interface@^2.9.0":
   version "2.11.0"
   resolved "https://registry.yarnpkg.com/@libp2p/interface/-/interface-2.11.0.tgz#a1032271d6532e53989781bd25b24f158e900e27"
   integrity sha512-0MUFKoXWHTQW3oWIgSHApmYMUKWO/Y02+7Hpyp+n3z+geD4Xo2Rku2gYWmxcq+Pyjkz6Q9YjDWz3Yb2SoV2E8Q==
@@ -1156,6 +1176,26 @@
     main-event "^1.0.1"
     uint8arrays "^5.1.0"
 
+"@libp2p/pubsub@^10.0.0":
+  version "10.1.18"
+  resolved "https://registry.yarnpkg.com/@libp2p/pubsub/-/pubsub-10.1.18.tgz#ba3b43d88d89356133fa58250cb7d8d35c27b675"
+  integrity sha512-Bxa0cwkaQvadyJNlJlzH0m1eo7m03G2nCpuKbcv+i0qNbyyTOydBcuoslG/UWFYhRBB9Js9R6zNIsaIgpo+iGw==
+  dependencies:
+    "@libp2p/crypto" "^5.1.8"
+    "@libp2p/interface" "^2.11.0"
+    "@libp2p/interface-internal" "^2.3.19"
+    "@libp2p/peer-collections" "^6.0.35"
+    "@libp2p/peer-id" "^5.1.9"
+    "@libp2p/utils" "^6.7.2"
+    it-length-prefixed "^10.0.1"
+    it-pipe "^3.0.1"
+    it-pushable "^3.2.3"
+    main-event "^1.0.1"
+    multiformats "^13.3.6"
+    p-queue "^8.1.0"
+    uint8arraylist "^2.4.8"
+    uint8arrays "^5.1.0"
+
 "@libp2p/tcp@^10.0.0":
   version "10.1.19"
   resolved "https://registry.yarnpkg.com/@libp2p/tcp/-/tcp-10.1.19.tgz#32e6304ca2d2cb1127a201aecb84c9faa82085c0"
@@ -1263,7 +1303,7 @@
   dependencies:
     "@multiformats/multiaddr" "^12.3.0"
 
-"@multiformats/multiaddr@^12.0.0", "@multiformats/multiaddr@^12.3.0", "@multiformats/multiaddr@^12.4.4":
+"@multiformats/multiaddr@^12.0.0", "@multiformats/multiaddr@^12.1.14", "@multiformats/multiaddr@^12.3.0", "@multiformats/multiaddr@^12.4.4":
   version "12.5.1"
   resolved "https://registry.yarnpkg.com/@multiformats/multiaddr/-/multiaddr-12.5.1.tgz#45d64456eddbf8cbe179366d7cb7b72efabe049f"
   integrity sha512-+DDlr9LIRUS8KncI1TX/FfUn8F2dl6BIxJgshS/yFQCNB5IAF0OGzcwB39g5NLE22s4qqDePv0Qof6HdpJ/4aQ==
@@ -1418,10 +1458,9 @@
   resolved "https://registry.yarnpkg.com/@railgun-community/curve25519-scalarmult-wasm/-/curve25519-scalarmult-wasm-0.1.5.tgz#edb5e40a8f1fdb7f7e0de1d04e8badabe41cb2a8"
   integrity sha512-Cur8uM/IdNW3WzUwdPloDG1CF0rpSBDWq2yGXJMZ7IMeBGdc4Jj0h9tnNMFRZ35ZuCVVbZ3yClmqSa4PsbpdGQ==
 
-"@railgun-community/engine@^9.5.3":
-  version "9.5.3"
-  resolved "https://registry.yarnpkg.com/@railgun-community/engine/-/engine-9.5.3.tgz#e562221448c963595fb631d849b21dd11c275fb9"
-  integrity sha512-0oHXj2PR+1PaOaCM29pKHGoBqaNjNAiNKSRyrMbqXLWDSNvuyCunhk4yjQdgHTzdZheL4TwOSzHN8TidSF+x5Q==
+"@railgun-community/engine@file:../../../../../../.cache/yarn/v6/.tmp/5ec9bab721ac6994b0c13fccf9f1e2b7/local-deps/railgun-community-engine-v9.5.38.tgz", "@railgun-community/engine@file:./local-deps/railgun-community-engine-v9.5.38.tgz":
+  version "9.5.38"
+  resolved "file:./local-deps/railgun-community-engine-v9.5.38.tgz#54e550ec2659d2c0b624ba8be084fe602657d79f"
   dependencies:
     "@noble/ciphers" "^0.4.0"
     "@noble/ed25519" "^1.7.1"
@@ -1453,15 +1492,13 @@
   resolved "https://registry.yarnpkg.com/@railgun-community/poseidon-hash-wasm/-/poseidon-hash-wasm-1.0.1.tgz#bfd3b3f915391a59486d8c9d632069f029e152d6"
   integrity sha512-zDAbMu095ZjMqsKIoyOnuKR4Zofnqqx4eTCtnA6qYglnexX5cadxItvJa3ozhDDTmFkDGAidDssQ7Pzl3wwLDA==
 
-"@railgun-community/shared-models@^8.0.1":
-  version "8.0.1"
-  resolved "https://registry.yarnpkg.com/@railgun-community/shared-models/-/shared-models-8.0.1.tgz#185a74f9fa60b7da74de7afde583926efc52b180"
-  integrity sha512-g5Gt3j2O8XAMoJ+SzxvzyuB/KioFXXOs+2T0wxFQS5ebXB52e+HFBZ5UFVlORCbHteaAwLiURRcR2W8hOBUuoA==
+"@railgun-community/shared-models@file:../../../../../../.cache/yarn/v6/.tmp/5ec9bab721ac6994b0c13fccf9f1e2b7/local-deps/railgun-community-shared-models-v8.0.5.tgz", "@railgun-community/shared-models@file:./local-deps/railgun-community-shared-models-v8.0.5.tgz":
+  version "8.0.5"
+  resolved "file:./local-deps/railgun-community-shared-models-v8.0.5.tgz#c07b5b8bf475fe00be5c272243fd634d6ce9f7d4"
 
-"@railgun-community/wallet@^10.8.4":
-  version "10.8.4"
-  resolved "https://registry.yarnpkg.com/@railgun-community/wallet/-/wallet-10.8.4.tgz#b7680f331e4e432e1a3914c84b6962eaadd5c931"
-  integrity sha512-PBoJ5e3maTtKgC2823ZwdJptFB3xtcX0+i2fJqnsJYjaBpElOrShwRzxUm5zE6tiMIH3SFWmIsVADwG459Y/iQ==
+"@railgun-community/wallet@file:./local-deps/railgun-community-wallet-v10.9.31.tgz":
+  version "10.9.31"
+  resolved "file:./local-deps/railgun-community-wallet-v10.9.31.tgz#180b0dd6f9651b2cd92c51db506f35465d473892"
   dependencies:
     "@graphql-mesh/cache-localforage" "^0.7.20"
     "@graphql-mesh/cross-helpers" "^0.3.4"
@@ -1474,8 +1511,8 @@
     "@graphql-mesh/types" "^0.91.14"
     "@graphql-mesh/utils" "^0.43.22"
     "@noble/ed25519" "^1.7.1"
-    "@railgun-community/engine" "^9.5.3"
-    "@railgun-community/shared-models" "^8.0.1"
+    "@railgun-community/engine" "file:../../../../../../.cache/yarn/v6/.tmp/5ec9bab721ac6994b0c13fccf9f1e2b7/local-deps/railgun-community-engine-v9.5.38.tgz"
+    "@railgun-community/shared-models" "file:../../../../../../.cache/yarn/v6/.tmp/5ec9bab721ac6994b0c13fccf9f1e2b7/local-deps/railgun-community-shared-models-v8.0.5.tgz"
     "@whatwg-node/fetch" "^0.8.4"
     assert "2.0.0"
     axios "1.7.2"
@@ -3286,6 +3323,11 @@ delayed-stream@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/delayed-stream/-/delayed-stream-1.0.0.tgz#df3ae199acadfb7d440aaae0b29e2272b24ec619"
   integrity sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==
+
+denque@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/denque/-/denque-2.1.0.tgz#e93e1a6569fb5e66f16a3c2a2964617d349d6ab1"
+  integrity sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==
 
 depd@2.0.0, depd@~2.0.0:
   version "2.0.0"
@@ -6141,6 +6183,11 @@ multiformats@^13.0.0, multiformats@^13.3.6, multiformats@^13.4.0:
   resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-13.4.1.tgz#d4d0aeaef73ed9dde1b04ea20c40554372085704"
   integrity sha512-VqO6OSvLrFVAYYjgsr8tyv62/rCQhPgsZUXLTqoFLSgdkgiUYKYeArbt1uWLlEpkjxQe+P0+sHlbPEte1Bi06Q==
 
+multiformats@^13.0.1:
+  version "13.4.2"
+  resolved "https://registry.yarnpkg.com/multiformats/-/multiformats-13.4.2.tgz#309ee17d3946db9a6954cf6832aeb2b4b10dd0f3"
+  integrity sha512-eh6eHCrRi1+POZ3dA+Dq1C6jhP1GNtr9CRINMb67OKzqW9I5DUuZM/3jLPlzhgpGeiNUlEGEbkCYChXMCc/8DQ==
+
 multihashes@^0.4.15, multihashes@~0.4.15:
   version "0.4.21"
   resolved "https://registry.yarnpkg.com/multihashes/-/multihashes-0.4.21.tgz#dc02d525579f334a7909ade8a122dabb58ccfcb5"
@@ -6446,6 +6493,14 @@ p-locate@^5.0.0:
   integrity sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==
   dependencies:
     p-limit "^3.0.2"
+
+p-queue@^8.1.0:
+  version "8.1.1"
+  resolved "https://registry.yarnpkg.com/p-queue/-/p-queue-8.1.1.tgz#dac3e8c57412fffa18fe6c341b141dbb3a16408b"
+  integrity sha512-aNZ+VfjobsWryoiPnEApGGmf5WmNsCo9xu8dfaYamG5qaLP7ClhLN6NgsFe6SwJ2UbLEBK5dv9x8Mn5+RVhMWQ==
+  dependencies:
+    eventemitter3 "^5.0.1"
+    p-timeout "^6.1.2"
 
 p-queue@^9.0.0:
   version "9.0.1"

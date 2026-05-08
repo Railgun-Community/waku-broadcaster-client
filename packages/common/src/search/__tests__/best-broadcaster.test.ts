@@ -1,4 +1,5 @@
 import chai from 'chai';
+import { networkForChain } from '@railgun-community/shared-models';
 import { BroadcasterFeeCache } from '../../fees/broadcaster-fee-cache.js';
 import { BroadcasterConfig } from '../../models/broadcaster-config.js';
 import { AddressFilter } from '../../filters/address-filter.js';
@@ -352,5 +353,66 @@ describe('best-broadcaster', () => {
 
     // Restore trusted signer
     BroadcasterConfig.trustedFeeSigner = originalTrustedSigner;
+  });
+
+  it('Should filter for relayAdapt7702 on supports7702 networks', () => {
+    const chain7702 = {
+      ...chain,
+      id: 11155111,
+    };
+    const relayAdapt7702 = networkForChain(chain7702)?.relayAdapt7702Contract;
+
+    expect(relayAdapt7702).to.be.a('string').and.not.equal('');
+
+    BroadcasterFeeCache.addTokenFees(
+      chain7702,
+      broadcaster1,
+      Date.now() + 100000,
+      {
+        [tokenAddress]: {
+          feePerUnitGas: '100',
+          expiration: Date.now() + 100000,
+          feesID: '1',
+          availableWallets: 1,
+          relayAdapt: '0x7e3d929EbD5bDC84d02Bd3205c777578f33A214D',
+          reliability: 1,
+        },
+      },
+      'id1',
+      '8.0.0',
+      [],
+    );
+
+    BroadcasterFeeCache.addTokenFees(
+      chain7702,
+      broadcaster2,
+      Date.now() + 100000,
+      {
+        [tokenAddress]: {
+          feePerUnitGas: '99',
+          expiration: Date.now() + 100000,
+          feesID: '1',
+          availableWallets: 1,
+          relayAdapt: '0x7e3d929EbD5bDC84d02Bd3205c777578f33A214D',
+          relayAdapt7702,
+          reliability: 1,
+        },
+      },
+      'id1',
+      '8.0.0',
+      [],
+    );
+
+    const broadcasters = BroadcasterSearch.findBroadcastersForToken(
+      chain7702,
+      tokenAddress,
+      true,
+      true,
+      true,
+    );
+
+    expect(broadcasters).to.be.an('array');
+    expect(broadcasters?.length).to.equal(1);
+    expect(broadcasters?.[0].railgunAddress).to.equal(broadcaster2);
   });
 });

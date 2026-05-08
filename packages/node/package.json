@@ -1,11 +1,12 @@
 {
   "name": "@railgun-community/waku-broadcaster-client-node",
-  "version": "9.1.0",
+  "version": "9.1.28",
   "license": "MIT",
   "main": "dist/index.js",
   "type": "module",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "local-deps/**/*"
   ],
   "exports": {
     ".": "./dist/index.js"
@@ -32,21 +33,25 @@
     "url": "https://github.com/Railgun-Community/waku-broadcaster-client/issues"
   },
   "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "14.1.1",
     "@libp2p/tcp": "^10.0.0",
     "@waku/discovery": "^0.0.13",
     "@waku/sdk": "^0.0.36",
     "patch-package": "^8.0.0"
   },
   "resolutions": {
-    "protons-runtime": "5.6.0"
+    "protons-runtime": "5.6.0",
+    "@railgun-community/engine": "file:./local-deps/railgun-community-engine-v9.5.38.tgz",
+    "@railgun-community/shared-models": "file:./local-deps/railgun-community-shared-models-v8.0.5.tgz",
+    "@railgun-community/wallet": "file:./local-deps/railgun-community-wallet-v10.9.31.tgz"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "^8.0.1",
-    "@railgun-community/wallet": "^10.8.4"
+    "@railgun-community/shared-models": "file:./local-deps/railgun-community-shared-models-v8.0.5.tgz",
+    "@railgun-community/wallet": "file:./local-deps/railgun-community-wallet-v10.9.31.tgz"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "^8.0.1",
-    "@railgun-community/wallet": "^10.8.4",
+    "@railgun-community/shared-models": "file:./local-deps/railgun-community-shared-models-v8.0.5.tgz",
+    "@railgun-community/wallet": "file:./local-deps/railgun-community-wallet-v10.9.31.tgz",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",

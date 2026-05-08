@@ -53,20 +53,30 @@ export const cachedFeeUnavailableOrExpired = (
   cachedFee: CachedTokenFee,
   chain: Chain,
   useRelayAdapt: boolean,
+  use7702Only = false,
 ) => {
   if (useRelayAdapt) {
-    const relayAdapt = cachedFee.relayAdapt;
-    if (!relayAdapt) {
-      return true;
-    }
     const network = networkForChain(chain);
     if (!network) {
       throw new Error(`Unrecognized chain ${chain}`);
     }
 
-    const expectedRelayAdapt = network.relayAdaptHistory;
+    const relayAdapt = use7702Only
+      ? cachedFee.relayAdapt7702
+      : cachedFee.relayAdapt;
+    if (!relayAdapt) {
+      return true;
+    }
+
+    const expectedRelayAdapt = use7702Only
+      // TODO: remove when all models are fully configured.
+      ? [network.relayAdapt7702Contract, ...network.relayAdapt7702History]
+      : network.relayAdaptHistory;
     // TODO: switch back when all testing and migration to new adapt has completed.
-    if (relayAdapt && !expectedRelayAdapt.includes(relayAdapt)) {
+    if (
+      expectedRelayAdapt.length > 0 &&
+      !expectedRelayAdapt.includes(relayAdapt)
+    ) {
       return true;
     }
   }
