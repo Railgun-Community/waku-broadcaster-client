@@ -16,10 +16,8 @@ jobs:
         with:
           node-version: "22"
           cache: "yarn"
-      - name: Install yarn
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
       - name: Unit test
         shell: bash
         run: cd packages/web && yarn test
@@ -33,10 +31,8 @@ jobs:
         with:
           node-version: "22"
           cache: "yarn"
-      - name: Install yarn
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
       - name: Unit test
         shell: bash
         run: cd packages/node && yarn test
