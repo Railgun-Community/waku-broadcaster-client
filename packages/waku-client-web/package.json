@@ -1,21 +1,43 @@
 {
-  "name": "@railgun-community/waku-broadcaster-client-common",
-  "version": "9.1.0",
+  "name": "@zeno/waku-client-web",
+  "version": "0.1.0",
   "license": "MIT",
+  "main": "dist/index.js",
+  "type": "module",
+  "files": [
+    "dist/**/*"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "postinstall": "node copy-src.js",
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc",
+    "prepare": "npm run build",
     "check-circular-deps": "madge --circular .",
     "eslint": "eslint src --ext .ts,.tsx --fix",
     "lint": "npm run check-circular-deps && npm run eslint && tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "tsc-test": "tsc -p tsconfig.test.json && tsc-alias -p tsconfig.test.json",
     "compile-test": "npm run clean && npm run tsc-test",
     "test-coverage": "npm run compile-test && c8 mocha",
-    "test": "npm run compile-test && NODE_ENV=test mocha"
+    "test": "npm run compile-test && NODE_ENV=test mocha 'dist/**/*.test.js'",
+    "postinstall": "patch-package"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZenoMD/waku-client-zeno.git"
+  },
+  "homepage": "https://github.com/ZenoMD/waku-client-zeno#readme",
+  "bugs": {
+    "url": "https://github.com/ZenoMD/waku-client-zeno/issues"
   },
   "dependencies": {
-    "@waku/sdk": "^0.0.36"
+    "@waku/discovery": "^0.0.13",
+    "@waku/sdk": "^0.0.36",
+    "patch-package": "^8.0.0"
+  },
+  "resolutions": {
+    "protons-runtime": "5.6.0"
   },
   "peerDependencies": {
     "@railgun-community/shared-models": "^8.0.1",

@@ -1,12 +1,29 @@
 {
-  "name": "waku-broadcaster-client",
-  "version": "9.1.0",
+  "name": "waku-client-zeno",
+  "version": "0.1.0",
+  "private": true,
   "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@11.5.2",
+  "volta": {
+    "node": "22.22.3",
+    "pnpm": "11.5.2"
+  },
   "scripts": {
-    "postinstall": "./setup"
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "lint": "oxlint",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.1"
-  },
-  "packageManager": "yarn@1.22.22"
+    "oxfmt": "0.54.0",
+    "oxlint": "1.69.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.8"
+  }
 }
