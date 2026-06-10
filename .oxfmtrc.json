@@ -6,22 +6,6 @@
     "**/dist/**",
     "**/pkg/**",
     "pnpm-lock.yaml",
-    "packages/*/src/tests/fixtures/**",
-    "packages/waku-client-common/src/__tests__/**",
-    "packages/waku-client-common/src/fees/**",
-    "packages/waku-client-common/src/filters/**",
-    "packages/waku-client-common/src/index.ts",
-    "packages/waku-client-common/src/models/**",
-    "packages/waku-client-common/src/search/**",
-    "packages/waku-client-common/src/status/**",
-    "packages/waku-client-common/src/tests/**",
-    "packages/waku-client-common/src/transact/**",
-    "packages/waku-client-common/src/types/**",
-    "packages/waku-client-common/src/utils/**",
-    "packages/waku-client-common/src/waku/**",
-    "packages/waku-client-common/src/waku-broadcaster-client.ts",
-    "packages/waku-client-common/copy-src.js",
-    "packages/waku-client-node/src/**",
-    "packages/waku-client-web/src/**"
+    "packages/*/src/tests/fixtures/**"
   ]
 }
