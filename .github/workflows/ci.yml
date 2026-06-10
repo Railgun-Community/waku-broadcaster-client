@@ -24,8 +24,8 @@ jobs:
       - run: pnpm audit --audit-level=moderate
       - run: pnpm lint
       - run: pnpm fmt:check
-      - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm typecheck
       - run: pnpm test
 
   hooks:
