@@ -14,7 +14,7 @@
     "outDir": "dist",
     "strict": true,
     "baseUrl": "./src",
-    "types": ["node", "mocha"],
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -31,7 +31,7 @@
     "useUnknownInCatchVariables": false,
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "src/**/__tests__", "src/tests", "dist"],
+  "exclude": ["node_modules", "src/**/__tests__", "src/tests", "dist", "smoke.test.ts"],
   "ts-node": {
     "files": true
   }

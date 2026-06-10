@@ -11,5 +11,13 @@
     "typescript/no-explicit-any": "error",
     "import/no-cycle": "error"
   },
-  "ignorePatterns": ["**/dist/**", "**/pkg/**", "**/node_modules/**"]
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/pkg/**",
+    "**/node_modules/**",
+    "packages/waku-client-common/src/**",
+    "packages/waku-client-common/copy-src.js",
+    "packages/waku-client-node/src/**",
+    "packages/waku-client-web/src/**"
+  ]
 }

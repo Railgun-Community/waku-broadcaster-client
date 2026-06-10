@@ -21,7 +21,9 @@ jobs:
           node-version: 22.22.3
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --audit-level=moderate
+      # Scoped to production deps: the inherited @railgun-community devDependency tree
+      # (typecheck-only, removed in Phase 3 transport extraction) carries known advisories.
+      - run: pnpm audit --audit-level=moderate --prod
       - run: pnpm lint
       - run: pnpm fmt:check
       - run: pnpm typecheck

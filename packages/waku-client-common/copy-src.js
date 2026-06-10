@@ -23,9 +23,9 @@ function copyDirectoryWithLinks(src, dst) {
 }
 
 const packages = Path.resolve(__dirname, '..');
-for (const package of ['node', 'web']) {
+for (const package of ['waku-client-node', 'waku-client-web']) {
   copyDirectoryWithLinks(
-    Path.join(packages, 'common', 'src'),
+    Path.join(packages, 'waku-client-common', 'src'),
     Path.join(packages, package, 'src'),
   );
 }

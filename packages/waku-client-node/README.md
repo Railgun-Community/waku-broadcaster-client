@@ -24,22 +24,24 @@ const chain: Chain = { type: 0, id: 1 }; // Ethereum Mainnet
 
 const broadcasterOptions = {
   // Required: Trusted Fee Signer
-  trustedFeeSigner: '0zk1...', 
+  trustedFeeSigner: '0zk1...',
   // Optional: Waku options
-  pubSubTopic: '/waku/2/default-waku/proto', 
+  pubSubTopic: '/waku/2/default-waku/proto',
   feeExpirationTimeout: 30000, // 30 seconds
   peerDiscoveryTimeout: 10000, // 10 seconds
   additionalDirectPeers: [], // Optional: Direct peers to connect to
   poiActiveListKeys: [], // Optional: POI keys
   useDNSDiscovery: true, // Optional: DNS discovery is always on
-  useCustomDNS: { // Optional: Custom DNS config
+  useCustomDNS: {
+    // Optional: Custom DNS config
     onlyCustom: false,
-    enrTreePeers: []
+    enrTreePeers: [],
   },
-  broadcasterVersionRange: { // Optional: Broadcaster version range
+  broadcasterVersionRange: {
+    // Optional: Broadcaster version range
     minVersion: '8.0.0',
-    maxVersion: '8.999.0'
-  }
+    maxVersion: '8.999.0',
+  },
 };
 
 const statusCallback = (status: BroadcasterConnectionStatus) => {
@@ -61,12 +63,9 @@ const chain: Chain = { type: 0, id: 1 }; // Ethereum Mainnet
 const tokenAddress = '0x6b175474e89094c44da98b954eedeac495271d0f'; // DAI
 
 // Wait a few seconds for peer discovery and fee updates...
-await new Promise(r => setTimeout(r, 5000));
+await new Promise((r) => setTimeout(r, 5000));
 
-const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(
-  chain,
-  tokenAddress
-);
+const selectedBroadcaster = await WakuBroadcasterClient.findBestBroadcaster(chain, tokenAddress);
 
 if (selectedBroadcaster) {
   console.log('Found broadcaster:', selectedBroadcaster.railgunAddress);
@@ -104,7 +103,7 @@ const broadcasterTransaction = await BroadcasterTransaction.create(
   nullifiers,
   overallBatchMinGasPrice,
   useRelayAdapt,
-  preTransactionPOIs
+  preTransactionPOIs,
 );
 
 try {
@@ -119,26 +118,27 @@ try {
 
 The `start` method accepts a `BroadcasterOptions` object.
 
--   `trustedFeeSigner`: (Required) The public key of the trusted fee signer.
--   `poiActiveListKeys`: (Optional) List of active POI list keys.
--   `pubSubTopic`: (Optional) The Waku pubsub topic to subscribe to. Defaults to the RAILGUN topic.
--   `additionalDirectPeers`: (Optional) Array of multiaddrs for direct peer connections.
--   `peerDiscoveryTimeout`: (Optional) Timeout in milliseconds for peer discovery.
--   `feeExpirationTimeout`: (Optional) Timeout in milliseconds for fee expiration.
--   `useDNSDiscovery`: (Optional) Boolean to enable DNS peer discovery.
--   `useCustomDNS`: (Optional) Configuration for custom DNS discovery.
-    -   `onlyCustom`: (Boolean) If true, only use the provided `enrTreePeers`.
-    -   `enrTreePeers`: (Array<string>) List of ENR tree URLs.
--   `broadcasterVersionRange`: (Optional) Object specifying the allowed broadcaster version range.
-    -   `minVersion`: (String) Minimum allowed version.
-    -   `maxVersion`: (String) Maximum allowed version.
+- `trustedFeeSigner`: (Required) The public key of the trusted fee signer.
+- `poiActiveListKeys`: (Optional) List of active POI list keys.
+- `pubSubTopic`: (Optional) The Waku pubsub topic to subscribe to. Defaults to the RAILGUN topic.
+- `additionalDirectPeers`: (Optional) Array of multiaddrs for direct peer connections.
+- `peerDiscoveryTimeout`: (Optional) Timeout in milliseconds for peer discovery.
+- `feeExpirationTimeout`: (Optional) Timeout in milliseconds for fee expiration.
+- `useDNSDiscovery`: (Optional) Boolean to enable DNS peer discovery.
+- `useCustomDNS`: (Optional) Configuration for custom DNS discovery.
+  - `onlyCustom`: (Boolean) If true, only use the provided `enrTreePeers`.
+  - `enrTreePeers`: (Array<string>) List of ENR tree URLs.
+- `broadcasterVersionRange`: (Optional) Object specifying the allowed broadcaster version range.
+  - `minVersion`: (String) Minimum allowed version.
+  - `maxVersion`: (String) Maximum allowed version.
 
 ## Dependencies
 
 This package relies on:
--   `@waku/sdk`: For Waku networking.
--   `@waku/discovery`: For peer discovery.
--   `@libp2p/tcp`: For TCP transport (Node.js specific).
+
+- `@waku/sdk`: For Waku networking.
+- `@waku/discovery`: For peer discovery.
+- `@libp2p/tcp`: For TCP transport (Node.js specific).
 
 ## License
 

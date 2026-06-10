@@ -1,2 +1,22 @@
 packages:
   - packages/*
+overrides:
+  protons-runtime: 5.6.0
+# GHSA-w5hq-g745-h8pq: uuid@9 inside @waku/core; patched only in uuid >=11.1.1.
+# Forcing a two-major bump inside the Waku transport is riskier than the advisory
+# (insufficiently random UUIDs; not used for key material here). Revisit on @waku/sdk upgrade.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-w5hq-g745-h8pq
+allowBuilds:
+  '@railgun-community/wallet': false
+  blake-hash: false
+  bufferutil: false
+  es5-ext: false
+  keccak: false
+  leveldown: false
+  secp256k1: false
+  utf-8-validate: false
+  web3: false
+  web3-bzz: false
+  web3-shh: false

@@ -4,14 +4,6 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "engines": {
-    "node": ">=22.0.0"
-  },
-  "packageManager": "pnpm@11.5.2",
-  "volta": {
-    "node": "22.22.3",
-    "pnpm": "11.5.2"
-  },
   "scripts": {
     "build": "pnpm -r build",
     "test": "vitest run",
@@ -25,5 +17,13 @@
     "oxlint": "1.69.0",
     "typescript": "5.9.3",
     "vitest": "4.1.8"
-  }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "volta": {
+    "node": "22.22.3",
+    "pnpm": "11.5.2"
+  },
+  "packageManager": "pnpm@11.5.2"
 }

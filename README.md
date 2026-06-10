@@ -10,13 +10,13 @@ Pre-release. Under active development; APIs and wire formats are not yet stable.
 
 ## Packages
 
-| Package | Description |
-|---|---|
-| `@zeno/shared-models` | Wire-format schemas, codecs, validators, and protocol constants |
+| Package                    | Description                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| `@zeno/shared-models`      | Wire-format schemas, codecs, validators, and protocol constants                          |
 | `@zeno/waku-client-common` | Shared transport core: LightNode lifecycle, topics, discovery, intents, quotes, sessions |
-| `@zeno/waku-client-node` | Node.js entrypoint (servers, Electron, scripts) |
-| `@zeno/waku-client-web` | Browser entrypoint (dApps, web wallets) |
-| `@zeno/crypto-wasm` | Rust cryptography (SWE, DLEQ, Pedersen) compiled to Wasm with a typed TS facade |
+| `@zeno/waku-client-node`   | Node.js entrypoint (servers, Electron, scripts)                                          |
+| `@zeno/waku-client-web`    | Browser entrypoint (dApps, web wallets)                                                  |
+| `@zeno/crypto-wasm`        | Rust cryptography (SWE, DLEQ, Pedersen) compiled to Wasm with a typed TS facade          |
 
 ## Development
 

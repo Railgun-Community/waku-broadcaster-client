@@ -11,16 +11,16 @@ Thank you for your interest in contributing. This repository follows a spec-firs
 
 ## Toolchain
 
-| Purpose | Tool |
-|---|---|
-| Runtime | Node 22 LTS, pinned via Volta |
-| Package manager | pnpm (workspaces) |
-| Modules | ESM only (`"type": "module"`) |
-| Lint | `oxlint` |
-| Format | `oxfmt` |
-| Tests | `vitest`, colocated `*.test.ts` |
-| Types | `tsc --noEmit`, strict mode plus the strictness flags in `tsconfig.base.json` |
-| Git hooks | `prek` (pre-commit compatible) |
+| Purpose         | Tool                                                                          |
+| --------------- | ----------------------------------------------------------------------------- |
+| Runtime         | Node 22 LTS, pinned via Volta                                                 |
+| Package manager | pnpm (workspaces)                                                             |
+| Modules         | ESM only (`"type": "module"`)                                                 |
+| Lint            | `oxlint`                                                                      |
+| Format          | `oxfmt`                                                                       |
+| Tests           | `vitest`, colocated `*.test.ts`                                               |
+| Types           | `tsc --noEmit`, strict mode plus the strictness flags in `tsconfig.base.json` |
+| Git hooks       | `prek` (pre-commit compatible)                                                |
 
 ## Setup
 
