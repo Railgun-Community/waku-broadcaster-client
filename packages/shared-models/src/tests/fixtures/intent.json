@@ -1,0 +1,62 @@
+{
+  "name": "intent",
+  "privateKey": "2222222222222222222222222222222222222222222222222222222222222222",
+  "publicKey": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0",
+  "data": {
+    "allowedPools": [
+      "railgun-v2"
+    ],
+    "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "chain": {
+      "id": 1,
+      "type": 0
+    },
+    "deadline": 1781100600000,
+    "escrowParams": {
+      "committeePubkeys": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "pool": "railgun-v2",
+      "refundDeadline": 1781186400000,
+      "threshold": 2
+    },
+    "expiry": 1781100060000,
+    "intentEphPubkey": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0",
+    "intentId": "00112233445566778899aabbccddeeff",
+    "sellAmount": "0xde0b6b3a7640000",
+    "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  },
+  "canonical": "{\"allowedPools\":[\"railgun-v2\"],\"buyToken\":\"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\",\"chain\":{\"id\":1,\"type\":0},\"deadline\":1781100600000,\"escrowParams\":{\"committeePubkeys\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"],\"pool\":\"railgun-v2\",\"refundDeadline\":1781186400000,\"threshold\":2},\"expiry\":1781100060000,\"intentEphPubkey\":\"a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0\",\"intentId\":\"00112233445566778899aabbccddeeff\",\"sellAmount\":\"0xde0b6b3a7640000\",\"sellToken\":\"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\"}",
+  "signature": "3250845912eb821b7bbcb0be6e0d6b45244545c7686d69929f587bc654c1d82865530dd1cea3095c26108cf4b1f5e4a0993302ae50ad21aed6dcc72105969f08",
+  "message": {
+    "data": {
+      "allowedPools": [
+        "railgun-v2"
+      ],
+      "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "chain": {
+        "id": 1,
+        "type": 0
+      },
+      "deadline": 1781100600000,
+      "escrowParams": {
+        "committeePubkeys": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        ],
+        "pool": "railgun-v2",
+        "refundDeadline": 1781186400000,
+        "threshold": 2
+      },
+      "expiry": 1781100060000,
+      "intentEphPubkey": "a09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0",
+      "intentId": "00112233445566778899aabbccddeeff",
+      "sellAmount": "0xde0b6b3a7640000",
+      "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    },
+    "signature": "3250845912eb821b7bbcb0be6e0d6b45244545c7686d69929f587bc654c1d82865530dd1cea3095c26108cf4b1f5e4a0993302ae50ad21aed6dcc72105969f08"
+  }
+}

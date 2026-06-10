@@ -1,0 +1,9 @@
+{
+  "name": "winner-notify-data",
+  "data": {
+    "accept": true,
+    "intentId": "00112233445566778899aabbccddeeff",
+    "pairId": "ffeeddccbbaa99887766554433221100",
+    "senderSetupPubkey": "c6822637c7d310ec57627be00ba259d253749f4aaf644470cffbe53a35f73242"
+  }
+}

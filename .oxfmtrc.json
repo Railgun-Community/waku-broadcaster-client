@@ -6,6 +6,7 @@
     "**/dist/**",
     "**/pkg/**",
     "pnpm-lock.yaml",
+    "packages/*/src/tests/fixtures/**",
     "packages/waku-client-common/src/**",
     "packages/waku-client-common/copy-src.js",
     "packages/waku-client-node/src/**",
