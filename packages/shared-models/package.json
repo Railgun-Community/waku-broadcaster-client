@@ -16,7 +16,16 @@
     ".": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@noble/ed25519": "3.1.0",
+    "@types/node": "22.19.20",
+    "fast-check": "4.8.0",
+    "vitest": "4.1.8"
   }
 }

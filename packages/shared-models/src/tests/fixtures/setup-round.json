@@ -1,0 +1,10 @@
+{
+  "name": "setup-round",
+  "message": {
+    "ciphertext": "0xd4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+    "counter": 0,
+    "direction": 0,
+    "pairId": "ffeeddccbbaa99887766554433221100",
+    "round": 1
+  }
+}

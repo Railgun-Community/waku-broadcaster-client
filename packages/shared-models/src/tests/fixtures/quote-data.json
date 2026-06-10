@@ -1,0 +1,11 @@
+{
+  "name": "quote-data",
+  "data": {
+    "buyAmount": "0xb2d05e00",
+    "intentId": "00112233445566778899aabbccddeeff",
+    "reliability": 9800,
+    "solverPubkey": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+    "solverSetupPubkey": "17cb79fb2b4120f2b1ec65e4198d6e08b28e813feb01e4a400839b85e18080ce",
+    "validUntil": 1781100015000
+  }
+}

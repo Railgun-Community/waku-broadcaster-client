@@ -1,0 +1,60 @@
+{
+  "name": "solver-ad",
+  "privateKey": "1111111111111111111111111111111111111111111111111111111111111111",
+  "publicKey": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+  "data": {
+    "chain": {
+      "id": 1,
+      "type": 0
+    },
+    "expiry": 1781100300000,
+    "reliability": 9800,
+    "solverPubkey": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+    "supportedPairs": [
+      {
+        "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "minSellAmount": "0x16345785d8a0000",
+        "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+      },
+      {
+        "buyToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "minSellAmount": "0x3b9aca00",
+        "sellToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+      }
+    ],
+    "supportedPools": [
+      "railgun-v2"
+    ],
+    "version": "0.1.0"
+  },
+  "canonical": "{\"chain\":{\"id\":1,\"type\":0},\"expiry\":1781100300000,\"reliability\":9800,\"solverPubkey\":\"d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737\",\"supportedPairs\":[{\"buyToken\":\"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\",\"minSellAmount\":\"0x16345785d8a0000\",\"sellToken\":\"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\"},{\"buyToken\":\"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2\",\"minSellAmount\":\"0x3b9aca00\",\"sellToken\":\"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48\"}],\"supportedPools\":[\"railgun-v2\"],\"version\":\"0.1.0\"}",
+  "signature": "14370c5a067e299707e315d90e13da0f7c2a235e3494ecc516f8a9fc65d134259bad8d25868a415adfadcc529dd78bb716680f0b6014cac3a9b4457c54038006",
+  "message": {
+    "data": {
+      "chain": {
+        "id": 1,
+        "type": 0
+      },
+      "expiry": 1781100300000,
+      "reliability": 9800,
+      "solverPubkey": "d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737",
+      "supportedPairs": [
+        {
+          "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+          "minSellAmount": "0x16345785d8a0000",
+          "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+        },
+        {
+          "buyToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "minSellAmount": "0x3b9aca00",
+          "sellToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        }
+      ],
+      "supportedPools": [
+        "railgun-v2"
+      ],
+      "version": "0.1.0"
+    },
+    "signature": "14370c5a067e299707e315d90e13da0f7c2a235e3494ecc516f8a9fc65d134259bad8d25868a415adfadcc529dd78bb716680f0b6014cac3a9b4457c54038006"
+  }
+}
