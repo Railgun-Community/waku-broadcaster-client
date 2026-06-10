@@ -21,7 +21,14 @@ importers:
         specifier: 4.1.8
         version: 4.1.8(@types/node@22.19.20)(vite@8.0.16(@types/node@22.19.20)(terser@5.48.0)(yaml@2.9.0))
 
-  packages/crypto-wasm: {}
+  packages/crypto-wasm:
+    devDependencies:
+      '@types/node':
+        specifier: 22.19.20
+        version: 22.19.20
+      vitest:
+        specifier: 4.1.8
+        version: 4.1.8(@types/node@22.19.20)(vite@8.0.16(@types/node@22.19.20)(terser@5.48.0)(yaml@2.9.0))
 
   packages/shared-models:
     dependencies:
