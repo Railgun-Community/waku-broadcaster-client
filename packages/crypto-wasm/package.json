@@ -19,6 +19,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@noble/hashes": "2.2.0"
+  },
   "devDependencies": {
     "@types/node": "22.19.20",
     "vitest": "4.1.8"
