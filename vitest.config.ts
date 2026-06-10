@@ -16,7 +16,7 @@ export default defineConfig({
       test: {
         name,
         root: `packages/${name}`,
-        include: ['smoke.test.ts', 'src/**/*.test.ts'],
+        include: ['*.test.ts', 'src/**/*.test.ts'],
         exclude: ['**/node_modules/**', '**/dist/**', 'src/**/__tests__/**', 'src/tests/**'],
       },
     })),

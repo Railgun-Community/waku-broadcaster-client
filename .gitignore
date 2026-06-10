@@ -1,12 +1,6 @@
 # OSX
 .DS_Store
 
-# Duplicates (copy-src.js copies common/src into node and web)
-packages/waku-client-node/src/**/*
-packages/waku-client-web/src/**/*
-!waku-broadcaster-waku-core.ts
-!*/
-
 # Node.js
 **/node_modules/
 **/npm-debug.log
