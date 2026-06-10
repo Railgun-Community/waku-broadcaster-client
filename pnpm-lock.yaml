@@ -44,6 +44,12 @@ importers:
 
   packages/waku-client-common:
     dependencies:
+      '@noble/ed25519':
+        specifier: 3.1.0
+        version: 3.1.0
+      '@noble/hashes':
+        specifier: 2.2.0
+        version: 2.2.0
       '@zeno/shared-models':
         specifier: workspace:*
         version: link:../shared-models
