@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "singleQuote": true,
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/pkg/**",
+    "pnpm-lock.yaml",
+    "packages/waku-client-common/src/**",
+    "packages/waku-client-common/copy-src.js",
+    "packages/waku-client-node/src/**",
+    "packages/waku-client-web/src/**"
+  ]
+}

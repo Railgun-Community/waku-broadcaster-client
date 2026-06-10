@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22.22.3
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Scoped to production deps: the inherited @railgun-community devDependency tree
+      # (typecheck-only, removed in Phase 3 transport extraction) carries known advisories.
+      - run: pnpm audit --audit-level=moderate --prod
+      - run: pnpm lint
+      - run: pnpm fmt:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Run prek hooks (oxlint and oxfmt covered by the checks job)
+        run: pipx run --spec prek==0.4.4 prek run --all-files
+        env:
+          SKIP: oxlint,oxfmt

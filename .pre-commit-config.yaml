@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        exclude: ^\.vscode/
+      - id: check-added-large-files
+      - id: check-merge-conflict
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint
+        entry: pnpm lint
+        language: system
+        types_or: [ts, tsx, javascript]
+        pass_filenames: false
+      - id: oxfmt
+        name: oxfmt check
+        entry: pnpm fmt:check
+        language: system
+        types_or: [ts, tsx, javascript, json]
+        pass_filenames: false

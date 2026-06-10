@@ -1,9 +1,9 @@
 # OSX
 .DS_Store
 
-# Duplicates
-packages/node/src/**/*
-packages/web/src/**/*
+# Duplicates (copy-src.js copies common/src into node and web)
+packages/waku-client-node/src/**/*
+packages/waku-client-web/src/**/*
 !waku-broadcaster-waku-core.ts
 !*/
 
@@ -13,6 +13,9 @@ packages/web/src/**/*
 **/yarn-error.log
 **/package-lock.json
 **/dist/
+
+# Wasm build output
+packages/crypto-wasm/pkg/
 
 # Test
 **/.nyc_output
