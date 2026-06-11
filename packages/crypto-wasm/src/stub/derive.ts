@@ -10,7 +10,7 @@ import { hkdf } from '@noble/hashes/hkdf.js';
 import { hmac } from '@noble/hashes/hmac.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, concatBytes, utf8ToBytes } from '@noble/hashes/utils.js';
-import type { EscrowAccount, PubShare, SweCiphertext } from '../backend.js';
+import type { EscrowAccount, PubShare, SweCiphertext, SweContext } from '../backend.js';
 
 const SHARE_INFO = 'zeno-v0-stub-share';
 const PUB_INFO = 'zeno-v0-stub-pub';
@@ -37,9 +37,9 @@ export function taggedHash(tag: string, ...parts: Uint8Array[]): Uint8Array {
   return sha256(lengthPrefixedConcat([utf8ToBytes(tag), ...parts]));
 }
 
-/** Derives the secret half of a key share from injected seed entropy. */
-export function deriveSecretShare(seed: Uint8Array): Uint8Array {
-  return hkdf(sha256, seed, undefined, utf8ToBytes(SHARE_INFO), KEY_LENGTH);
+/** Derives the secret half of a key share from injected entropy bytes. */
+export function deriveSecretShare(entropy: Uint8Array): Uint8Array {
+  return hkdf(sha256, entropy, undefined, utf8ToBytes(SHARE_INFO), KEY_LENGTH);
 }
 
 /** Derives the public half of a key share from its secret. */
@@ -99,17 +99,29 @@ export function deriveStubEscrowAccount(localPub: PubShare, remotePub: PubShare)
   return { keyTuple, depositAddress, viewKey };
 }
 
-/** Derives the AES-256-GCM key for the SWE simulation from public inputs. */
-export function deriveSweKey(threshold: number, committee: Uint8Array[]): Uint8Array {
+/** Unambiguous byte encoding of a SWE encryption context. */
+export function encodeSweContext(ctx: SweContext): Uint8Array {
   const thresholdBytes = new Uint8Array(4);
-  new DataView(thresholdBytes.buffer).setUint32(0, threshold);
-  const ikm = lengthPrefixedConcat([thresholdBytes, ...committee]);
-  return hkdf(sha256, ikm, undefined, utf8ToBytes(SWE_KEY_INFO), KEY_LENGTH);
+  new DataView(thresholdBytes.buffer).setUint32(0, ctx.threshold);
+  return lengthPrefixedConcat([thresholdBytes, ctx.chosenText, ...ctx.committee]);
 }
 
-/** The message id committee members "sign" to release a SWE ciphertext. */
+/**
+ * Derives the AES-256-GCM key for the SWE simulation from the public
+ * encryption context. `chosenText` participates so ciphertexts - and the
+ * signatures that release them - bind to the committee-signed identity.
+ */
+export function deriveSweKey(ctx: SweContext): Uint8Array {
+  return hkdf(sha256, encodeSweContext(ctx), undefined, utf8ToBytes(SWE_KEY_INFO), KEY_LENGTH);
+}
+
+/**
+ * The message id the committee "signs" to release a SWE ciphertext. Binds
+ * BOTH the ciphertext bytes and the chosen text, simulating the crate where
+ * the aggregate signature over `chosen_text` is the decryption key.
+ */
 export function sweMessageId(ct: SweCiphertext): Uint8Array {
-  return taggedHash(MESSAGE_ID_TAG, ct.ciphertext);
+  return taggedHash(MESSAGE_ID_TAG, ct.ciphertext, ct.chosenText);
 }
 
 /** Dev-known secret of a simulated committee member, derived from its public id. */
@@ -118,12 +130,22 @@ export function committeeMemberSecret(member: Uint8Array): Uint8Array {
 }
 
 /**
- * Simulated oblivious-signer signature: `HMAC-SHA256(devSecret_i, messageId)`.
+ * Simulated aggregate committee signature releasing `ct`:
+ * `HMAC-SHA256(sha256(concat(memberSecrets of masked signers)), messageId)`.
  *
  * Test harnesses call this to play the committee; there is no signer
- * infrastructure in stub mode (spec 02, Q2.3). `Unsafe` because the signing
- * secret is derivable by anyone from the member's public id.
+ * infrastructure in stub mode (spec 02, Q2.3). `Unsafe` because every
+ * member secret is derivable by anyone from the member's public id. The
+ * member secrets are fixed 32-byte values, so plain concatenation in
+ * committee order is unambiguous.
  */
-export function unsafeStubCommitteeSign(member: Uint8Array, ct: SweCiphertext): Uint8Array {
-  return hmac(sha256, committeeMemberSecret(member), sweMessageId(ct));
+export function unsafeStubAggregateSign(ct: SweCiphertext, signers: boolean[]): Uint8Array {
+  const maskedSecrets: Uint8Array[] = [];
+  for (const [index, member] of ct.committee.entries()) {
+    if (signers[index] === true) {
+      maskedSecrets.push(committeeMemberSecret(member));
+    }
+  }
+  const aggregateSecret = sha256(concatBytes(...maskedSecrets));
+  return hmac(sha256, aggregateSecret, sweMessageId(ct));
 }

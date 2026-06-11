@@ -3,9 +3,10 @@
  *
  * Simulates the deterministic key-generation workflow only - NOT the security
  * properties (spec 02 section 2). Escrow keys derive from public material,
- * committee signatures are HMACs under derivable secrets, and proofs are
- * tagged hashes of their public inputs. Nothing is zero-knowledge, nothing is
- * sound, and every secret is recoverable by anyone observing the session.
+ * the aggregate committee signature is an HMAC under a derivable secret, and
+ * proofs are tagged hashes of their public inputs. Nothing is
+ * zero-knowledge, nothing is sound, and every secret is recoverable by
+ * anyone observing the session.
  *
  * Approved deviation from spec 02 section 5: `stub/railgun-keys.ts` called
  * for real Railgun address derivation via `@railgun-community/engine`, but
@@ -20,9 +21,6 @@
  * scope.
  */
 import { createCipheriv, createDecipheriv } from 'node:crypto';
-import { hmac } from '@noble/hashes/hmac.js';
-import { sha256 } from '@noble/hashes/sha2.js';
-import { bytesToHex, concatBytes } from '@noble/hashes/utils.js';
 import {
   ZenoCryptoError,
   type DleqStatement,
@@ -30,7 +28,10 @@ import {
   type KeyShare,
   type PoolId,
   type PubShare,
+  type SecureRandom,
   type SweCiphertext,
+  type SweContext,
+  type SweEncryptResult,
   type ZenoCryptoBackend,
 } from '../backend.js';
 import {
@@ -38,10 +39,10 @@ import {
   derivePubShare,
   deriveSecretShare,
   deriveSweKey,
-  lengthPrefixedConcat,
+  encodeSweContext,
   sweMessageId,
   taggedHash,
-  unsafeStubCommitteeSign,
+  unsafeStubAggregateSign,
 } from './derive.js';
 
 /** Options for {@link createUnsafeStubBackend}; the flag name is the consent. */
@@ -55,10 +56,11 @@ const MAINNET_CHAIN_IDS = new Set([1, 10, 56, 137, 8453, 42161]);
 
 const GCM_IV_LENGTH = 12;
 const GCM_TAG_LENGTH = 16;
+const ENTROPY_LENGTH = 32;
 
-const SWE_WF_TAG = 'zeno-v0-stub-swe-wf';
+const SWE_PROOF_TAG = 'zeno-v0-stub-swe-proof';
+const SWE_COMMITMENT_TAG = 'zeno-v0-stub-swe-commitment';
 const DLEQ_TAG = 'zeno-v0-stub-dleq';
-const PEDERSEN_TAG = 'zeno-v0-stub-pedersen';
 
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) {
@@ -87,55 +89,81 @@ function assertOptions(options: UnsafeStubBackendOptions): void {
   }
 }
 
-function sweEncryptStub(
+function sweProof(ct: SweCiphertext, ctx: SweContext, commitment: Uint8Array): Uint8Array {
+  return taggedHash(SWE_PROOF_TAG, ct.ciphertext, encodeSweContext(ctx), commitment);
+}
+
+function sweEncryptAndProveStub(
   message: Uint8Array,
-  threshold: number,
-  committee: Uint8Array[],
-): SweCiphertext {
-  if (!Number.isInteger(threshold) || threshold < 1 || threshold > committee.length) {
+  ctx: SweContext,
+  random: SecureRandom,
+): SweEncryptResult {
+  if (
+    !Number.isInteger(ctx.threshold) ||
+    ctx.threshold < 1 ||
+    ctx.threshold > ctx.committee.length
+  ) {
     throw new ZenoCryptoError(
       'invalid-input',
-      `threshold ${threshold} must be an integer in [1, committee size ${committee.length}]`,
+      `threshold ${ctx.threshold} must be an integer in [1, committee size ${ctx.committee.length}]`,
     );
   }
-  const key = deriveSweKey(threshold, committee);
-  const iv = hmac(sha256, key, message).slice(0, GCM_IV_LENGTH);
+  const key = deriveSweKey(ctx);
+  const iv = random(GCM_IV_LENGTH);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const body = cipher.update(message);
   cipher.final();
-  const ciphertext = concatBytes(iv, new Uint8Array(body), new Uint8Array(cipher.getAuthTag()));
-  return { ciphertext, threshold, committee: committee.map((member) => member.slice()) };
+  const ciphertext: SweCiphertext = {
+    ciphertext: new Uint8Array([...iv, ...body, ...cipher.getAuthTag()]),
+    threshold: ctx.threshold,
+    committee: ctx.committee.map((member) => member.slice()),
+    chosenText: ctx.chosenText.slice(),
+  };
+  // Stub Pedersen commitment: a tagged hash of a fresh blinding and the
+  // plaintext. The proof binds ciphertext, context, and commitment together;
+  // the plaintext relation holds by construction since proving is fused with
+  // encryption (the crate's encrypt_and_prove shape).
+  const blinding = random(ENTROPY_LENGTH);
+  const commitment = taggedHash(SWE_COMMITMENT_TAG, blinding, message);
+  return { ciphertext, proof: sweProof(ciphertext, ctx, commitment), commitment };
 }
 
-function countValidSignatures(ct: SweCiphertext, signatures: Uint8Array[]): number {
-  const expected = new Set(
-    ct.committee.map((member) => bytesToHex(unsafeStubCommitteeSign(member, ct))),
-  );
-  const provided = new Set(signatures.map((signature) => bytesToHex(signature)));
-  let valid = 0;
-  for (const tag of provided) {
-    if (expected.has(tag)) {
-      valid += 1;
+function sweDecryptStub(
+  ct: SweCiphertext,
+  aggSignature: Uint8Array,
+  signers: boolean[],
+): Uint8Array {
+  if (signers.length !== ct.committee.length) {
+    throw new ZenoCryptoError(
+      'signer-mask-length-mismatch',
+      `signer mask has ${signers.length} entries, committee has ${ct.committee.length}`,
+    );
+  }
+  let signerCount = 0;
+  for (const signed of signers) {
+    if (signed) {
+      signerCount += 1;
     }
   }
-  return valid;
-}
-
-function sweDecryptStub(ct: SweCiphertext, signatures: Uint8Array[]): Uint8Array {
+  if (signerCount < ct.threshold) {
+    throw new ZenoCryptoError(
+      'insufficient-signers',
+      `${signerCount} signers in the mask, threshold is ${ct.threshold}`,
+    );
+  }
   if (ct.ciphertext.length < GCM_IV_LENGTH + GCM_TAG_LENGTH) {
     throw new ZenoCryptoError(
       'invalid-input',
       `ciphertext of ${ct.ciphertext.length} bytes is shorter than iv plus auth tag`,
     );
   }
-  const valid = countValidSignatures(ct, signatures);
-  if (valid < ct.threshold) {
+  if (!bytesEqual(aggSignature, unsafeStubAggregateSign(ct, signers))) {
     throw new ZenoCryptoError(
-      'swe-threshold',
-      `${valid} valid committee signatures, threshold is ${ct.threshold}`,
+      'no-dlog-exists',
+      'the aggregate signature does not authorize this ciphertext for the masked signers',
     );
   }
-  const key = deriveSweKey(ct.threshold, ct.committee);
+  const key = deriveSweKey(ct);
   const iv = ct.ciphertext.slice(0, GCM_IV_LENGTH);
   const body = ct.ciphertext.slice(GCM_IV_LENGTH, ct.ciphertext.length - GCM_TAG_LENGTH);
   const tag = ct.ciphertext.slice(ct.ciphertext.length - GCM_TAG_LENGTH);
@@ -147,16 +175,10 @@ function sweDecryptStub(ct: SweCiphertext, signatures: Uint8Array[]): Uint8Array
     return new Uint8Array(plaintext);
   } catch {
     throw new ZenoCryptoError(
-      'swe-decrypt-failed',
-      'AES-GCM authentication failed: the ciphertext was tampered with',
+      'no-dlog-exists',
+      'AES-GCM authentication failed: the ciphertext does not decrypt under its context',
     );
   }
-}
-
-function encodeCiphertext(ct: SweCiphertext): Uint8Array {
-  const thresholdBytes = new Uint8Array(4);
-  new DataView(thresholdBytes.buffer).setUint32(0, ct.threshold);
-  return lengthPrefixedConcat([thresholdBytes, ...ct.committee, ct.ciphertext]);
 }
 
 /**
@@ -167,11 +189,11 @@ function encodeCiphertext(ct: SweCiphertext): Uint8Array {
  * (1, 10, 56, 137, 8453, 42161), and emits exactly one warning through the
  * injected logger per construction.
  *
- * Proof stubs hash only the inputs the matching `verify*` call also receives
- * (`verify*` recomputes and compares), so DLEQ witnesses and Pedersen
- * openings do not influence the placeholder proof bytes. Well-formedness
- * proving does bind the message: stub encryption is deterministic, so
- * `sweProveWellFormedness` re-encrypts and throws on a mismatch.
+ * Proof stubs hash only the inputs the matching `verify` call also receives
+ * (`verify` recomputes and compares), so DLEQ witnesses and randomness do
+ * not influence the placeholder proof bytes. The SWE proof binds the
+ * ciphertext, the encryption context (committee, threshold, chosenText),
+ * and the Pedersen-commitment stand-in returned next to it.
  */
 export function createUnsafeStubBackend(options: UnsafeStubBackendOptions): ZenoCryptoBackend {
   assertOptions(options);
@@ -180,43 +202,28 @@ export function createUnsafeStubBackend(options: UnsafeStubBackendOptions): Zeno
       'zero-knowledge, nothing is sound. Dev and test only - never fund real value.',
   );
   return {
-    generateKeyShare(_pool: PoolId, seed: Uint8Array): KeyShare {
-      const secret = deriveSecretShare(seed);
+    generateKeyShare(_pool: PoolId, random: SecureRandom): KeyShare {
+      const secret = deriveSecretShare(random(ENTROPY_LENGTH));
       return { secret, pub: derivePubShare(secret) };
     },
     deriveEscrowAccount(_pool: PoolId, local: KeyShare, remotePub: PubShare): EscrowAccount {
       return deriveStubEscrowAccount(local.pub, remotePub);
     },
-    sweEncrypt: sweEncryptStub,
+    sweEncryptAndProve: sweEncryptAndProveStub,
     sweDecrypt: sweDecryptStub,
-    sweProveWellFormedness(ct: SweCiphertext, message: Uint8Array): Uint8Array {
-      const reEncrypted = sweEncryptStub(message, ct.threshold, ct.committee);
-      if (!bytesEqual(reEncrypted.ciphertext, ct.ciphertext)) {
-        throw new ZenoCryptoError(
-          'invalid-input',
-          'message does not match the ciphertext: cannot prove well-formedness',
-        );
-      }
-      return taggedHash(SWE_WF_TAG, encodeCiphertext(ct));
+    sweVerify(
+      ct: SweCiphertext,
+      proof: Uint8Array,
+      ctx: SweContext,
+      commitment: Uint8Array,
+    ): boolean {
+      return bytesEqual(proof, sweProof(ct, ctx, commitment));
     },
-    sweVerifyWellFormedness(ct: SweCiphertext, proof: Uint8Array): boolean {
-      return bytesEqual(proof, taggedHash(SWE_WF_TAG, encodeCiphertext(ct)));
-    },
-    proveDleq(_witness: Uint8Array, statement: DleqStatement): Uint8Array {
+    proveDleq(_witness: Uint8Array, statement: DleqStatement, _random: SecureRandom): Uint8Array {
       return taggedHash(DLEQ_TAG, statement.left, statement.right);
     },
     verifyDleq(proof: Uint8Array, statement: DleqStatement): boolean {
       return bytesEqual(proof, taggedHash(DLEQ_TAG, statement.left, statement.right));
-    },
-    provePedersenOpening(
-      commitment: Uint8Array,
-      _opening: Uint8Array,
-      keyShare: PubShare,
-    ): Uint8Array {
-      return taggedHash(PEDERSEN_TAG, commitment, keyShare);
-    },
-    verifyPedersenOpening(commitment: Uint8Array, proof: Uint8Array, keyShare: PubShare): boolean {
-      return bytesEqual(proof, taggedHash(PEDERSEN_TAG, commitment, keyShare));
     },
     backendKind(): 'stub-unsafe' {
       return 'stub-unsafe';

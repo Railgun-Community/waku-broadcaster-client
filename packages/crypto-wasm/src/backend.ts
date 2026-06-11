@@ -1,16 +1,32 @@
 /**
  * `ZenoCryptoBackend`: the stable TS facade over Zeno's escrow cryptography
- * (key sharing, verifiable SWE, cross-group DLEQ, Pedersen opening).
+ * (key sharing, verifiable SWE, DLEQ).
  *
  * Two backends implement this interface: the developer-known stub
  * ({@link ../stub/backend.js}) and the wasm backend backed by the
  * `rust/zeno-crypto` submodule (spec 02 section 4, not yet available).
  * Phases 5-7 program against this interface only; the backend is selected
  * at client construction.
+ *
+ * Interface revised per Willem's feedback and the verifiable-swe crate API
+ * (spec 02-crypto-wasm-revision-willem.md, R2).
  */
+
+// xgdleq surface pending Willem (see specs/02-crypto-wasm-revision-willem.md section 5)
 
 /** Shielded pool identifier. v0 supports only the Railgun v2 pool. */
 export type PoolId = 'railgun-v2';
+
+/**
+ * `getRandomValues`-style source of secure random bytes, injected into every
+ * randomness-consuming backend call. Production callers pass
+ * {@link defaultSecureRandom}; tests inject seeded deterministic functions.
+ */
+export type SecureRandom = (length: number) => Uint8Array;
+
+/** Default {@link SecureRandom} wired to `globalThis.crypto.getRandomValues`. */
+export const defaultSecureRandom: SecureRandom = (length) =>
+  globalThis.crypto.getRandomValues(new Uint8Array(length));
 
 /** Public half of a key share, exchanged over the setup session. */
 export type PubShare = Uint8Array;
@@ -40,26 +56,64 @@ export interface EscrowAccount {
   readonly viewKey: Uint8Array;
 }
 
-/** Verifiable SWE ciphertext addressed to a signing committee. */
+/**
+ * Encryption context for verifiable SWE, mirroring the crate's
+ * `EncryptionContext`: the decryption key is a valid BLS aggregate signature
+ * from `threshold` of the `committee` keys over `chosenText`.
+ */
+export interface SweContext {
+  /** Committee public keys: 96-byte BLS12-381 G2 compressed points. */
+  committee: Uint8Array[];
+  threshold: number;
+  /** The committee-signed identity (escrow encoding decided in Phase 7). */
+  chosenText: Uint8Array;
+}
+
+/**
+ * Verifiable SWE ciphertext addressed to a signing committee.
+ *
+ * The {@link SweContext} fields are carried on the ciphertext so that
+ * `sweDecrypt` is self-contained (the crate's `decrypt` takes the context as
+ * a separate argument; the TS surface folds it into the ciphertext value).
+ */
 export interface SweCiphertext {
   readonly ciphertext: Uint8Array;
   readonly threshold: number;
   readonly committee: Uint8Array[];
+  readonly chosenText: Uint8Array;
 }
 
-/** Statement for a cross-group discrete-log-equality proof. */
+/** Output bundle of {@link ZenoCryptoBackend.sweEncryptAndProve}. */
+export interface SweEncryptResult {
+  ciphertext: SweCiphertext;
+  /** Well-formedness + plaintext-equality bundle (opaque). */
+  proof: Uint8Array;
+  /** G1 Pedersen commitment to the plaintext (opaque). */
+  commitment: Uint8Array;
+}
+
+/** Statement for a discrete-log-equality proof. */
 export interface DleqStatement {
   readonly left: Uint8Array;
   readonly right: Uint8Array;
 }
 
-/** Machine-readable failure category for {@link ZenoCryptoError}. */
+/**
+ * Machine-readable failure category for {@link ZenoCryptoError}.
+ *
+ * `insufficient-signers`, `signers-not-subset`, `signer-mask-length-mismatch`,
+ * and `no-dlog-exists` adopt the verifiable-swe crate's error taxonomy;
+ * `unsafe-flag-missing`, `mainnet-chain`, `invalid-input`, and
+ * `not-available` are TS-side codes for the stub rails and the facade.
+ */
 export type ZenoCryptoErrorCode =
+  | 'insufficient-signers'
+  | 'signers-not-subset'
+  | 'signer-mask-length-mismatch'
+  | 'no-dlog-exists'
   | 'unsafe-flag-missing'
   | 'mainnet-chain'
   | 'invalid-input'
-  | 'swe-threshold'
-  | 'swe-decrypt-failed'
   | 'not-available';
 
 /**
@@ -81,16 +135,16 @@ export class ZenoCryptoError extends Error {
 }
 
 /**
- * Backend-neutral crypto surface (spec 02 section 3).
+ * Backend-neutral crypto surface (spec 02 section 3, revised per R2).
  *
  * All byte parameters are `Uint8Array`; hex conversion happens at the
- * shared-models boundary. `generateKeyShare` takes an explicit seed so tests
- * are deterministic and key generation is auditable; callers pass fresh
- * CSPRNG bytes in production.
+ * shared-models boundary. Randomness-consuming calls take an injected
+ * {@link SecureRandom} so tests are deterministic and production callers
+ * wire `crypto.getRandomValues` via {@link defaultSecureRandom}.
  */
 export interface ZenoCryptoBackend {
-  /** Derives a key share deterministically from `seed` for `pool`. */
-  generateKeyShare(pool: PoolId, seed: Uint8Array): KeyShare;
+  /** Generates a key share for `pool` from injected secure randomness. */
+  generateKeyShare(pool: PoolId, random: SecureRandom): KeyShare;
 
   /**
    * Derives the escrow account from the local share and the counterparty's
@@ -98,35 +152,36 @@ export interface ZenoCryptoBackend {
    */
   deriveEscrowAccount(pool: PoolId, local: KeyShare, remotePub: PubShare): EscrowAccount;
 
-  /** Encrypts `message` toward `committee` with reconstruction `threshold`. */
-  sweEncrypt(message: Uint8Array, threshold: number, committee: Uint8Array[]): SweCiphertext;
+  /**
+   * Encrypts `message` toward `ctx.committee` with reconstruction
+   * `ctx.threshold`, binding the ciphertext to `ctx.chosenText`, and proves
+   * well-formedness plus plaintext equality against the returned Pedersen
+   * commitment (the crate's fused `encrypt_and_prove`).
+   *
+   * @throws ZenoCryptoError `invalid-input` for an out-of-range threshold.
+   */
+  sweEncryptAndProve(message: Uint8Array, ctx: SweContext, random: SecureRandom): SweEncryptResult;
 
   /**
-   * Recovers the plaintext given at least `threshold` valid committee
-   * signatures.
+   * Recovers the plaintext given an aggregate committee signature over the
+   * chosen text and the boolean mask of which committee members signed.
    *
-   * @throws ZenoCryptoError `swe-threshold` below threshold,
-   *   `swe-decrypt-failed` on a tampered ciphertext.
+   * @throws ZenoCryptoError `signer-mask-length-mismatch` when the mask
+   *   length differs from the committee size, `insufficient-signers` when
+   *   the mask popcount is below the threshold (both before any crypto),
+   *   `no-dlog-exists` when the aggregate signature does not authorize the
+   *   ciphertext (wrong signers, wrong chosen text, or tampered bytes).
    */
-  sweDecrypt(ct: SweCiphertext, signatures: Uint8Array[]): Uint8Array;
+  sweDecrypt(ct: SweCiphertext, aggSignature: Uint8Array, signers: boolean[]): Uint8Array;
 
-  /** Proves `ct` is a well-formed encryption of `message`. */
-  sweProveWellFormedness(ct: SweCiphertext, message: Uint8Array): Uint8Array;
-
-  /** Verifies a well-formedness proof against `ct`. */
-  sweVerifyWellFormedness(ct: SweCiphertext, proof: Uint8Array): boolean;
+  /** Verifies the encrypt-and-prove bundle against `ctx` and `commitment`. */
+  sweVerify(ct: SweCiphertext, proof: Uint8Array, ctx: SweContext, commitment: Uint8Array): boolean;
 
   /** Proves discrete-log equality for `statement` using `witness`. */
-  proveDleq(witness: Uint8Array, statement: DleqStatement): Uint8Array;
+  proveDleq(witness: Uint8Array, statement: DleqStatement, random: SecureRandom): Uint8Array;
 
   /** Verifies a DLEQ proof against `statement`. */
   verifyDleq(proof: Uint8Array, statement: DleqStatement): boolean;
-
-  /** Proves knowledge of the opening of a Pedersen commitment (railgun-v2 only in v0). */
-  provePedersenOpening(commitment: Uint8Array, opening: Uint8Array, keyShare: PubShare): Uint8Array;
-
-  /** Verifies a Pedersen opening proof against `commitment` and `keyShare`. */
-  verifyPedersenOpening(commitment: Uint8Array, proof: Uint8Array, keyShare: PubShare): boolean;
 
   /** Identifies which backend is in use; `stub-unsafe` has no security properties. */
   backendKind(): 'stub-unsafe' | 'wasm';

@@ -6,16 +6,20 @@
  * via wasm-pack; throws `not-available` until the submodule lands).
  */
 export {
+  defaultSecureRandom,
   ZenoCryptoError,
   type DleqStatement,
   type EscrowAccount,
   type KeyShare,
   type PoolId,
   type PubShare,
+  type SecureRandom,
   type SweCiphertext,
+  type SweContext,
+  type SweEncryptResult,
   type ZenoCryptoBackend,
   type ZenoCryptoErrorCode,
 } from './backend.js';
 export { createUnsafeStubBackend, type UnsafeStubBackendOptions } from './stub/backend.js';
-export { unsafeStubCommitteeSign } from './stub/derive.js';
+export { unsafeStubAggregateSign } from './stub/derive.js';
 export { createWasmBackend } from './wasm/backend.js';
