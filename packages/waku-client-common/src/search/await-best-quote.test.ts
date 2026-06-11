@@ -10,7 +10,8 @@ import {
 import { awaitBestQuote } from './await-best-quote.js';
 
 const fixture = loadEciesFixture();
-const NOW = fixture.plaintext.validUntil - 15_000;
+// The selection window must close before validUntil: an expired option cannot be accepted.
+const NOW = fixture.plaintext.validUntil - 40_000;
 const anchor = { buyPerSellQ96: (3000n * 10n ** 6n * 2n ** 96n) / 10n ** 18n };
 const pubkey = (byte: string): string => byte.repeat(64);
 

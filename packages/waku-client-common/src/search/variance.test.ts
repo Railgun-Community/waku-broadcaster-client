@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { checkVariance } from './variance.js';
 
-// Anchor: 1e18 sell (WETH) buys exactly 3000e6 (USDC).
-const anchor = { buyPerSellQ96: (3000n * 10n ** 6n * 2n ** 96n) / 10n ** 18n };
-const sellAmount = '0xde0b6b3a7640000'; // 1e18
+// sellAmount = 2^96 makes expected = buyPerSellQ96 exactly (no Q96 truncation),
+// so the band boundaries are exact integers and pinnable to the unit.
+const anchor = { buyPerSellQ96: 3_000_000_000n };
+const sellAmount = `0x${(2n ** 96n).toString(16)}`;
 const hex = (v: bigint): string => `0x${v.toString(16)}`;
-const EXPECTED = 3000n * 10n ** 6n;
+const EXPECTED = 3_000_000_000n;
 
 describe('checkVariance', () => {
   test.each([
@@ -25,7 +26,7 @@ describe('checkVariance', () => {
   test('integer math only: no precision loss on large amounts', () => {
     const bigSell = hex(10n ** 27n);
     const bigAnchor = { buyPerSellQ96: (7n * 10n ** 25n * 2n ** 96n) / 10n ** 27n };
-    const expected = 7n * 10n ** 25n;
+    const expected = (10n ** 27n * bigAnchor.buyPerSellQ96) / 2n ** 96n;
     expect(checkVariance(hex(expected), bigSell, bigAnchor)).toBe('in-band');
     expect(checkVariance(hex((expected * 9500n) / 10000n - 1n), bigSell, bigAnchor)).toBe(
       'below-band',
