@@ -141,6 +141,7 @@ export class BroadcasterFeeCache {
     chain: Chain,
     tokenAddress: string,
     useRelayAdapt: boolean,
+    use7702Only = false,
   ): boolean {
     const feesForToken = this.feesForToken(chain, tokenAddress);
     if (!feesForToken) {
@@ -160,7 +161,12 @@ export class BroadcasterFeeCache {
 
     const availableUnexpiredFee = cachedFees.find(
       cachedFee =>
-        !cachedFeeUnavailableOrExpired(cachedFee, chain, useRelayAdapt),
+        !cachedFeeUnavailableOrExpired(
+          cachedFee,
+          chain,
+          useRelayAdapt,
+          use7702Only,
+        ),
     );
     return availableUnexpiredFee != null;
   }

@@ -62,6 +62,7 @@ describe('handle-authorized-fees', function () {
         feesID,
         availableWallets,
         relayAdapt,
+        relayAdapt7702: relayAdapt,
         reliability: 1,
       },
     };
