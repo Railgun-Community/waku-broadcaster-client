@@ -42,10 +42,9 @@ export abstract class WakuBroadcasterWakuCoreBase {
         chain,
       );
 
-      if(BroadcasterConfig.useStore){
-        this.pollHistoricalTopics()
+      if (BroadcasterConfig.useStore) {
+        this.pollHistoricalTopics();
       }
-
 
     } catch (err) {
       if (!(err instanceof Error)) {
@@ -113,7 +112,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
       BroadcasterConfig.historicalLookBackTime = broadcasterOptions.historicalLookBackTime
     }
 
-    if(isDefined(broadcasterOptions.useStore)){
+    if (isDefined(broadcasterOptions.useStore)) {
       BroadcasterConfig.useStore = broadcasterOptions.useStore;
     }
   }

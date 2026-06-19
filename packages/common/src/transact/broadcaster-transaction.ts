@@ -249,7 +249,7 @@ export class BroadcasterTransaction {
     const pollIterations = SECONDS_PER_RETRY / POLL_DELAY_SECONDS;
 
     const responseTopic = contentTopics.transactResponse(this.chain);
-    if(BroadcasterConfig.useStore){
+    if (BroadcasterConfig.useStore) {
       await WakuBroadcasterWakuCore.retrieveHistoricalForTopic(responseTopic);
     }
 
