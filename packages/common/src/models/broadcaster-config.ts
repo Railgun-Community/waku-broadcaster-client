@@ -37,6 +37,8 @@ export class BroadcasterConfig {
   static shardId = WAKU_RAILGUN_DEFAULT_SHARD.shardId;
   static pubSubTopic = WAKU_RAILGUN_DEFAULT_SHARD.pubsubTopic;
 
+  static useStore = true;
+
   static configureWakuNetwork(options: {
     clusterId?: number;
     shardId?: number;

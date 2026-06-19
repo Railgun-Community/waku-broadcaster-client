@@ -293,8 +293,12 @@ export abstract class WakuBroadcasterPeerDiscoveryCoreBase extends WakuBroadcast
       await this.afterNodeStart();
 
       BroadcasterDebug.log('Waiting for remote peer.');
+      const protocols = [Protocols.Filter, Protocols.LightPush]
+      if(BroadcasterConfig.useStore){
+        protocols.push(Protocols.Store);
+      }
       await waku.waitForPeers(
-        [Protocols.Filter, Protocols.LightPush, Protocols.Store],
+        protocols,
         this.peerDiscoveryTimeout,
       );
       BroadcasterDebug.log(this.getConnectedLogMessage());
