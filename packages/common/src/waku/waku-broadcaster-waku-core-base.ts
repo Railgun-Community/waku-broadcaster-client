@@ -42,7 +42,9 @@ export abstract class WakuBroadcasterWakuCoreBase {
         chain,
       );
 
-      this.pollHistoricalTopics()
+      if (BroadcasterConfig.useStore) {
+        this.pollHistoricalTopics();
+      }
 
     } catch (err) {
       if (!(err instanceof Error)) {
@@ -94,7 +96,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
     });
 
     this.pubSubTopic = BroadcasterConfig.pubSubTopic;
-    if (broadcasterOptions.additionalDirectPeers) {
+    if (isDefined(broadcasterOptions.additionalDirectPeers)) {
       this.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
     }
@@ -108,6 +110,10 @@ export abstract class WakuBroadcasterWakuCoreBase {
     }
     if (isDefined(broadcasterOptions.historicalLookBackTime)) {
       BroadcasterConfig.historicalLookBackTime = broadcasterOptions.historicalLookBackTime
+    }
+
+    if (isDefined(broadcasterOptions.useStore)) {
+      BroadcasterConfig.useStore = broadcasterOptions.useStore;
     }
   }
 

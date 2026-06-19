@@ -276,9 +276,13 @@ export abstract class WakuBroadcasterPeerDiscoveryCoreBase extends WakuBroadcast
         bootstrapPeers: directPeers,
         libp2p: libp2pOptions,
         networkConfig: BroadcasterConfig.getWakuNetworkConfig(),
-        store: {
-          peers: storePeers,
-        },
+        ...(BroadcasterConfig.useStore
+          ? {
+              store: {
+                peers: storePeers,
+              },
+            }
+          : {}),
         ...this.getConnectionManagerOptions(),
       });
       const waku = this.waku;
@@ -293,8 +297,12 @@ export abstract class WakuBroadcasterPeerDiscoveryCoreBase extends WakuBroadcast
       await this.afterNodeStart();
 
       BroadcasterDebug.log('Waiting for remote peer.');
+      const protocols = [Protocols.Filter, Protocols.LightPush];
+      if (BroadcasterConfig.useStore) {
+        protocols.push(Protocols.Store);
+      }
       await waku.waitForPeers(
-        [Protocols.Filter, Protocols.LightPush, Protocols.Store],
+        protocols,
         this.peerDiscoveryTimeout,
       );
       BroadcasterDebug.log(this.getConnectedLogMessage());

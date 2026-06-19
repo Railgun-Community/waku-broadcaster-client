@@ -24,6 +24,7 @@ export type BroadcasterOptions = {
     minVersion: string;
     maxVersion: string;
   };
+  useStore?: boolean;
 };
 
 export type BroadcasterConnectionStatusCallback = (
