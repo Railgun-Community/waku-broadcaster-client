@@ -22,6 +22,7 @@ import {
   stopRailgunEngine,
   unloadProvider,
 } from '@railgun-community/wallet';
+import { Wallet } from 'ethers';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -49,12 +50,7 @@ describe('broadcaster-transaction', () => {
     if (network == null) {
       throw new Error('Network is null');
     }
-    try {
-      await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
-    } catch (err) {
-      console.warn('Skipping broadcaster-transaction tests: provider unavailable');
-      this.skip();
-    }
+    await loadProvider(MOCK_FALLBACK_PROVIDER_JSON_CONFIG, network.name);
 
     wakuBroadcastMessageStub = sinon
       .stub(WakuBroadcasterWakuCore, 'broadcastMessage')
@@ -62,12 +58,12 @@ describe('broadcaster-transaction', () => {
   });
 
   afterEach(() => {
-    wakuBroadcastMessageStub?.resetHistory();
+    wakuBroadcastMessageStub.resetHistory();
   });
 
   after(async () => {
-    wakuBroadcastMessageStub?.restore();
-    await unloadProvider(networkForChain(chain)!.name).catch(() => {});
+    wakuBroadcastMessageStub.restore();
+    await unloadProvider(networkForChain(chain)!.name);
     stopRailgunEngine();
   });
 
@@ -89,6 +85,65 @@ describe('broadcaster-transaction', () => {
       overallBatchMinGasPrice,
       useRelayAdapt,
       {}, // preTransactionPOIsPerTxidLeafPerList
+    );
+
+    const mockDelayedResponse = async () => {
+      await delay(2000);
+      const { sharedKey } = BroadcasterTransactResponse;
+      if (!sharedKey) {
+        throw new Error('No shared key');
+      }
+      const response = { txHash: MOCK_TX_HASH };
+      const encryptedResponse = encryptResponseData(response, sharedKey);
+      const payload = utf8ToBytes(
+        JSON.stringify({ result: encryptedResponse }),
+      );
+      await BroadcasterTransactResponse.handleBroadcasterTransactionResponseMessage(
+        {
+          payload,
+        },
+      );
+    };
+
+    const [response] = await Promise.all([
+      broadcasterTransaction.send(),
+      mockDelayedResponse(),
+    ]);
+
+    expect(response).to.equal(MOCK_TX_HASH);
+  }).timeout(10000);
+
+  it('Should generate and relay a Broadcaster transaction with EIP-7702 authorization', async () => {
+    const broadcasterRailgunAddress = MOCK_RAILGUN_WALLET_ADDRESS;
+    const broadcasterFeesID = 'abc';
+    const nullifiers = ['0x012345'];
+    const overallBatchMinGasPrice = BigInt('0x0100');
+    const useRelayAdapt = true;
+    const signer = new Wallet(
+      '0x0123456789012345678901234567890123456789012345678901234567890123',
+    );
+    const authorization = await signer.authorize({
+      chainId: BigInt(chain.id),
+      address: '0x1234567890123456789012345678901234567890',
+      nonce: 1,
+    });
+
+    const broadcasterTransaction = await BroadcasterTransaction.create(
+      TXIDVersion.V2_PoseidonMerkle,
+      '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // to
+      '0x1234abcdef', // data
+      broadcasterRailgunAddress,
+      broadcasterFeesID,
+      chain,
+      nullifiers,
+      overallBatchMinGasPrice,
+      useRelayAdapt,
+      {}, // preTransactionPOIsPerTxidLeafPerList
+      authorization,
+      {
+        maxFeePerGas: overallBatchMinGasPrice,
+        maxPriorityFeePerGas: 0n,
+      },
     );
 
     const mockDelayedResponse = async () => {

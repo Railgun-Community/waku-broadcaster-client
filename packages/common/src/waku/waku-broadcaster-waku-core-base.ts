@@ -12,6 +12,7 @@ import {
 } from '@waku/sdk';
 import { BroadcasterOptions } from '../models/index.js';
 import {
+  WAKU_RAILGUN_DEFAULT_SHARD,
   WAKU_RAILGUN_PUB_SUB_TOPIC,
 } from '../models/constants.js';
 import { BroadcasterFeeCache } from '../fees/broadcaster-fee-cache.js';
@@ -27,6 +28,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
   protected static pubSubTopic = WAKU_RAILGUN_PUB_SUB_TOPIC;
   protected static additionalDirectPeers: string[] = [];
   protected static peerDiscoveryTimeout = 60000;
+  protected static defaultShard = WAKU_RAILGUN_DEFAULT_SHARD;
   public static restartCount = 0;
 
   static async initWaku(chain: Chain): Promise<void> {
@@ -87,13 +89,9 @@ export abstract class WakuBroadcasterWakuCoreBase {
   static setBroadcasterOptions(broadcasterOptions: BroadcasterOptions) {
     BroadcasterConfig.trustedFeeSigner = broadcasterOptions.trustedFeeSigner;
 
-    BroadcasterConfig.configureWakuNetwork({
-      clusterId: broadcasterOptions.clusterId,
-      shardId: broadcasterOptions.shardId,
-      pubSubTopic: broadcasterOptions.pubSubTopic,
-    });
-
-    this.pubSubTopic = BroadcasterConfig.pubSubTopic;
+    if (isDefined(broadcasterOptions.pubSubTopic)) {
+      this.pubSubTopic = broadcasterOptions.pubSubTopic;
+    }
     if (broadcasterOptions.additionalDirectPeers) {
       this.additionalDirectPeers =
         broadcasterOptions.additionalDirectPeers;
@@ -148,19 +146,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
     });
   }
 
-  private static getLightPushAcceptedCount(result: {
-    successes?: unknown[];
-    recipients?: unknown[];
-    failures?: unknown[];
-  }): number {
-    if (Array.isArray(result.successes)) {
-      return result.successes.length;
-    }
-    if (Array.isArray(result.recipients)) {
-      return result.recipients.length;
-    }
-    return 0;
-  }
+
 
   static async broadcastMessage(data: object, topic: string): Promise<void> {
     if (!this.waku) {
@@ -168,7 +154,7 @@ export abstract class WakuBroadcasterWakuCoreBase {
     }
     const encoder = createEncoder({
       contentTopic: topic,
-      routingInfo: BroadcasterConfig.getWakuRoutingInfo(),
+      routingInfo: WAKU_RAILGUN_DEFAULT_SHARD
     });
 
     const payload = utf8ToBytes(JSON.stringify(data));
@@ -177,15 +163,8 @@ export abstract class WakuBroadcasterWakuCoreBase {
       payload,
     });
 
-    const acceptedCount = this.getLightPushAcceptedCount(result);
-    const failures = result.failures ?? [];
-
-    if (failures.length > 0) {
-      if (acceptedCount > 0) {
-        return;
-      }
-
-      throw new Error('Failed to send message');
+    if (result.failures && result.failures.length > 0) {
+      throw new Error(`Failed to send message: ${result.failures.map(f => f.error).join(', ')}`);
     }
   }
 
@@ -200,39 +179,66 @@ export abstract class WakuBroadcasterWakuCoreBase {
       return;
     }
 
-    const decoder = createDecoder(topic, BroadcasterConfig.getWakuRoutingInfo());
+    const decoder = createDecoder(topic, WAKU_RAILGUN_DEFAULT_SHARD);
 
     try {
-      const startTime = new Date()
-      // TODO: make a variable
-      startTime.setTime(Date.now() - (BroadcasterConfig.historicalLookBackTime))
-      const endTime = new Date(Date.now())
-      const options: QueryRequestParams = {
+      const startTime = new Date();
+      startTime.setTime(Date.now() - BroadcasterConfig.historicalLookBackTime);
+      const endTime = new Date(Date.now());
+
+      const optionsBase: QueryRequestParams = {
         includeData: true,
-        pubsubTopic: BroadcasterConfig.pubSubTopic,
+        pubsubTopic: this.pubSubTopic,
         contentTopics: [topic],
         paginationForward: true,
-      }
-      const lastMessage = WakuObservers.getLastMessage(topic);
-      if (lastMessage) {
-        const cursor = this.waku.store.createCursor(lastMessage)
-        options.paginationCursor = cursor
-      } else {
-        options.timeStart = startTime
-        options.timeEnd = endTime
-      }
-      const generator = this.waku.store.queryGenerator([decoder], options);
-      for await (const messagesPromises of generator) {
-        messagesPromises.reverse()
-        for (const messagePromise of messagesPromises) {
-          if (isDefined(messagePromise)) {
-            const message = await messagePromise
-            if (isDefined(message)) {
-              callback(message);
+      };
+
+      const runQuery = async (options: QueryRequestParams) => {
+        const generator = this.waku!.store.queryGenerator([decoder], options);
+        for await (const messagesPromises of generator) {
+          messagesPromises.reverse();
+          for (const messagePromise of messagesPromises) {
+            if (isDefined(messagePromise)) {
+              const message = await messagePromise;
+              if (isDefined(message)) {
+                callback(message);
+              }
             }
           }
         }
+      };
+
+      const lastMessage = WakuObservers.getLastMessage(topic);
+      if (lastMessage) {
+        try {
+          const cursor = this.waku.store.createCursor(lastMessage);
+          await runQuery({
+            ...optionsBase,
+            paginationCursor: cursor,
+          });
+        } catch (err) {
+          // Cursor can be invalid after restart / archive pruning.
+          if (err instanceof Error && err.message.includes('cursor not found')) {
+            BroadcasterDebug.log(
+              `Historical cursor invalid (${topic}); retrying with time window.`,
+            );
+            await runQuery({
+              ...optionsBase,
+              timeStart: startTime,
+              timeEnd: endTime,
+            });
+          } else {
+            throw err;
+          }
+        }
+        return;
       }
+
+      await runQuery({
+        ...optionsBase,
+        timeStart: startTime,
+        timeEnd: endTime,
+      });
     } catch (err) {
       if (err instanceof Error) {
         BroadcasterDebug.log(
