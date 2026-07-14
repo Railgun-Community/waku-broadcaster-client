@@ -40,12 +40,12 @@
     "protons-runtime": "5.6.0"
   },
   "peerDependencies": {
-    "@railgun-community/shared-models": "^8.0.1",
-    "@railgun-community/wallet": "^10.9.0"
+    "@railgun-community/shared-models": "8.1.0-rc.1",
+    "@railgun-community/wallet": "10.10.0-rc.0"
   },
   "devDependencies": {
-    "@railgun-community/shared-models": "^8.0.1",
-    "@railgun-community/wallet": "^10.9.0",
+    "@railgun-community/shared-models": "8.1.0-rc.1",
+    "@railgun-community/wallet": "10.10.0-rc.0",
     "@types/chai": "^4.3.5",
     "@types/chai-as-promised": "^7.1.5",
     "@types/leveldown": "^4.0.3",
