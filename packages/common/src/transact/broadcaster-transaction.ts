@@ -151,7 +151,11 @@ export class BroadcasterTransaction {
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
     authorization?: AuthorizationInput,
-    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
+    type4FeeOverrides?: {
+      gasLimit: bigint;
+      maxFeePerGas: bigint;
+      maxPriorityFeePerGas: bigint;
+    },
   ): Promise<BroadcasterTransaction> {
     const encryptedDataResponse = await this.encryptTransaction(
       txidVersionForInputs,
@@ -185,7 +189,11 @@ export class BroadcasterTransaction {
     useRelayAdapt: boolean,
     preTransactionPOIsPerTxidLeafPerList: PreTransactionPOIsPerTxidLeafPerList,
     authorization?: AuthorizationInput,
-    type4FeeOverrides?: { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint },
+    type4FeeOverrides?: {
+      gasLimit: bigint;
+      maxFeePerGas: bigint;
+      maxPriorityFeePerGas: bigint;
+    },
   ): Promise<EncryptDataWithSharedKeyResponse> {
     if (!isHexString(data)) {
       throw new Error('Data field must be a hex string.');
@@ -211,40 +219,49 @@ export class BroadcasterTransaction {
       preTransactionPOIsPerTxidLeafPerList,
     };
 
-    type BroadcasterRawParamsTransactERC7702Local = BroadcasterTransactRequestRaw & {
-      transactType: BroadcasterTransactRequestType.TX7702;
-      maxFeePerGas: string;
-      maxPriorityFeePerGas: string;
-      authorization: Authorization;
-    };
+    type BroadcasterRawParamsTransactERC7702Local =
+      BroadcasterTransactRequestRaw & {
+        transactType: BroadcasterTransactRequestType.TX7702;
+        gasLimit: string;
+        maxFeePerGas: string;
+        maxPriorityFeePerGas: string;
+        authorization: Authorization;
+      };
 
-    const transactData: BroadcasterRawParamsTransactCommon | BroadcasterRawParamsTransactERC7702Local =
-      authorization
-        ? (() => {
-            if (!type4FeeOverrides) {
-              throw new Error(
-                'EIP-7702 transact requires explicit type4FeeOverrides (maxFeePerGas/maxPriorityFeePerGas).',
-              );
-            }
-
-            const resolvedAuthorization = authorizationify(
-              normalizeAuthorizationLike(authorization),
+    const transactData:
+      | BroadcasterRawParamsTransactCommon
+      | BroadcasterRawParamsTransactERC7702Local = authorization
+      ? (() => {
+          if (
+            !type4FeeOverrides ||
+            type4FeeOverrides.gasLimit == null ||
+            type4FeeOverrides.maxFeePerGas == null ||
+            type4FeeOverrides.maxPriorityFeePerGas == null
+          ) {
+            throw new Error(
+              'EIP-7702 transact requires explicit type4FeeOverrides (gasLimit/maxFeePerGas/maxPriorityFeePerGas).',
             );
+          }
 
-            return {
-              ...baseTransactData,
-              transactType: BroadcasterTransactRequestType.TX7702,
-              maxFeePerGas: type4FeeOverrides.maxFeePerGas.toString(),
-              maxPriorityFeePerGas:
-                type4FeeOverrides.maxPriorityFeePerGas.toString(),
-              authorization: resolvedAuthorization,
-            };
-          })()
-        : {
+          const resolvedAuthorization = authorizationify(
+            normalizeAuthorizationLike(authorization),
+          );
+
+          return {
             ...baseTransactData,
-            transactType: BroadcasterTransactRequestType.COMMON,
-            minGasPrice: overallBatchMinGasPrice.toString(),
+            transactType: BroadcasterTransactRequestType.TX7702,
+            gasLimit: type4FeeOverrides.gasLimit.toString(),
+            maxFeePerGas: type4FeeOverrides.maxFeePerGas.toString(),
+            maxPriorityFeePerGas:
+              type4FeeOverrides.maxPriorityFeePerGas.toString(),
+            authorization: resolvedAuthorization,
           };
+        })()
+      : {
+          ...baseTransactData,
+          transactType: BroadcasterTransactRequestType.COMMON,
+          minGasPrice: overallBatchMinGasPrice.toString(),
+        };
 
     const encryptedDataResponse = await encryptDataWithSharedKey(
       transactData,
