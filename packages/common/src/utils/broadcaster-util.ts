@@ -4,12 +4,52 @@ import {
   networkForChain,
   versionCompare,
 } from '@railgun-community/shared-models';
+import { getRailgunWalletAddressData } from '@railgun-community/wallet';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
 import { isDefined } from './is-defined.js';
 
 const FEE_EXPIRATION_MINIMUM_MSEC = 40000;
 
+const PAYEE_KEY_CACHE_MAX_SIZE = 5000;
+
 export const DEFAULT_BROADCASTER_IDENTIFIER = 'default';
+
+const payeeKeyCache = new Map<string, string>();
+
+/**
+ * A 0zk address encodes { masterPublicKey, networkID, viewingPublicKey }, but
+ * only the master public key decides who owns a fee note - the note public key
+ * is poseidon(masterPublicKey, random). The viewing key merely decides who can
+ * decrypt it, and the networkID is not part of the payee at all.
+ *
+ * Fee messages are self-signed against the viewing key of the address they
+ * claim, so a single operator can mint unlimited valid, distinct addresses that
+ * all pay the same wallet. Group broadcasters on the master public key so that
+ * announcing more addresses (or more identifiers under one address) can never
+ * win an operator extra slots in the list.
+ */
+export const payeeKeyForBroadcaster = (railgunAddress: string): string => {
+  const cached = payeeKeyCache.get(railgunAddress);
+  if (isDefined(cached)) {
+    return cached;
+  }
+
+  let payeeKey: string;
+  try {
+    payeeKey = getRailgunWalletAddressData(
+      railgunAddress,
+    ).masterPublicKey.toString();
+  } catch {
+    payeeKey = railgunAddress;
+  }
+
+  if (payeeKeyCache.size >= PAYEE_KEY_CACHE_MAX_SIZE) {
+    payeeKeyCache.clear();
+  }
+  payeeKeyCache.set(railgunAddress, payeeKey);
+
+  return payeeKey;
+};
 
 export const shortenAddress = (address: string): string => {
   if (address.length < 13) {
