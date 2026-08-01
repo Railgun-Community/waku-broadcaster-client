@@ -4,6 +4,7 @@ import { AddressFilter } from '../filters/address-filter.js';
 import { BroadcasterDebug } from '../utils/broadcaster-debug.js';
 import {
   cachedFeeUnavailableOrExpired,
+  payeeKeyForBroadcaster,
   shortenAddress,
 } from '../utils/broadcaster-util.js';
 import { isDefined } from '../utils/is-defined.js';
@@ -49,7 +50,10 @@ export class BroadcasterSearch {
       );
     }
 
-    const selectedBroadcasters: SelectedBroadcaster[] = [];
+    // Keyed on payee (master public key), not on address or identifier, so that
+    // one operator occupies exactly one slot however many identifiers or
+    // addresses they announce. See payeeKeyForBroadcaster.
+    const bestPerPayee = new Map<string, SelectedBroadcaster>();
 
     const authorizedFee =
       BroadcasterFeeCache.getAuthorizedFee(tokenAddressLowercase);
@@ -107,9 +111,23 @@ export class BroadcasterSearch {
           tokenFee: nextCachedFee,
           tokenAddress,
         };
-        selectedBroadcasters.push(selectedBroadcaster);
+
+        // Keep the offer that would have won anyway: cheapest fee, then most
+        // reliable. Spamming is therefore never better than announcing once.
+        const payeeKey = payeeKeyForBroadcaster(broadcasterAddress);
+        const currentBest = bestPerPayee.get(payeeKey);
+        if (
+          !isDefined(currentBest) ||
+          SelectedBroadcasterAscendingFee(selectedBroadcaster, currentBest) < 0
+        ) {
+          bestPerPayee.set(payeeKey, selectedBroadcaster);
+        }
       });
     });
+
+    const selectedBroadcasters: SelectedBroadcaster[] = [
+      ...bestPerPayee.values(),
+    ];
 
     // selectedBroadcasters.sort(SelectedBroadcasterAscendingFee);
     selectedBroadcasters.sort(
