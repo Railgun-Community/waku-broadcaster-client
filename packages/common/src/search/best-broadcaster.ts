@@ -8,6 +8,7 @@ import {
 } from '../utils/broadcaster-util.js';
 import { isDefined } from '../utils/is-defined.js';
 import { BroadcasterConfig } from '../models/broadcaster-config.js';
+import { sessionRankDigest } from '../utils/session-seed.js';
 
 const SelectedBroadcasterAscendingFee = (
   a: SelectedBroadcaster,
@@ -20,6 +21,142 @@ const SelectedBroadcasterAscendingFee = (
   }
   return feeAmount > BigInt(0) ? 1 : -1;
 };
+
+// Internal construction metadata only: the public `SelectedBroadcaster`
+// shape is unchanged. `identifier` is used to preserve the per-address
+// cache/insertion order during tiered round-robin ordering.
+type BroadcasterCandidate = SelectedBroadcaster & {
+  identifier: string;
+};
+
+const toSelectedBroadcaster = (
+  candidate: BroadcasterCandidate,
+): SelectedBroadcaster => {
+  return {
+    railgunAddress: candidate.railgunAddress,
+    tokenFee: candidate.tokenFee,
+    tokenAddress: candidate.tokenAddress,
+  };
+};
+
+// Unpredictable within a session (via the random HMAC key) but deterministic
+// across repeated calls and cache regeneration. Reliability is intentionally
+// excluded so the tier tie-break only considers session seed, chain, token,
+// fee, and railgun address. The fee is normalized to its canonical numeric
+// string so numerically equal representations (e.g. '100' and '0100') produce
+// identical ranks, mirroring the BigInt comparison used for tier grouping.
+// The session seed is the HMAC key (not part of the rank input), and the
+// returned fixed-width hex digest is compared as a string.
+const sessionRankForAddress = (
+  chain: Chain,
+  tokenAddressLowercase: string,
+  feePerUnitGas: string,
+  railgunAddress: string,
+): string => {
+  return sessionRankDigest(
+    `${chain.type}:${chain.id}:${tokenAddressLowercase}:${BigInt(feePerUnitGas).toString()}:${railgunAddress}`,
+  );
+};
+
+// Within one exact fee+reliability tier, order distinct addresses by session
+// rank. Tie-breaks fall back to first-appearance (cache insertion) order,
+// never lexicographic address order.
+const rankAddresses = (
+  tierCandidates: BroadcasterCandidate[],
+  chain: Chain,
+  tokenAddressLowercase: string,
+): string[] => {
+  const addresses: string[] = [];
+  const seenAddresses = new Set<string>();
+  tierCandidates.forEach(candidate => {
+    if (!seenAddresses.has(candidate.railgunAddress)) {
+      seenAddresses.add(candidate.railgunAddress);
+      addresses.push(candidate.railgunAddress);
+    }
+  });
+
+  const feePerUnitGas = tierCandidates[0].tokenFee.feePerUnitGas;
+
+  return addresses
+    .map(address => ({
+      address,
+      rank: sessionRankForAddress(
+        chain,
+        tokenAddressLowercase,
+        feePerUnitGas,
+        address,
+      ),
+    }))
+    .sort((a, b) => {
+      if (a.rank !== b.rank) {
+        return a.rank < b.rank ? -1 : 1;
+      }
+      return addresses.indexOf(a.address) - addresses.indexOf(b.address);
+    })
+    .map(ranked => ranked.address);
+};
+
+// Candidates must be pre-sorted by fee ascending, then reliability descending,
+// so exact fee+reliability tiers are contiguous. Within each tier, candidates
+// are emitted round-robin: one per address (in session rank order) before a
+// second candidate for any address.
+const orderCandidatesByTieredRoundRobin = (
+  candidates: BroadcasterCandidate[],
+  chain: Chain,
+  tokenAddressLowercase: string,
+): SelectedBroadcaster[] => {
+  const orderedBroadcasters: SelectedBroadcaster[] = [];
+
+  let tierStart = 0;
+  // Handle tiered batches of candidates with the same fee and reliability
+  while (tierStart < candidates.length) {
+    const { feePerUnitGas, reliability } = candidates[tierStart].tokenFee;
+    const tierFeeAmount = BigInt(feePerUnitGas);
+
+    let tierEnd = tierStart;
+    while (tierEnd < candidates.length) {
+      const candidate = candidates[tierEnd];
+      if (
+        BigInt(candidate.tokenFee.feePerUnitGas) !== tierFeeAmount ||
+        candidate.tokenFee.reliability !== reliability
+      ) {
+        break;
+      }
+      tierEnd++;
+    }
+
+    const candidateBatch = candidates.slice(tierStart, tierEnd);
+    const addressesByRank = rankAddresses(
+      candidateBatch,
+      chain,
+      tokenAddressLowercase,
+    );
+
+    // First round
+    const candidatesByAddress = addressesByRank.map(address =>
+      candidateBatch.filter(candidate => candidate.railgunAddress === address),
+    );
+
+    // One round emits at most one candidate per address, in rank order.
+    let remaining = candidateBatch.length;
+    let round = 0;
+    while (remaining > 0) {
+      addressesByRank.forEach((address, addressIndex) => {
+        const next = candidatesByAddress[addressIndex][round];
+        if (isDefined(next)) {
+          orderedBroadcasters.push(toSelectedBroadcaster(next));
+          remaining--;
+        }
+      });
+      round++;
+    }
+
+    tierStart = tierEnd;
+  }
+
+  return orderedBroadcasters;
+};
+
 export class BroadcasterSearch {
   static findBroadcastersForToken(
     chain: Chain,
@@ -49,7 +186,7 @@ export class BroadcasterSearch {
       );
     }
 
-    const selectedBroadcasters: SelectedBroadcaster[] = [];
+    const candidates: BroadcasterCandidate[] = [];
 
     const authorizedFee =
       BroadcasterFeeCache.getAuthorizedFee(tokenAddressLowercase);
@@ -102,20 +239,23 @@ export class BroadcasterSearch {
           }
         }
 
-        const selectedBroadcaster: SelectedBroadcaster = {
+        const selectedBroadcaster: BroadcasterCandidate = {
           railgunAddress: broadcasterAddress,
           tokenFee: nextCachedFee,
           tokenAddress,
+          identifier,
         };
-        selectedBroadcasters.push(selectedBroadcaster);
+        candidates.push(selectedBroadcaster);
       });
     });
 
-    // selectedBroadcasters.sort(SelectedBroadcasterAscendingFee);
-    selectedBroadcasters.sort(
-      (a, b) => b.tokenFee.reliability - a.tokenFee.reliability,
+    candidates.sort(SelectedBroadcasterAscendingFee);
+
+    return orderCandidatesByTieredRoundRobin(
+      candidates,
+      chain,
+      tokenAddressLowercase,
     );
-    return selectedBroadcasters;
   }
 
   static findAllBroadcastersForChain(
@@ -204,10 +344,9 @@ export class BroadcasterSearch {
       return undefined;
     }
 
-    const sortedBroadcasters = broadcastersForToken.sort(
-      SelectedBroadcasterAscendingFee,
-    );
-
-    return sortedBroadcasters[0];
+    // findBroadcastersForToken already orders by fee ascending, then
+    // reliability descending, with seeded round-robin ties within each tier.
+    // The first entry is the best broadcaster; no further sort is needed.
+    return broadcastersForToken[0];
   }
 }
